@@ -173,8 +173,8 @@ export async function GET(req: NextRequest) {
                   number: epNum,
                   title: ep.episode_name || `Episódio ${epNum}`,
                   duration: '45m',
-                  link: `resolver2_episodes=${ep.link || ''}`,
-                  streamUrl: ep.link || (tmdbId ? `https://vidsrc.sh/embed/tv?tmdb=${tmdbId}&season=${sNum}&episode=${epNum}` : '')
+                  link: `resolver2_episodes=${ep.link || ''}&season=${sNum}&episode=${epNum}`,
+                  streamUrl: ep.link || (tmdbId ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${sNum}&e=${epNum}` : '')
                 });
               });
             }
@@ -202,8 +202,8 @@ export async function GET(req: NextRequest) {
                 number: epNum,
                 title: epTitle,
                 duration: '45m',
-                link: `resolver3_episodes=${slug}/${sNum}/${epNum}`,
-                streamUrl: tmdbId ? `https://vidsrc.sh/embed/tv?tmdb=${tmdbId}&season=${sNum}&episode=${epNum}` : ''
+                link: `resolver3_episodes=${slug}/${sNum}/${epNum}&season=${sNum}&episode=${epNum}`,
+                streamUrl: tmdbId ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${sNum}&e=${epNum}` : ''
               });
             }
           }
@@ -234,7 +234,8 @@ export async function GET(req: NextRequest) {
                     number: ep,
                     title: `Episódio ${ep}`,
                     duration: '45m',
-                    streamUrl: `https://vidsrc.sh/embed/tv?tmdb=${tmdbId}&season=${sNum}&episode=${ep}`
+                    link: `${link}&season=${sNum}&episode=${ep}`,
+                    streamUrl: `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${sNum}&e=${ep}`
                   });
                 }
               }

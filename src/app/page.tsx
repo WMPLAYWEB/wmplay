@@ -334,58 +334,48 @@ export default function KodiApp() {
       });
     }
 
-    // 2. High-quality verified embeds with TMDB ID (Operational high speed endpoints)
+    // 2. Provedores com Suporte a Áudio PT-BR e Legendas
     if (tmdbId) {
       if (seasonNum && epNum) {
         servers.push({
-          name: "Servidor 1 (VidSrc HD)",
-          url: `https://vidsrc.sh/embed/tv?tmdb=${tmdbId}&season=${seasonNum}&episode=${epNum}`,
-          type: "embed",
-        });
-        servers.push({
-          name: "Servidor 2 (2Embed Skin)",
-          url: `https://www.2embed.skin/embedtv/${tmdbId}&s=${seasonNum}&e=${epNum}`,
-          type: "embed",
-        });
-        servers.push({
-          name: "Servidor 3 (MultiEmbed)",
+          name: "MultiEmbed (Áudio PT-BR / Legendas)",
           url: `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${seasonNum}&e=${epNum}`,
           type: "embed",
         });
         servers.push({
-          name: "Servidor 4 (VidSrc ME)",
-          url: `https://vidsrc.me/embed/tv?tmdb=${tmdbId}&season=${seasonNum}&episode=${epNum}`,
+          name: "AutoEmbed Backup HD",
+          url: `https://player.autoembed.cc/embed/tv/${tmdbId}/${seasonNum}/${epNum}`,
           type: "embed",
         });
         servers.push({
-          name: "Servidor 5 (AutoEmbed Reserva)",
-          url: `https://autoembed.co/tv/tmdb/${tmdbId}/${seasonNum}/${epNum}`,
+          name: "VidSrc HD",
+          url: `https://vidsrc.sh/embed/tv?tmdb=${tmdbId}&season=${seasonNum}&episode=${epNum}`,
+          type: "embed",
+        });
+        servers.push({
+          name: "2Embed Skin",
+          url: `https://www.2embed.skin/embedtv/${tmdbId}&s=${seasonNum}&e=${epNum}`,
           type: "embed",
         });
       } else {
         servers.push({
-          name: "Servidor 1 (VidSrc HD)",
-          url: `https://vidsrc.sh/embed/movie?tmdb=${tmdbId}`,
-          type: "embed",
-        });
-        servers.push({
-          name: "Servidor 2 (2Embed Skin)",
-          url: `https://www.2embed.skin/embed/${tmdbId}`,
-          type: "embed",
-        });
-        servers.push({
-          name: "Servidor 3 (MultiEmbed)",
+          name: "MultiEmbed (Áudio PT-BR / Legendas)",
           url: `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`,
           type: "embed",
         });
         servers.push({
-          name: "Servidor 4 (VidSrc ME)",
-          url: `https://vidsrc.me/embed/movie?tmdb=${tmdbId}`,
+          name: "AutoEmbed Backup HD",
+          url: `https://player.autoembed.cc/embed/movie/${tmdbId}`,
           type: "embed",
         });
         servers.push({
-          name: "Servidor 5 (AutoEmbed Reserva)",
-          url: `https://autoembed.co/movie/tmdb/${tmdbId}`,
+          name: "VidSrc HD",
+          url: `https://vidsrc.sh/embed/movie?tmdb=${tmdbId}`,
+          type: "embed",
+        });
+        servers.push({
+          name: "2Embed Skin",
+          url: `https://www.2embed.skin/embed/${tmdbId}`,
           type: "embed",
         });
       }
@@ -412,6 +402,40 @@ export default function KodiApp() {
       servers,
       activeServerIndex: 0,
     });
+
+    // 4. Carregamento em tempo real de Servidores Nacionais Dublados (Overflix / Streamtape / Mixdrop)
+    if (!directUrl?.includes(".m3u8") && (directUrl || tmdbId)) {
+      const isTv = Boolean(seasonNum && epNum);
+      const params = new URLSearchParams({
+        link: directUrl || "",
+        tmdbId: tmdbId || "",
+        type: isTv ? "tv" : "movie",
+        season: String(seasonNum || 1),
+        episode: String(epNum || 1),
+      });
+
+      fetch(`/api/resolve-stream?${params.toString()}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.servers) && data.servers.length > 0) {
+            setPlayingMedia((prev) => {
+              if (!prev || prev.title !== title) return prev;
+              const newServers = [...data.servers];
+              prev.servers.forEach((s) => {
+                if (!newServers.some((ns) => ns.url === s.url)) {
+                  newServers.push(s);
+                }
+              });
+              return {
+                ...prev,
+                servers: newServers,
+                activeServerIndex: 0, // Prioriza imediatamente o primeiro servidor Dublado PT-BR
+              };
+            });
+          }
+        })
+        .catch((err) => console.error("Erro ao resolver servidores dublados:", err));
+    }
   };
 
   // Filtragem dos Add-ons
@@ -1151,7 +1175,7 @@ export default function KodiApp() {
                                 selectedSeriesItem.synopsis,
                                 selectedSeriesItem.thumbnail,
                                 selectedSeriesItem.tmdb_id,
-                                ep.streamUrl,
+                                ep.link || selectedSeriesItem.link || ep.streamUrl,
                                 activeSeasonTab,
                                 ep.number
                               )
@@ -1324,7 +1348,7 @@ export default function KodiApp() {
                               selectedSeriesItem.synopsis,
                               selectedSeriesItem.thumbnail,
                               selectedSeriesItem.tmdb_id,
-                              ep.streamUrl,
+                              ep.link || selectedSeriesItem.link || ep.streamUrl,
                               activeSeasonTab,
                               ep.number
                             )

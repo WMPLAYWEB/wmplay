@@ -50,7 +50,20 @@ export default function KodiVideoPlayer({
   const [errorMessage, setErrorMessage] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [antiPopupMode, setAntiPopupMode] = useState(false);
+  const [antiPopupMode, setAntiPopupMode] = useState(true);
+
+  // Bloqueador de Anúncios Ativo (Intercepta pop-ups e abas abertas por scripts terceiros)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const originalOpen = window.open;
+    window.open = function (...args) {
+      console.warn("[WMPLAY AdBlock] Anúncio em nova janela/aba bloqueado:", args[0]);
+      return null;
+    };
+    return () => {
+      window.open = originalOpen;
+    };
+  }, []);
 
   // Setup Video / Hls playback
   useEffect(() => {
@@ -210,19 +223,19 @@ export default function KodiVideoPlayer({
               </p>
               <button
                 onClick={() => setAntiPopupMode((prev) => !prev)}
-                className={`text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full font-mono flex items-center gap-1 transition-all cursor-pointer ${
+                className={`text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full font-mono flex items-center gap-1.5 transition-all cursor-pointer ${
                   antiPopupMode
                     ? "text-emerald-300 bg-emerald-950/80 border border-emerald-500/50 hover:bg-emerald-900"
-                    : "text-slate-400 bg-black/90 border border-zinc-800 hover:text-white"
+                    : "text-amber-300 bg-amber-950/80 border border-amber-500/50 hover:bg-amber-900"
                 }`}
                 title={
                   antiPopupMode
-                    ? "Anti-Popup Ativado. Clique para Desativar."
-                    : "Modo Compatível Ativo. Clique para ativar Anti-Popup."
+                    ? "Bloqueador de Anúncios Ativado: Pop-ups e abas são bloqueados automaticamente. Clique para desativar."
+                    : "Modo Aberto: Clique para reativar o Bloqueador de Anúncios."
                 }
               >
-                <span className={`w-1.5 h-1.5 rounded-full ${antiPopupMode ? "bg-emerald-400" : "bg-red-500"}`} />
-                {antiPopupMode ? "🛡️ Anti-Popup" : "🔓 Compatível"}
+                <span className={`w-1.5 h-1.5 rounded-full ${antiPopupMode ? "bg-emerald-400" : "bg-amber-400"}`} />
+                {antiPopupMode ? "🛡️ Sem Anúncios (Ativo)" : "⚠️ Anúncios Permitidos"}
               </button>
             </div>
             <h2 className="text-base sm:text-xl md:text-2xl font-black text-white drop-shadow truncate mt-0.5">
@@ -396,7 +409,7 @@ export default function KodiVideoPlayer({
               referrerPolicy="origin"
               sandbox={
                 antiPopupMode
-                  ? "allow-scripts allow-same-origin allow-forms allow-presentation"
+                  ? "allow-scripts allow-same-origin allow-forms allow-presentation allow-encrypted-media"
                   : undefined
               }
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
@@ -407,9 +420,9 @@ export default function KodiVideoPlayer({
             {/* Non-intrusive Helper overlay at the bottom */}
             <div className="absolute bottom-2 left-4 right-4 z-10 hidden sm:flex items-center justify-between text-[11px] text-zinc-300 bg-black/85 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-zinc-800 pointer-events-none">
               <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span>
-                  <b>Dica:</b> Para iniciar, clique no botão <b>Play</b> no centro. Caso abra uma propaganda em outra aba, basta fechá-la.
+                  <b>🛡️ WMPLAY Protegido:</b> Pop-ups e abas bloqueadas automaticamente. Use os botões acima para alternar entre servidores Dublados.
                 </span>
               </div>
               <span className="text-zinc-400 font-mono">
