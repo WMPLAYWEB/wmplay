@@ -73,6 +73,11 @@ export default function KodiVideoPlayer({
 
     if (!currentServer) return;
 
+    if (!currentServer.url) {
+      setIsLoading(true);
+      return;
+    }
+
     if (currentServer.type === "video") {
       const video = videoRef.current;
       if (!video) return;

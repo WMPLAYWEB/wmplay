@@ -52,9 +52,8 @@ function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-BR'): S
   if (!playerData) return servers;
 
   const dub = parseServersString(playerData.servers_dub);
-  const leg = parseServersString(playerData.servers_leg);
 
-  // Servidores Dublados
+  // Servidores Estritamente Dublados em Português do Brazuca Play
   if (dub.streamtape) {
     servers.push({
       name: `1. ${labelPrefix} (StreamTape)`,
@@ -88,28 +87,11 @@ function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-BR'): S
     });
   }
 
-  // Servidores Legendados como alternativa
-  if (leg.streamtape) {
-    servers.push({
-      name: `5. Legendado (StreamTape)`,
-      url: `https://streamtape.com/e/${leg.streamtape}`,
-      type: 'embed',
-      isDubbed: false
-    });
-  }
-  if (leg.mixdrop) {
-    servers.push({
-      name: `6. Legendado (MixDrop)`,
-      url: `https://mxdrop.top/e/${leg.mixdrop}`,
-      type: 'embed',
-      isDubbed: false
-    });
-  }
-
   return servers;
 }
 
 async function callResolver(resolverNum: number, requestStr: string): Promise<string | null> {
+  // Padrão do Brazuca Play com aspas simples para compatibilidade com o backend Python
   const params = `{'resolver': ${resolverNum}, 'request': '${requestStr}'}`;
   const payload = encodeURIComponent(Buffer.from(params).toString('base64'));
 
@@ -121,7 +103,7 @@ async function callResolver(resolverNum: number, requestStr: string): Promise<st
             'Authorization': `Bearer ${TOKEN}`,
             'User-Agent': 'Mozilla/5.0'
           },
-          timeout: 4000
+          timeout: 4500
         }, (res) => {
           let data = '';
           res.on('data', chunk => data += chunk);
@@ -135,10 +117,12 @@ async function callResolver(resolverNum: number, requestStr: string): Promise<st
       if (json && json.success && json.result) {
         if (typeof json.result === 'string') {
           try {
-            return Buffer.from(json.result, 'base64').toString('utf8');
-          } catch {
-            return json.result;
-          }
+            const decoded = Buffer.from(json.result, 'base64').toString('utf8');
+            if (decoded && (decoded.startsWith('http') || decoded.startsWith('{') || decoded.startsWith('['))) {
+              return decoded;
+            }
+          } catch {}
+          return json.result;
         }
       }
     } catch {}
@@ -150,14 +134,85 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const link = searchParams.get('link') || '';
-    const tmdbId = searchParams.get('tmdbId') || '';
     const mediaType = searchParams.get('type') || 'movie'; // movie or tv
     const season = searchParams.get('season') || '1';
     const episode = searchParams.get('episode') || '1';
 
     const servers: StreamServer[] = [];
 
-    // 1. Resolver Overflix Dublado para Filmes (movie2=...)
+    // =========================================================================
+    // 1. REPRODUÇÃO DIRETA DE EPISÓDIOS RESOLVIDOS DO BRAZUCA PLAY
+    // =========================================================================
+    if (link.includes('resolver2_episodes=')) {
+      try {
+        let epUrl = link.split('resolver2_episodes=')[1];
+        if (epUrl.includes('&season=')) {
+          epUrl = epUrl.split('&season=')[0];
+        }
+        if (epUrl && epUrl.startsWith('http')) {
+          servers.push({
+            name: `Transmissão Direta Full HD Dublado T${season}E${episode}`,
+            url: epUrl,
+            type: 'video',
+            isDubbed: true
+          });
+        }
+      } catch (err) {
+        console.error('Erro ao extrair resolver2_episodes:', err);
+      }
+    }
+
+    // =========================================================================
+    // 2. REPRODUÇÃO DIRETA DO RESOLVER 3 EPISODES (Wasabi S3)
+    // =========================================================================
+    if (link.includes('resolver3_episodes=')) {
+      try {
+        let epSlug = link.split('resolver3_episodes=')[1];
+        if (epSlug.includes('&season=')) {
+          epSlug = epSlug.split('&season=')[0];
+        }
+        if (epSlug) {
+          const directWasabi = await callResolver(3, `episodes=${epSlug}`);
+          if (directWasabi && directWasabi.startsWith('http')) {
+            servers.push({
+              name: `Transmissão Wasabi Full HD Dublado T${season}E${episode}`,
+              url: directWasabi,
+              type: 'video',
+              isDubbed: true
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao resolver resolver3_episodes:', err);
+      }
+    }
+
+    // =========================================================================
+    // 3. REPRODUÇÃO DE FILMES: RESOLVER 3 (GeekAntenado Wasabi S3 MP4 Full HD)
+    // =========================================================================
+    if (link.includes('resolver3_mv=')) {
+      try {
+        const match = link.match(/resolver3_mv=([a-zA-Z0-9_\-]+)/);
+        if (match && match[1]) {
+          const slug = match[1];
+          const directWasabi = await callResolver(3, `mvshows=${slug}`);
+          if (directWasabi && directWasabi.startsWith('http')) {
+            servers.push({
+              name: 'Transmissão Direta Full HD Dublado (Wasabi S3)',
+              url: directWasabi,
+              type: 'video',
+              isDubbed: true
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao resolver resolver3_mv:', err);
+      }
+    }
+
+    // =========================================================================
+    // 4. REPRODUÇÃO DE FILMES: OVERFLIX DUBLADO (movie2=...)
+    // =========================================================================
     if (link.includes('movie2=')) {
       try {
         const match = link.match(/movie2=([a-zA-Z0-9_\-]+)/);
@@ -177,8 +232,26 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 2. Resolver Overflix Dublado para Séries (serie3=...)
-    if (mediaType === 'tv' && link.includes('serie3=')) {
+    // =========================================================================
+    // 5. REPRODUÇÃO DE SÉRIES: OVERFLIX DUBLADO (serie3_ep= ou serie3=)
+    // =========================================================================
+    if (link.includes('serie3_ep=')) {
+      try {
+        const match = link.match(/serie3_ep=([^&]+)/);
+        if (match && match[1]) {
+          const epUrl = decodeURIComponent(match[1]);
+          const epSlug = epUrl.replace(/\/$/, '').split('/').pop();
+          const epId = epSlug?.split('-').pop();
+          if (epId && /^\d+$/.test(epId)) {
+            const epPlayerData = await fetchOverflix(`/index.php?app=videobox&module=video&controller=view&do=playerData&id=${epId}`, epUrl);
+            const ovServers = buildOverflixServers(epPlayerData, `Dublado PT-BR T${season}E${episode}`);
+            servers.push(...ovServers);
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao resolver serie3_ep:', err);
+      }
+    } else if (mediaType === 'tv' && link.includes('serie3=')) {
       try {
         const match = link.match(/serie3=([a-zA-Z0-9_\-]+)/);
         if (match && match[1]) {
@@ -208,96 +281,16 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 2.1. Resolver diretamente se o link contiver o episódio específico (serie3_ep=...)
-    if (link.includes('serie3_ep=')) {
-      try {
-        const match = link.match(/serie3_ep=([^&]+)/);
-        if (match && match[1]) {
-          const epUrl = decodeURIComponent(match[1]);
-          const epSlug = epUrl.replace(/\/$/, '').split('/').pop();
-          const epId = epSlug?.split('-').pop();
-          if (epId && /^\d+$/.test(epId)) {
-            const epPlayerData = await fetchOverflix(`/index.php?app=videobox&module=video&controller=view&do=playerData&id=${epId}`, epUrl);
-            const ovServers = buildOverflixServers(epPlayerData, `Dublado PT-BR T${season}E${episode}`);
-            servers.push(...ovServers);
-          }
-        }
-      } catch (err) {
-        console.error('Erro ao resolver serie3_ep:', err);
-      }
-    }
-
-    // 3. Resolver GeekAntenado (resolver3_mv=, resolver1_mv=)
-    if (link.includes('resolver3_mv=')) {
-      const match = link.match(/resolver3_mv=([a-zA-Z0-9_\-]+)/);
-      if (match && match[1]) {
-        const direct = await callResolver(3, `mvshows=${match[1]}`);
-        if (direct && direct.startsWith('http')) {
-          servers.push({
-            name: 'Transmissão Direta HD (Nacional)',
-            url: direct,
-            type: 'video',
-            isDubbed: true
-          });
-        }
-      }
-    }
-
-    // 4. URL direta (se fornecida e for stream direto)
+    // =========================================================================
+    // 6. STREAMS DIRETOS (HLS .m3u8 ou MP4 nativo)
+    // =========================================================================
     if (link.startsWith('http') && (link.includes('.m3u8') || link.includes('.mp4'))) {
-      servers.unshift({
-        name: link.includes('.m3u8') ? 'Sinal Direto HD' : 'Vídeo Direto MP4',
-        url: link,
-        type: 'video',
-        isDubbed: true
-      });
-    }
-
-    // 5. Provedores de Embed Globais com Suporte a Áudio PT / Legendas PT
-    if (tmdbId) {
-      if (mediaType === 'movie') {
-        servers.push({
-          name: 'MultiEmbed (Áudio PT-BR / Legendas)',
-          url: `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`,
-          type: 'embed',
+      if (!servers.some(s => s.url === link)) {
+        servers.unshift({
+          name: link.includes('.m3u8') ? 'Sinal Direto HD' : 'Transmissão Direta MP4 Dublado',
+          url: link,
+          type: 'video',
           isDubbed: true
-        });
-        servers.push({
-          name: 'AutoEmbed Backup HD',
-          url: `https://player.autoembed.cc/embed/movie/${tmdbId}`,
-          type: 'embed'
-        });
-        servers.push({
-          name: 'VidSrc HD',
-          url: `https://vidsrc.sh/embed/movie?tmdb=${tmdbId}`,
-          type: 'embed'
-        });
-        servers.push({
-          name: '2Embed Skin',
-          url: `https://www.2embed.skin/embed/${tmdbId}`,
-          type: 'embed'
-        });
-      } else {
-        servers.push({
-          name: 'MultiEmbed (Áudio PT-BR / Legendas)',
-          url: `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`,
-          type: 'embed',
-          isDubbed: true
-        });
-        servers.push({
-          name: 'AutoEmbed Backup HD',
-          url: `https://player.autoembed.cc/embed/tv/${tmdbId}/${season}/${episode}`,
-          type: 'embed'
-        });
-        servers.push({
-          name: 'VidSrc HD',
-          url: `https://vidsrc.sh/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`,
-          type: 'embed'
-        });
-        servers.push({
-          name: '2Embed Skin',
-          url: `https://www.2embed.skin/embedtv/${tmdbId}&s=${season}&e=${episode}`,
-          type: 'embed'
         });
       }
     }

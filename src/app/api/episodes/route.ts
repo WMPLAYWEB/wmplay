@@ -3,6 +3,7 @@ import https from 'https';
 
 const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXNvbHZlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc5MDk4OTczfQ.WzQBuOqMai96Afleh9g-i7NXo6h-YsjPUbOgxlUqVsU';
 const HOSTS = ['api.geekantenado.online', 'geekantenado.fly.dev'];
+const OVERFLIX_HOST = 'www.overflix.asia';
 const TMDB_KEY = '4e44d9029b1270a757cddc766a1bcb63';
 
 // In-memory cache for ultra-fast response
@@ -20,7 +21,7 @@ async function callResolver(resolverNum: number, requestStr: string): Promise<an
             'Authorization': `Bearer ${TOKEN}`,
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
           },
-          timeout: 4000
+          timeout: 4500
         }, (res) => {
           let data = '';
           res.on('data', chunk => data += chunk);
@@ -54,6 +55,35 @@ async function callResolver(resolverNum: number, requestStr: string): Promise<an
     }
   }
   return null;
+}
+
+async function fetchOverflixEpisodes(seriesId: string, season: number, referer: string): Promise<any[]> {
+  const url = `https://${OVERFLIX_HOST}/index.php?app=videobox&module=video&controller=view&do=episodesList&id=${seriesId}&season=${season}&audio=Dublado`;
+  return new Promise((resolve) => {
+    https.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Referer': referer
+      },
+      timeout: 5000
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed && Array.isArray(parsed.episodes)) {
+            resolve(parsed.episodes);
+          } else {
+            resolve([]);
+          }
+        } catch {
+          resolve([]);
+        }
+      });
+    }).on('error', () => resolve([]));
+  });
 }
 
 async function fetchTmdbTvShow(tmdbId: string): Promise<any> {
@@ -132,7 +162,7 @@ export async function GET(req: NextRequest) {
     let tmdbId = searchParams.get('tmdbId') || '';
     const title = searchParams.get('title') || 'Série';
 
-    // If tmdbId is missing, attempt to find it via title on TMDB
+    // Se tmdbId não foi fornecido, buscar no TMDB pelo título em português
     if (!tmdbId && title && title !== 'Série') {
       try {
         const cleanTitle = title.replace(/\s*-\s*.*$/, '').trim();
@@ -156,11 +186,13 @@ export async function GET(req: NextRequest) {
 
     const seasonsMap: { [s: number]: FormattedEpisode[] } = {};
 
-    // 1. Prioritize Brazuca Resolver 2 (Has verified multi-season arrays)
+    // =========================================================================
+    // 1. PRIORIDADE 1: BRAZUCA PLAY RESOLVER 2 (MP4s Nativos em Português)
+    // =========================================================================
     if (link.includes('resolver2_tvshows=')) {
       try {
         let slug = link.split('resolver2_tvshows=')[1].split('|')[0];
-        if (!slug.includes('#')) slug = 'serie#' + slug;
+        if (!slug.includes('#')) slug = 'series#' + slug;
         const data = await callResolver(2, `tvshows=${slug}`);
         if (Array.isArray(data)) {
           data.forEach((sObj: any, idx: number) => {
@@ -174,7 +206,7 @@ export async function GET(req: NextRequest) {
                   title: ep.episode_name || `Episódio ${epNum}`,
                   duration: '45m',
                   link: `resolver2_episodes=${ep.link || ''}&season=${sNum}&episode=${epNum}`,
-                  streamUrl: ep.link || (tmdbId ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${sNum}&e=${epNum}` : '')
+                  streamUrl: ep.link || ''
                 });
               });
             }
@@ -185,7 +217,48 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 2. Fallback to Resolver 3 if Resolver 2 yielded no seasons
+    // =========================================================================
+    // 2. PRIORIDADE 2: OVERFLIX DUBLADO (serie3=...)
+    // =========================================================================
+    if (Object.keys(seasonsMap).length === 0 && link.includes('serie3=')) {
+      try {
+        const match = link.match(/serie3=([a-zA-Z0-9_\-]+)/);
+        if (match && match[1]) {
+          const slug = match[1];
+          const seriesId = slug.split('-').pop();
+          if (seriesId && /^\d+$/.test(seriesId)) {
+            const referer = `https://${OVERFLIX_HOST}/series/online/${slug}/`;
+            // Buscar até 10 temporadas
+            for (let s = 1; s <= 10; s++) {
+              const epList = await fetchOverflixEpisodes(seriesId, s, referer);
+              if (Array.isArray(epList) && epList.length > 0) {
+                seasonsMap[s] = [];
+                epList.forEach((ep: any) => {
+                  const epNum = parseInt(ep.number, 10) || 1;
+                  seasonsMap[s].push({
+                    number: epNum,
+                    title: ep.title || `Episódio ${epNum}`,
+                    duration: ep.duration || '45m',
+                    thumbnail: ep.thumb || '',
+                    link: `serie3_ep=${encodeURIComponent(ep.url || '')}&season=${s}&episode=${epNum}`,
+                    streamUrl: ''
+                  });
+                });
+              } else {
+                // Se uma temporada não retornar episódios, para a busca sequencial
+                if (s > 1) break;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Overflix serie3 error:', err);
+      }
+    }
+
+    // =========================================================================
+    // 3. PRIORIDADE 3: BRAZUCA PLAY RESOLVER 3 (Wasabi S3)
+    // =========================================================================
     if (Object.keys(seasonsMap).length === 0 && link.includes('resolver3_tvshows=')) {
       try {
         const slug = link.split('resolver3_tvshows=')[1].split('|')[0];
@@ -203,7 +276,7 @@ export async function GET(req: NextRequest) {
                 title: epTitle,
                 duration: '45m',
                 link: `resolver3_episodes=${slug}/${sNum}/${epNum}&season=${sNum}&episode=${epNum}`,
-                streamUrl: tmdbId ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${sNum}&e=${epNum}` : ''
+                streamUrl: ''
               });
             }
           }
@@ -213,21 +286,21 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 3. TMDB Integration: Guarantees ALL seasons & real episode counts for every TV show
+    // =========================================================================
+    // 4. INTEGRAÇÃO TMDB: Metadados em Português
+    // =========================================================================
     if (tmdbId) {
       try {
         const tmdbData = await fetchTmdbTvShow(tmdbId);
         if (tmdbData && Array.isArray(tmdbData.seasons)) {
-          // Filter to valid seasons (season_number > 0 and episode_count > 0)
           const validSeasons = tmdbData.seasons.filter((s: any) => s.season_number > 0 && s.episode_count > 0);
 
           if (validSeasons.length > 0) {
-            // For seasons not yet present in seasonsMap, create them
-            for (const s of validSeasons) {
-              const sNum = s.season_number;
-              const epCount = s.episode_count || 10;
-
-              if (!seasonsMap[sNum] || seasonsMap[sNum].length === 0) {
+            // Se nenhuma das fontes acima retornou temporadas, estruturar as temporadas do TMDB
+            if (Object.keys(seasonsMap).length === 0) {
+              for (const s of validSeasons) {
+                const sNum = s.season_number;
+                const epCount = s.episode_count || 10;
                 seasonsMap[sNum] = [];
                 for (let ep = 1; ep <= epCount; ep++) {
                   seasonsMap[sNum].push({
@@ -235,34 +308,33 @@ export async function GET(req: NextRequest) {
                     title: `Episódio ${ep}`,
                     duration: '45m',
                     link: `${link}&season=${sNum}&episode=${ep}`,
-                    streamUrl: `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${sNum}&e=${ep}`
+                    streamUrl: ''
                   });
                 }
               }
             }
 
-            // Enrich episode titles for up to 6 seasons in parallel with Portuguese names
-            if (validSeasons.length > 0) {
-              try {
-                const enrichSeasons = validSeasons.slice(0, 6);
-                await Promise.all(
-                  enrichSeasons.map(async (s: any) => {
-                    const sNum = s.season_number;
-                    try {
-                      const sEpisodes = await fetchTmdbSeasonEpisodes(tmdbId, sNum);
-                      if (Array.isArray(sEpisodes) && sEpisodes.length > 0 && seasonsMap[sNum]) {
-                        sEpisodes.forEach((epObj: any) => {
-                          const existing = seasonsMap[sNum].find(e => e.number === epObj.episode_number);
-                          if (existing && epObj.name && epObj.name !== `Episódio ${epObj.episode_number}`) {
-                            existing.title = `Episódio ${epObj.episode_number}: ${epObj.name}`;
-                          }
-                        });
+            // Enriquecer nomes de episódios existentes com títulos oficiais em Português
+            const enrichSeasons = validSeasons.slice(0, 6);
+            await Promise.all(
+              enrichSeasons.map(async (s: any) => {
+                const sNum = s.season_number;
+                try {
+                  const sEpisodes = await fetchTmdbSeasonEpisodes(tmdbId, sNum);
+                  if (Array.isArray(sEpisodes) && sEpisodes.length > 0 && seasonsMap[sNum]) {
+                    sEpisodes.forEach((epObj: any) => {
+                      const existing = seasonsMap[sNum].find(e => e.number === epObj.episode_number);
+                      if (existing && epObj.name && epObj.name !== `Episódio ${epObj.episode_number}`) {
+                        existing.title = `Episódio ${epObj.episode_number}: ${epObj.name}`;
                       }
-                    } catch {}
-                  })
-                );
-              } catch {}
-            }
+                      if (existing && epObj.still_path && !existing.thumbnail) {
+                        existing.thumbnail = `https://image.tmdb.org/t/p/w300${epObj.still_path}`;
+                      }
+                    });
+                  }
+                } catch {}
+              })
+            );
           }
         }
       } catch (err) {
@@ -270,18 +342,19 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 4. Fallback if still empty: generate multiple seasons (4 seasons)
+    // =========================================================================
+    // 5. ESTRUTURA FINAL DAS TEMPORADAS
+    // =========================================================================
     if (Object.keys(seasonsMap).length === 0) {
-      for (let s = 1; s <= 4; s++) {
-        seasonsMap[s] = [];
-        for (let ep = 1; ep <= 10; ep++) {
-          seasonsMap[s].push({
-            number: ep,
-            title: `Episódio ${ep}`,
-            duration: '45m',
-            streamUrl: tmdbId ? `https://vidsrc.sh/embed/tv?tmdb=${tmdbId}&season=${s}&episode=${ep}` : ''
-          });
-        }
+      seasonsMap[1] = [];
+      for (let ep = 1; ep <= 10; ep++) {
+        seasonsMap[1].push({
+          number: ep,
+          title: `Episódio ${ep}`,
+          duration: '45m',
+          link: `${link}&season=1&episode=${ep}`,
+          streamUrl: ''
+        });
       }
     }
 

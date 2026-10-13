@@ -278,11 +278,11 @@ export default function KodiApp() {
   ) => {
     const servers: { name: string; url: string; type: "video" | "embed" }[] = [];
 
-    // 1. Direct stream if available and valid (e.g. Live TV or MP4)
+    // 1. Stream direto já fornecido (Ex.: TV ao Vivo .m3u8 ou MP4 direto)
     if (directUrl && (directUrl.includes(".m3u8") || directUrl.endsWith(".mp4") || directUrl.includes(".mp4?"))) {
       const isLiveHls = directUrl.includes(".m3u8");
       servers.push({
-        name: isLiveHls ? "Sinal Ao Vivo 1 (Direto HD)" : "Transmissão Direta Dublada (MP4)",
+        name: isLiveHls ? "Sinal Ao Vivo 1 (Direto HD)" : "Transmissão Direta Full HD Dublado (MP4)",
         url: directUrl,
         type: "video",
       });
@@ -326,116 +326,73 @@ export default function KodiApp() {
           });
         }
       }
-    } else if (directUrl && directUrl.startsWith("http") && !directUrl.includes("vidsrc.sh")) {
-      servers.push({
-        name: "Servidor Principal (Brazuca Stream)",
-        url: directUrl,
-        type: "embed",
+
+      setPlayingMedia({
+        title,
+        info,
+        poster,
+        servers,
+        activeServerIndex: 0,
       });
+      return;
     }
 
-    // 2. Provedores com Suporte a Áudio PT-BR e Legendas
-    if (tmdbId) {
-      if (seasonNum && epNum) {
-        servers.push({
-          name: "MultiEmbed (Áudio PT-BR / Legendas)",
-          url: `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${seasonNum}&e=${epNum}`,
-          type: "embed",
-        });
-        servers.push({
-          name: "AutoEmbed Backup HD",
-          url: `https://player.autoembed.cc/embed/tv/${tmdbId}/${seasonNum}/${epNum}`,
-          type: "embed",
-        });
-        servers.push({
-          name: "VidSrc HD",
-          url: `https://vidsrc.sh/embed/tv?tmdb=${tmdbId}&season=${seasonNum}&episode=${epNum}`,
-          type: "embed",
-        });
-        servers.push({
-          name: "2Embed Skin",
-          url: `https://www.2embed.skin/embedtv/${tmdbId}&s=${seasonNum}&e=${epNum}`,
-          type: "embed",
-        });
-      } else {
-        servers.push({
-          name: "MultiEmbed (Áudio PT-BR / Legendas)",
-          url: `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`,
-          type: "embed",
-        });
-        servers.push({
-          name: "AutoEmbed Backup HD",
-          url: `https://player.autoembed.cc/embed/movie/${tmdbId}`,
-          type: "embed",
-        });
-        servers.push({
-          name: "VidSrc HD",
-          url: `https://vidsrc.sh/embed/movie?tmdb=${tmdbId}`,
-          type: "embed",
-        });
-        servers.push({
-          name: "2Embed Skin",
-          url: `https://www.2embed.skin/embed/${tmdbId}`,
-          type: "embed",
-        });
-      }
-    }
-
-    // 3. Fallback reliable video streams if nothing added (Live Brazilian streams)
-    if (servers.length === 0) {
-      servers.push({
-        name: "Sinal Ao Vivo 1 (TV Cultura)",
-        url: directUrl || "https://fpa-gateway.tvcultura.com.br:8181/memfs/606caef0-a290-413d-9f1f-8fcdb3a73831.m3u8",
-        type: "video",
-      });
-      servers.push({
-        name: "Sinal Ao Vivo 2 (Record News)",
-        url: "https://jmp2.uk/plu-6102e04e9ab1db0007a980a1.m3u8",
-        type: "video",
-      });
-    }
-
+    // 2. Filmes & Séries do Catálogo Nativo Brazuca Play (100% Dublado em Português)
     setPlayingMedia({
       title,
       info,
       poster,
-      servers,
+      servers: [
+        {
+          name: "Conectando ao Repositório Brazuca Play (Dublado PT-BR)...",
+          url: "",
+          type: "video",
+        },
+      ],
       activeServerIndex: 0,
     });
 
-    // 4. Carregamento em tempo real de Servidores Nacionais Dublados (Overflix / Streamtape / Mixdrop)
-    if (!directUrl?.includes(".m3u8") && (directUrl || tmdbId)) {
-      const isTv = Boolean(seasonNum && epNum);
-      const params = new URLSearchParams({
-        link: directUrl || "",
-        tmdbId: tmdbId || "",
-        type: isTv ? "tv" : "movie",
-        season: String(seasonNum || 1),
-        episode: String(epNum || 1),
-      });
+    const isTv = Boolean(seasonNum && epNum);
+    const params = new URLSearchParams({
+      link: directUrl || "",
+      tmdbId: tmdbId || "",
+      type: isTv ? "tv" : "movie",
+      season: String(seasonNum || 1),
+      episode: String(epNum || 1),
+    });
 
-      fetch(`/api/resolve-stream?${params.toString()}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && Array.isArray(data.servers) && data.servers.length > 0) {
-            setPlayingMedia((prev) => {
-              if (!prev || prev.title !== title) return prev;
-              const newServers = [...data.servers];
-              prev.servers.forEach((s) => {
-                if (!newServers.some((ns) => ns.url === s.url)) {
-                  newServers.push(s);
-                }
-              });
-              return {
-                ...prev,
-                servers: newServers,
-                activeServerIndex: 0, // Prioriza imediatamente o primeiro servidor Dublado PT-BR
-              };
-            });
-          }
-        })
-        .catch((err) => console.error("Erro ao resolver servidores dublados:", err));
-    }
+    fetch(`/api/resolve-stream?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.servers) && data.servers.length > 0) {
+          setPlayingMedia((prev) => {
+            if (!prev || prev.title !== title) return prev;
+            return {
+              ...prev,
+              servers: data.servers,
+              activeServerIndex: 0,
+            };
+          });
+        } else {
+          setPlayingMedia((prev) => {
+            if (!prev || prev.title !== title) return prev;
+            return {
+              ...prev,
+              servers: [
+                {
+                  name: "Sinal em sincronização no repositório Brazuca Play",
+                  url: "",
+                  type: "video",
+                },
+              ],
+              activeServerIndex: 0,
+            };
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("Erro ao resolver servidores Brazuca Play:", err);
+      });
   };
 
   // Filtragem dos Add-ons
