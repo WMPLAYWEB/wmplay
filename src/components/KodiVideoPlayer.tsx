@@ -73,9 +73,20 @@ export default function KodiVideoPlayer({
 
     if (!currentServer) return;
 
-    if (!currentServer.url) {
+    if (!currentServer.url || currentServer.url === "ERROR_UNAVAILABLE") {
+      if (currentServer.url === "ERROR_UNAVAILABLE") {
+        setIsLoading(false);
+        setHasError(true);
+        setErrorMessage("Este título está temporariamente fora de sinal no servidor principal do Brazuca Play.");
+        return;
+      }
       setIsLoading(true);
-      return;
+      const timeoutId = setTimeout(() => {
+        setIsLoading(false);
+        setHasError(true);
+        setErrorMessage("Não foi possível sincronizar o sinal deste título no momento. Tente outro servidor.");
+      }, 5000);
+      return () => clearTimeout(timeoutId);
     }
 
     if (currentServer.type === "video") {
@@ -104,10 +115,12 @@ export default function KodiVideoPlayer({
 
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           setIsLoading(false);
-          video.play().catch(() => {
-            // Autoplay blocked by browser, user can click play
-            setIsPlaying(false);
-          });
+          video.play()
+            .then(() => setIsPlaying(true))
+            .catch(() => {
+              setIsPlaying(false);
+              setIsLoading(false);
+            });
         });
 
         let hasRetriedProxy = false;
@@ -142,11 +155,14 @@ export default function KodiVideoPlayer({
         video.src = streamUrl;
         video.load();
 
-        const handleCanPlay = () => {
+        const handleReady = () => {
           setIsLoading(false);
-          video.play().catch(() => {
-            setIsPlaying(false);
-          });
+          video.play()
+            .then(() => setIsPlaying(true))
+            .catch(() => {
+              setIsPlaying(false);
+              setIsLoading(false);
+            });
         };
 
         const handleError = () => {
@@ -155,11 +171,27 @@ export default function KodiVideoPlayer({
           setErrorMessage("Erro ao carregar o arquivo de vídeo. Tente outro servidor.");
         };
 
-        video.addEventListener("canplay", handleCanPlay);
+        video.addEventListener("loadedmetadata", handleReady);
+        video.addEventListener("loadeddata", handleReady);
+        video.addEventListener("canplay", handleReady);
+        video.addEventListener("play", handleReady);
+        video.addEventListener("playing", handleReady);
+        video.addEventListener("timeupdate", handleReady);
         video.addEventListener("error", handleError);
 
+        // Timer de segurança: libera os controles após 1.5s para garantir que o player nunca trave
+        const fallbackTimer = setTimeout(() => {
+          setIsLoading(false);
+        }, 1500);
+
         return () => {
-          video.removeEventListener("canplay", handleCanPlay);
+          clearTimeout(fallbackTimer);
+          video.removeEventListener("loadedmetadata", handleReady);
+          video.removeEventListener("loadeddata", handleReady);
+          video.removeEventListener("canplay", handleReady);
+          video.removeEventListener("play", handleReady);
+          video.removeEventListener("playing", handleReady);
+          video.removeEventListener("timeupdate", handleReady);
           video.removeEventListener("error", handleError);
         };
       }
@@ -400,17 +432,41 @@ export default function KodiVideoPlayer({
 
         {/* Player: Video Stream or Iframe Embed */}
         {currentServer?.type === "video" ? (
-          <div className="w-full h-full relative group">
+          <div className="w-full h-full relative group flex items-center justify-center">
             <video
               ref={videoRef}
               controls
               playsInline
               autoPlay
               poster={poster}
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain cursor-pointer"
+              onClick={togglePlay}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
             />
+
+            {/* Botão Central de Início de Reprodução quando pausado/aguardando clique */}
+            {!isPlaying && !isLoading && !hasError && (
+              <button
+                type="button"
+                onClick={togglePlay}
+                className="absolute z-10 flex flex-col items-center justify-center gap-3 p-5 sm:p-7 rounded-2xl bg-black/70 hover:bg-black/90 backdrop-blur-md border border-white/20 transition-all hover:scale-105 cursor-pointer shadow-2xl group/playbtn"
+                title="Clique para Iniciar Reprodução"
+              >
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-red-600 group-hover/playbtn:bg-red-500 flex items-center justify-center shadow-lg shadow-red-600/50 transition-transform">
+                  <Play className="w-8 h-8 sm:w-10 sm:h-10 text-white fill-white ml-1" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm sm:text-base font-black text-white tracking-wide uppercase">
+                    Clique para Assistir
+                  </p>
+                  <p className="text-[11px] sm:text-xs text-emerald-400 font-semibold flex items-center justify-center gap-1 mt-0.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    100% Dublado PT-BR · Sem Anúncios
+                  </p>
+                </div>
+              </button>
+            )}
           </div>
         ) : (
           <div className="w-full h-full relative">

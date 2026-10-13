@@ -355,6 +355,7 @@ export default function KodiApp() {
     const isTv = Boolean(seasonNum && epNum);
     const params = new URLSearchParams({
       link: directUrl || "",
+      title: title || "",
       tmdbId: tmdbId || "",
       type: isTv ? "tv" : "movie",
       season: String(seasonNum || 1),
@@ -380,8 +381,8 @@ export default function KodiApp() {
               ...prev,
               servers: [
                 {
-                  name: "Sinal em sincronização no repositório Brazuca Play",
-                  url: "",
+                  name: "Sinal Temporariamente Fora do Ar (Brazuca Play)",
+                  url: "ERROR_UNAVAILABLE",
                   type: "video",
                 },
               ],
@@ -392,6 +393,20 @@ export default function KodiApp() {
       })
       .catch((err) => {
         console.error("Erro ao resolver servidores Brazuca Play:", err);
+        setPlayingMedia((prev) => {
+          if (!prev || prev.title !== title) return prev;
+          return {
+            ...prev,
+            servers: [
+              {
+                name: "Falha de Conexão com o Repositório Brazuca Play",
+                url: "ERROR_UNAVAILABLE",
+                type: "video",
+              },
+            ],
+            activeServerIndex: 0,
+          };
+        });
       });
   };
 

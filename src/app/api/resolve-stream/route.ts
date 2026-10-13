@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import https from 'https';
 import vm from 'node:vm';
+import path from 'path';
+import { DatabaseSync } from 'node:sqlite';
+
+let dbInstance: DatabaseSync | null = null;
+function getDb(): DatabaseSync {
+  if (!dbInstance) {
+    const dbPath = path.join(process.cwd(), 'src', 'data', 'catalog.db');
+    dbInstance = new DatabaseSync(dbPath, { open: true, readOnly: true });
+  }
+  return dbInstance;
+}
 
 const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXNvbHZlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc5MDk4OTczfQ.WzQBuOqMai96Afleh9g-i7NXo6h-YsjPUbOgxlUqVsU';
 const HOSTS = ['api.geekantenado.online', 'geekantenado.fly.dev'];
@@ -185,13 +196,16 @@ async function callResolver(resolverNum: number, requestStr: string): Promise<st
       const json = JSON.parse(resData);
       if (json && json.success && json.result) {
         if (typeof json.result === 'string') {
+          if (json.result.includes('not found') || json.result.includes('Maintenance') || json.result.trim() === '') {
+            return null;
+          }
           try {
             const decoded = Buffer.from(json.result, 'base64').toString('utf8');
             if (decoded && (decoded.startsWith('http') || decoded.startsWith('{') || decoded.startsWith('['))) {
               return decoded;
             }
           } catch {}
-          return json.result;
+          return json.result.startsWith('http') ? json.result : null;
         }
       }
     } catch {}
@@ -203,6 +217,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const link = searchParams.get('link') || '';
+    const title = searchParams.get('title') || '';
     const mediaType = searchParams.get('type') || 'movie'; // movie or tv
     const season = searchParams.get('season') || '1';
     const episode = searchParams.get('episode') || '1';
@@ -264,7 +279,13 @@ export async function GET(req: NextRequest) {
         const match = link.match(/resolver3_mv=([a-zA-Z0-9_\-]+)/);
         if (match && match[1]) {
           const slug = match[1];
-          const directWasabi = await callResolver(3, `mvshows=${slug}`);
+          let directWasabi = await callResolver(3, `mvshows=${slug}`);
+          if (!directWasabi) {
+            directWasabi = await callResolver(2, `mvshows=${slug}`);
+          }
+          if (!directWasabi) {
+            directWasabi = await callResolver(1, `mvshows=${slug}`);
+          }
           if (directWasabi && directWasabi.startsWith('http')) {
             servers.push({
               name: 'Transmissão Direta Full HD Dublado (Wasabi S3 - Sem Anúncios)',
@@ -364,10 +385,50 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // =========================================================================
+    // 7. BUSCA AUTOMÁTICA DE SERVIDOR ALTERNATIVO NO CATÁLOGO POR TÍTULO
+    // =========================================================================
+    if (servers.length === 0 && title) {
+      try {
+        const cleanTitle = title.replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        const db = getDb();
+        const altRow = db.prepare(
+          'SELECT link FROM items WHERE type = ? AND (title LIKE ? OR title LIKE ?) AND (link LIKE ? OR link LIKE ?) LIMIT 1'
+        ).get(
+          mediaType === 'tv' ? 'series' : 'filmes',
+          `%${cleanTitle}%`,
+          `%${title}%`,
+          '%movie2=%',
+          '%#movies_list=%'
+        ) as { link: string } | undefined;
+
+        if (altRow && altRow.link && altRow.link !== link) {
+          const altLink = altRow.link;
+          if (altLink.includes('movie2=')) {
+            const match = altLink.match(/movie2=([a-zA-Z0-9_\-]+)/);
+            if (match && match[1]) {
+              const slug = match[1];
+              const videoId = slug.split('-').pop();
+              if (videoId && /^\d+$/.test(videoId)) {
+                const referer = `https://${OVERFLIX_HOST}/filmes/online/${slug}/`;
+                const p = `/index.php?app=videobox&module=video&controller=view&do=playerData&id=${videoId}`;
+                const playerData = await fetchOverflix(p, referer);
+                const ovServers = await buildOverflixServers(playerData, 'Dublado PT-BR');
+                servers.push(...ovServers);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Erro no fallback por título:', err);
+      }
+    }
+
     return NextResponse.json({
-      success: true,
+      success: servers.length > 0,
       servers,
-      totalServers: servers.length
+      totalServers: servers.length,
+      error: servers.length === 0 ? 'Sinal temporariamente indisponível no servidor principal do Brazuca Play.' : undefined
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message, servers: [] }, { status: 500 });
