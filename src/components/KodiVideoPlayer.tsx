@@ -226,22 +226,29 @@ export default function KodiVideoPlayer({
                 <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
                 WMPLAY · Reprodução
               </p>
-              <button
-                onClick={() => setAntiPopupMode((prev) => !prev)}
-                className={`text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full font-mono flex items-center gap-1.5 transition-all cursor-pointer ${
-                  antiPopupMode
-                    ? "text-emerald-300 bg-emerald-950/80 border border-emerald-500/50 hover:bg-emerald-900"
-                    : "text-amber-300 bg-amber-950/80 border border-amber-500/50 hover:bg-amber-900"
-                }`}
-                title={
-                  antiPopupMode
-                    ? "Bloqueador de Anúncios Ativado: Pop-ups e abas são bloqueados automaticamente. Clique para desativar."
-                    : "Modo Aberto: Clique para reativar o Bloqueador de Anúncios."
-                }
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${antiPopupMode ? "bg-emerald-400" : "bg-amber-400"}`} />
-                {antiPopupMode ? "🛡️ Sem Anúncios (Ativo)" : "⚠️ Anúncios Permitidos"}
-              </button>
+              {currentServer?.type === "video" ? (
+                <span className="text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full font-mono flex items-center gap-1.5 text-emerald-300 bg-emerald-950/80 border border-emerald-500/50">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  🛡️ Transmissão Direta (100% Sem Anúncios · Padrão Kodi)
+                </span>
+              ) : (
+                <button
+                  onClick={() => setAntiPopupMode((prev) => !prev)}
+                  className={`text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full font-mono flex items-center gap-1.5 transition-all cursor-pointer ${
+                    antiPopupMode
+                      ? "text-emerald-300 bg-emerald-950/80 border border-emerald-500/50 hover:bg-emerald-900"
+                      : "text-amber-300 bg-amber-950/80 border border-amber-500/50 hover:bg-amber-900"
+                  }`}
+                  title={
+                    antiPopupMode
+                      ? "Bloqueador de Anúncios Ativado: Pop-ups e abas são bloqueados automaticamente. Clique para desativar."
+                      : "Modo Aberto: Clique para reativar o Bloqueador de Anúncios."
+                  }
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${antiPopupMode ? "bg-emerald-400" : "bg-amber-400"}`} />
+                  {antiPopupMode ? "🛡️ Sem Anúncios (Ativo)" : "⚠️ Anúncios Permitidos"}
+                </button>
+              )}
             </div>
             <h2 className="text-base sm:text-xl md:text-2xl font-black text-white drop-shadow truncate mt-0.5">
               {title}
@@ -414,7 +421,7 @@ export default function KodiVideoPlayer({
               referrerPolicy="origin"
               sandbox={
                 antiPopupMode
-                  ? "allow-scripts allow-same-origin allow-forms allow-presentation allow-encrypted-media"
+                  ? "allow-scripts allow-forms allow-presentation allow-encrypted-media"
                   : undefined
               }
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"

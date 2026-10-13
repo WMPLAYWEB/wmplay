@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import https from 'https';
+import vm from 'node:vm';
 
 const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXNvbHZlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc5MDk4OTczfQ.WzQBuOqMai96Afleh9g-i7NXo6h-YsjPUbOgxlUqVsU';
 const HOSTS = ['api.geekantenado.online', 'geekantenado.fly.dev'];
@@ -47,16 +48,85 @@ function parseServersString(str?: string): Record<string, string> {
   return result;
 }
 
-function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-BR'): StreamServer[] {
+// Extrai o link direto de vídeo MP4 do StreamTape (Padrão Kodi ResolveURL - Sem Anúncios)
+async function resolveStreamTape(mediaId: string): Promise<string | null> {
+  const url = `https://streamtape.com/e/${mediaId}`;
+  return new Promise((resolve) => {
+    https.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://streamtape.com/'
+      },
+      timeout: 5000
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const match = data.match(/document\.getElementById\(['"]robotlink['"]\)\.innerHTML\s*=\s*(.+?);/);
+          if (match && match[1]) {
+            const expr = match[1];
+            const resolvedPath = vm.runInNewContext(expr, {});
+            if (resolvedPath && typeof resolvedPath === 'string') {
+              const directUrl = (resolvedPath.startsWith('//') ? 'https:' : '') + resolvedPath + '&stream=1';
+              resolve(directUrl);
+              return;
+            }
+          }
+        } catch {}
+        resolve(null);
+      });
+    }).on('error', () => resolve(null));
+  });
+}
+
+// Segue o redirecionamento 302 para obter a URL direta de entrega de vídeo (tapecontent.net)
+async function getRedirectLocation(videoUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    https.get(videoUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://streamtape.com/'
+      },
+      timeout: 5000
+    }, (res) => {
+      if (res.headers.location) {
+        resolve(res.headers.location);
+      } else {
+        resolve(videoUrl);
+      }
+    }).on('error', () => resolve(videoUrl));
+  });
+}
+
+async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-BR'): Promise<StreamServer[]> {
   const servers: StreamServer[] = [];
   if (!playerData) return servers;
 
   const dub = parseServersString(playerData.servers_dub);
 
-  // Servidores Estritamente Dublados em Português do Brazuca Play
+  // 1. Extração Direta de Vídeo MP4 (Como no Kodi - 0 Anúncios / Reprodução Direta)
+  if (dub.streamtape) {
+    try {
+      const directTape = await resolveStreamTape(dub.streamtape);
+      if (directTape) {
+        const finalMp4 = await getRedirectLocation(directTape);
+        servers.push({
+          name: `Transmissão Direta Full HD Dublado (Sem Anúncios)`,
+          url: finalMp4,
+          type: 'video',
+          isDubbed: true
+        });
+      }
+    } catch (err) {
+      console.error('Erro ao resolver StreamTape direto:', err);
+    }
+  }
+
+  // 2. Servidores Alternativos de Backup
   if (dub.streamtape) {
     servers.push({
-      name: `1. ${labelPrefix} (StreamTape)`,
+      name: `1. ${labelPrefix} (StreamTape Reserva)`,
       url: `https://streamtape.com/e/${dub.streamtape}`,
       type: 'embed',
       isDubbed: true
@@ -64,7 +134,7 @@ function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-BR'): S
   }
   if (dub.mixdrop) {
     servers.push({
-      name: `2. ${labelPrefix} (MixDrop)`,
+      name: `2. ${labelPrefix} (MixDrop Reserva)`,
       url: `https://mxdrop.top/e/${dub.mixdrop}`,
       type: 'embed',
       isDubbed: true
@@ -72,7 +142,7 @@ function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-BR'): S
   }
   if (dub.byse) {
     servers.push({
-      name: `3. ${labelPrefix} (Byse)`,
+      name: `3. ${labelPrefix} (Byse Reserva)`,
       url: `https://bysebuho.com/e/${dub.byse}`,
       type: 'embed',
       isDubbed: true
@@ -80,7 +150,7 @@ function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-BR'): S
   }
   if (dub.doodstream) {
     servers.push({
-      name: `4. ${labelPrefix} (DoodStream)`,
+      name: `4. ${labelPrefix} (DoodStream Reserva)`,
       url: `https://playmogo.com/e/${dub.doodstream}`,
       type: 'embed',
       isDubbed: true
@@ -91,7 +161,6 @@ function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-BR'): S
 }
 
 async function callResolver(resolverNum: number, requestStr: string): Promise<string | null> {
-  // Padrão do Brazuca Play com aspas simples para compatibilidade com o backend Python
   const params = `{'resolver': ${resolverNum}, 'request': '${requestStr}'}`;
   const payload = encodeURIComponent(Buffer.from(params).toString('base64'));
 
@@ -141,7 +210,7 @@ export async function GET(req: NextRequest) {
     const servers: StreamServer[] = [];
 
     // =========================================================================
-    // 1. REPRODUÇÃO DIRETA DE EPISÓDIOS RESOLVIDOS DO BRAZUCA PLAY
+    // 1. REPRODUÇÃO DIRETA DE EPISÓDIOS RESOLVIDOS DO BRAZUCA PLAY (MP4 Sem Anúncios)
     // =========================================================================
     if (link.includes('resolver2_episodes=')) {
       try {
@@ -151,7 +220,7 @@ export async function GET(req: NextRequest) {
         }
         if (epUrl && epUrl.startsWith('http')) {
           servers.push({
-            name: `Transmissão Direta Full HD Dublado T${season}E${episode}`,
+            name: `Transmissão Direta Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
             url: epUrl,
             type: 'video',
             isDubbed: true
@@ -163,7 +232,7 @@ export async function GET(req: NextRequest) {
     }
 
     // =========================================================================
-    // 2. REPRODUÇÃO DIRETA DO RESOLVER 3 EPISODES (Wasabi S3)
+    // 2. REPRODUÇÃO DIRETA DO RESOLVER 3 EPISODES (Wasabi S3 MP4 Sem Anúncios)
     // =========================================================================
     if (link.includes('resolver3_episodes=')) {
       try {
@@ -175,7 +244,7 @@ export async function GET(req: NextRequest) {
           const directWasabi = await callResolver(3, `episodes=${epSlug}`);
           if (directWasabi && directWasabi.startsWith('http')) {
             servers.push({
-              name: `Transmissão Wasabi Full HD Dublado T${season}E${episode}`,
+              name: `Transmissão Wasabi Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
               url: directWasabi,
               type: 'video',
               isDubbed: true
@@ -188,7 +257,7 @@ export async function GET(req: NextRequest) {
     }
 
     // =========================================================================
-    // 3. REPRODUÇÃO DE FILMES: RESOLVER 3 (GeekAntenado Wasabi S3 MP4 Full HD)
+    // 3. REPRODUÇÃO DE FILMES: RESOLVER 3 (GeekAntenado Wasabi S3 MP4 Full HD - Sem Anúncios)
     // =========================================================================
     if (link.includes('resolver3_mv=')) {
       try {
@@ -198,7 +267,7 @@ export async function GET(req: NextRequest) {
           const directWasabi = await callResolver(3, `mvshows=${slug}`);
           if (directWasabi && directWasabi.startsWith('http')) {
             servers.push({
-              name: 'Transmissão Direta Full HD Dublado (Wasabi S3)',
+              name: 'Transmissão Direta Full HD Dublado (Wasabi S3 - Sem Anúncios)',
               url: directWasabi,
               type: 'video',
               isDubbed: true
@@ -223,7 +292,7 @@ export async function GET(req: NextRequest) {
             const referer = `https://${OVERFLIX_HOST}/filmes/online/${slug}/`;
             const path = `/index.php?app=videobox&module=video&controller=view&do=playerData&id=${videoId}`;
             const playerData = await fetchOverflix(path, referer);
-            const ovServers = buildOverflixServers(playerData, 'Dublado PT-BR');
+            const ovServers = await buildOverflixServers(playerData, 'Dublado PT-BR');
             servers.push(...ovServers);
           }
         }
@@ -244,7 +313,7 @@ export async function GET(req: NextRequest) {
           const epId = epSlug?.split('-').pop();
           if (epId && /^\d+$/.test(epId)) {
             const epPlayerData = await fetchOverflix(`/index.php?app=videobox&module=video&controller=view&do=playerData&id=${epId}`, epUrl);
-            const ovServers = buildOverflixServers(epPlayerData, `Dublado PT-BR T${season}E${episode}`);
+            const ovServers = await buildOverflixServers(epPlayerData, `Dublado PT-BR T${season}E${episode}`);
             servers.push(...ovServers);
           }
         }
@@ -269,7 +338,7 @@ export async function GET(req: NextRequest) {
                 const epId = epSlug?.split('-').pop();
                 if (epId && /^\d+$/.test(epId)) {
                   const epPlayerData = await fetchOverflix(`/index.php?app=videobox&module=video&controller=view&do=playerData&id=${epId}`, targetEp.url);
-                  const ovServers = buildOverflixServers(epPlayerData, `Dublado PT-BR T${season}E${episode}`);
+                  const ovServers = await buildOverflixServers(epPlayerData, `Dublado PT-BR T${season}E${episode}`);
                   servers.push(...ovServers);
                 }
               }
@@ -287,7 +356,7 @@ export async function GET(req: NextRequest) {
     if (link.startsWith('http') && (link.includes('.m3u8') || link.includes('.mp4'))) {
       if (!servers.some(s => s.url === link)) {
         servers.unshift({
-          name: link.includes('.m3u8') ? 'Sinal Direto HD' : 'Transmissão Direta MP4 Dublado',
+          name: link.includes('.m3u8') ? 'Sinal Direto HD (Sem Anúncios)' : 'Transmissão Direta MP4 Dublado (Sem Anúncios)',
           url: link,
           type: 'video',
           isDubbed: true
