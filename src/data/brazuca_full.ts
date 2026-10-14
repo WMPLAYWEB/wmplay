@@ -117,1252 +117,580 @@ export const BRAZUCA_ROOT_CATEGORIES: BrazucaCategoryNode[] = [
 
 export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
-    "id": "ch_1hd",
-    "name": "Canal 1 HD",
-    "logo": "/logos/1hd.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Canal 1 HD Ao Vivo",
-    "streamUrl": "https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8"
+    "id": "ch_tvcultura",
+    "name": "TV Cultura HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/TV_Cultura_logo_2022.svg/300px-TV_Cultura_logo_2022.svg.png",
+    "category": "aberta",
+    "epg": "Guia EPG · TV Cultura Programação Educativa, Cultura e Infantil Ao Vivo",
+    "streamUrl": "https://fpa-gateway.tvcultura.com.br:8181/memfs/606caef0-a290-413d-9f1f-8fcdb3a73831.m3u8"
   },
   {
-    "id": "ch_24hrs",
-    "name": "Canal 24 Horas",
-    "logo": "/logos/24hrs.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Canal 24 Horas Ao Vivo",
-    "streamUrl": "http://170.83.16.50/AeE/index.m3u8"
+    "id": "ch_redetv",
+    "name": "RedeTV! HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/RedeTV%21_logo.svg/300px-RedeTV%21_logo.svg.png",
+    "category": "aberta",
+    "epg": "Guia EPG · Programação RedeTV! Ao Vivo 24 Horas",
+    "streamUrl": "http://170.83.16.50/REDE_TV/index.m3u8"
+  },
+  {
+    "id": "ch_sbt_news",
+    "name": "SBT News HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/4/42/SBT_News_2025.svg",
+    "category": "aberta",
+    "epg": "Guia EPG · SBT News Jornalismo e Notícias Oficiais 24 Horas",
+    "streamUrl": "https://dai.google.com/linear/hls/event/1XSOdtQ0SH2G8OEmEfGgjQ/master.m3u8"
+  },
+  {
+    "id": "ch_sbt",
+    "name": "SBT Nacional HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/SBT_logo.svg/300px-SBT_logo.svg.png",
+    "category": "aberta",
+    "epg": "Guia EPG · Sistema Brasileiro de Televisão Ao Vivo",
+    "streamUrl": "https://cdn.jmvstream.com/w/LVW-10801/LVW10801_Xvg4R0u57n/playlist.m3u8"
+  },
+  {
+    "id": "ch_uol",
+    "name": "Canal UOL HD",
+    "logo": "https://conteudo.imguol.com.br/c/play/logo_canaluol_2024.svg",
+    "category": "aberta",
+    "epg": "Guia EPG · Canal UOL Entretenimento, Entrevistas e Esportes Ao Vivo",
+    "streamUrl": "https://video24.mais.uol.com.br/live/6146.m3u8"
+  },
+  {
+    "id": "ch_futura",
+    "name": "Canal Futura HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Canal_Futura.png/300px-Canal_Futura.png",
+    "category": "aberta",
+    "epg": "Guia EPG · Canal Futura Fundação Roberto Marinho Ao Vivo",
+    "streamUrl": "http://170.83.16.50/FUTURA/index.m3u8"
+  },
+  {
+    "id": "ch_canal_gov",
+    "name": "Canal Gov HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Canal_Gov_logo.png/300px-Canal_Gov_logo.png",
+    "category": "aberta",
+    "epg": "Guia EPG · Canal Gov Rede Nacional de Comunicação Pública",
+    "streamUrl": "http://45.177.114.115/TV_BRASIL_2/index.m3u8"
+  },
+  {
+    "id": "ch_tv_aparecida",
+    "name": "TV Aparecida HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/TV_Aparecida_logo.png/300px-TV_Aparecida_logo.png",
+    "category": "aberta",
+    "epg": "Guia EPG · TV Aparecida Ao Vivo",
+    "streamUrl": "https://5c483b9d1019c.streamlock.net/8054/8054/playlist.m3u8"
+  },
+  {
+    "id": "ch_rede_vida",
+    "name": "Rede Vida HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Redevida_logo.png/300px-Redevida_logo.png",
+    "category": "aberta",
+    "epg": "Guia EPG · Rede Vida Programação para a Família",
+    "streamUrl": "https://jmp2.uk/plu-5ff768b6a4c8b80008498610.m3u8"
   },
   {
     "id": "ch_acriticaplay",
     "name": "A Crítica Play",
-    "logo": "/logos/acriticaplay.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação A Crítica Play Ao Vivo",
-    "streamUrl": "https://cdn.jmvstream.com/w/LVW-9715/LVW9715_12B26T62tm/playlist.m3u8"
-  },
-  {
-    "id": "ch_ae",
-    "name": "A&E HD",
-    "logo": "/logos/ae.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação A&E HD Ao Vivo",
-    "streamUrl": "http://170.83.16.50/AeE/index.m3u8"
-  },
-  {
-    "id": "ch_afazenda",
-    "name": "A Fazenda 24h Ao Vivo",
-    "logo": "/logos/afazenda.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação A Fazenda 24h Ao Vivo Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-61b790b985706b00072cb797.m3u8"
-  },
-  {
-    "id": "ch_allsports",
-    "name": "All Sports HD",
-    "logo": "/logos/allsports.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação All Sports HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-61b790b985706b00072cb797.m3u8"
-  },
-  {
-    "id": "ch_amc",
-    "name": "AMC HD",
-    "logo": "/logos/amc.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação AMC HD Ao Vivo",
-    "streamUrl": "http://170.83.49.66:8083/AMCHD/index.m3u8"
-  },
-  {
-    "id": "ch_animal_planet",
-    "name": "Animal Planet HD",
-    "logo": "/logos/animal_planet.png",
-    "category": "noticias_docs",
-    "epg": "Guia EPG · Programação Animal Planet HD Ao Vivo",
-    "streamUrl": "http://168.197.104.22/ANIMAL_PLANET/index.m3u8"
-  },
-  {
-    "id": "ch_arte1",
-    "name": "Arte 1 HD",
-    "logo": "/logos/arte1.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Arte 1 HD Ao Vivo",
-    "streamUrl": "http://168.197.104.22/ARTE1/index.m3u8"
-  },
-  {
-    "id": "ch_axn",
-    "name": "AXN HD",
-    "logo": "/logos/axn.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação AXN HD Ao Vivo",
-    "streamUrl": "http://170.83.16.50/AXN/index.m3u8"
-  },
-  {
-    "id": "ch_babytv",
-    "name": "Baby TV",
-    "logo": "/logos/babytv.png",
-    "category": "infantil",
-    "epg": "Guia EPG · Programação Baby TV Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-6759eeb1bd523200083b4f29.m3u8"
-  },
-  {
-    "id": "ch_band",
-    "name": "Rede Bandeirantes (Band) HD",
-    "logo": "/logos/band.png",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/TV_A_Cr%C3%ADtica_logo.png/300px-TV_A_Cr%C3%ADtica_logo.png",
     "category": "aberta",
-    "epg": "Guia EPG · Programação Rede Bandeirantes (Band) HD Ao Vivo",
+    "epg": "Guia EPG · TV A Crítica Ao Vivo Amazonas",
     "streamUrl": "https://cdn.jmvstream.com/w/LVW-9715/LVW9715_12B26T62tm/playlist.m3u8"
+  },
+  {
+    "id": "ch_amazonsat",
+    "name": "Amazon Sat HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Amazon_Sat_logo.png/300px-Amazon_Sat_logo.png",
+    "category": "aberta",
+    "epg": "Guia EPG · Amazon Sat A Voz da Amazônia",
+    "streamUrl": "https://amazonsat.brasilstream.com.br/hls/amazonsat/index.m3u8"
+  },
+  {
+    "id": "ch_sportv2",
+    "name": "SporTV 2 HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/SporTV_2_logo_2021.svg/300px-SporTV_2_logo_2021.svg.png",
+    "category": "esportes",
+    "epg": "Guia EPG · SporTV 2 Jogos Ao Vivo, Vôlei, Basquete e Futsal",
+    "streamUrl": "http://195.178.110.110/sportv2/index.m3u8"
+  },
+  {
+    "id": "ch_sportv3",
+    "name": "SporTV 3 HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/SporTV_3_logo_2021.svg/300px-SporTV_3_logo_2021.svg.png",
+    "category": "esportes",
+    "epg": "Guia EPG · SporTV 3 Tênis, Automobilismo e Esportes Radicais",
+    "streamUrl": "http://170.83.49.66:8083/SPORTV3HD/index.m3u8"
+  },
+  {
+    "id": "ch_espn_brasil",
+    "name": "ESPN Brasil HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ESPN_wordmark.svg/300px-ESPN_wordmark.svg.png",
+    "category": "esportes",
+    "epg": "Guia EPG · ESPN Brasil Premier League, La Liga, NBA e NFL Ao Vivo",
+    "streamUrl": "http://170.83.16.50/ESPN/index.m3u8"
+  },
+  {
+    "id": "ch_espn_extra",
+    "name": "ESPN Extra HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ESPN_wordmark.svg/300px-ESPN_wordmark.svg.png",
+    "category": "esportes",
+    "epg": "Guia EPG · ESPN Extra Competições Internacionais e Ligas Secundárias",
+    "streamUrl": "http://168.197.104.22/ESPN_EXTRA/index.m3u8"
+  },
+  {
+    "id": "ch_espn4",
+    "name": "ESPN 4 HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/ESPN_4_logo.svg/300px-ESPN_4_logo.svg.png",
+    "category": "esportes",
+    "epg": "Guia EPG · ESPN 4 Futebol Internacional e Transmissões Ao Vivo",
+    "streamUrl": "http://181.78.197.59:8000/play/a07n/index.m3u8"
   },
   {
     "id": "ch_bandsports",
     "name": "BandSports HD",
-    "logo": "/logos/bandsports.png",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/BandSports_logo_2018.svg/300px-BandSports_logo_2018.svg.png",
     "category": "esportes",
-    "epg": "Guia EPG · Programação BandSports HD Ao Vivo",
-    "streamUrl": "http://181.78.197.59:8000/play/a07n/index.m3u8"
+    "epg": "Guia EPG · BandSports O Canal de Todos os Esportes",
+    "streamUrl": "http://170.83.16.50/BAND_SPORTS/index.m3u8"
   },
   {
-    "id": "ch_band_news",
-    "name": "BandNews TV HD",
-    "logo": "/logos/band_news.png",
-    "category": "noticias_docs",
-    "epg": "Guia EPG · Programação BandNews TV HD Ao Vivo",
-    "streamUrl": "http://45.162.64.114/AGROMAIS/index.m3u8"
+    "id": "ch_ge_fast",
+    "name": "ge Fast (Globo Esporte)",
+    "logo": "https://i.ibb.co/WGXHDnF/logo-ge-fast.png",
+    "category": "esportes",
+    "epg": "Guia EPG · ge Fast Gols da Rodada, Bastidores e Coberturas do Futebol",
+    "streamUrl": "https://amg00716-globo-amg00716c1-tcl-br-9495.playouts.now.amagi.tv/playlist.m3u8"
   },
   {
-    "id": "ch_bbb",
-    "name": "Big Brother Brasil (BBB) Ao Vivo",
-    "logo": "/logos/bbb.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Big Brother Brasil (BBB) Ao Vivo Ao Vivo",
-    "streamUrl": "http://168.197.104.22/ADULT_SWIM/index.m3u8"
+    "id": "ch_fifa_plus",
+    "name": "FIFA+ Brasil HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/FIFA%2B_%282025%29.svg/300px-FIFA%2B_%282025%29.svg.png",
+    "category": "esportes",
+    "epg": "Guia EPG · FIFA+ Jogos Históricos de Copas, Mundiais e Documentários",
+    "streamUrl": "https://e3be9ac5.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/TEctYnJfRklGQVBsdXNQb3J0dWd1ZXNlX0hMUw/playlist.m3u8"
   },
   {
-    "id": "ch_bhnews_tv",
-    "name": "BH News TV",
-    "logo": "/logos/bhnews_tv.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação BH News TV Ao Vivo",
-    "streamUrl": "http://45.162.64.114/AGRO_CANAL/index.m3u8"
+    "id": "ch_redbull_tv",
+    "name": "Red Bull TV",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Red_Bull_Logo.svg/300px-Red_Bull_Logo.svg.png",
+    "category": "esportes",
+    "epg": "Guia EPG · Red Bull TV Esportes Radicais, F1, Skate, Surf e Festivais",
+    "streamUrl": "https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8"
   },
   {
-    "id": "ch_bis",
-    "name": "Canal Bis HD",
-    "logo": "/logos/bis.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Canal Bis HD Ao Vivo",
-    "streamUrl": "http://45.162.64.114/AGROMAIS/index.m3u8"
+    "id": "ch_pluto_esportes",
+    "name": "Pluto TV Esportes",
+    "logo": "https://images.pluto.tv/channels/61b790b985706b00072cb797/logo.png",
+    "category": "esportes",
+    "epg": "Guia EPG · Pluto TV Esportes e Competições Mundiais",
+    "streamUrl": "https://jmp2.uk/plu-61b790b985706b00072cb797.m3u8"
   },
   {
-    "id": "ch_boomerang",
-    "name": "Boomerang HD",
-    "logo": "/logos/boomerang.png",
-    "category": "infantil",
-    "epg": "Guia EPG · Programação Boomerang HD Ao Vivo",
-    "streamUrl": "http://170.83.49.66:8083/BOXKIDSHD/index.m3u8"
+    "id": "ch_tnt",
+    "name": "TNT HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/TNT_Logo_2016.svg/300px-TNT_Logo_2016.svg.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · TNT Grandes Sucessos de Hollywood e Premiações Ao Vivo",
+    "streamUrl": "http://170.83.16.50/TNT/index.m3u8"
   },
   {
-    "id": "ch_canalbrasil",
-    "name": "Canal Brasil HD",
-    "logo": "/logos/canalbrasil.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Canal Brasil HD Ao Vivo",
-    "streamUrl": "https://amazonsat.brasilstream.com.br/hls/amazonsat/index.m3u8"
+    "id": "ch_tnt_series",
+    "name": "TNT Series HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/TNT_Series_logo.svg/300px-TNT_Series_logo.svg.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · TNT Series Maratonas e Grandes Séries Internacionais",
+    "streamUrl": "http://170.83.16.50/TNT_SERIES/index.m3u8"
   },
   {
-    "id": "ch_canalfutura",
-    "name": "Futura HD",
-    "logo": "/logos/canalfutura.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Futura HD Ao Vivo",
+    "id": "ch_tnt_novelas",
+    "name": "TNT Novelas HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/TNT_Novelas_logo.svg/300px-TNT_Novelas_logo.svg.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · TNT Novelas As Melhores Telenovelas e Dramas Mundiais",
+    "streamUrl": "http://170.83.16.50/TNT_NOVELAS/index.m3u8"
+  },
+  {
+    "id": "ch_space",
+    "name": "Space HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Space_Logo_2020.svg/300px-Space_Logo_2020.svg.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · Space Filmes de Ação, Ficção Científica e Suspense 24h",
+    "streamUrl": "http://170.83.16.50/SPACE/index.m3u8"
+  },
+  {
+    "id": "ch_sony",
+    "name": "Sony Channel HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Sony_Channel_logo_2019.svg/300px-Sony_Channel_logo_2019.svg.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · Sony Channel Grey's Anatomy, The Good Doctor e Sucessos de Cinema",
+    "streamUrl": "http://170.83.16.50/SONY_CHANNEL/index.m3u8"
+  },
+  {
+    "id": "ch_axn",
+    "name": "AXN HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/AXN_logo_2015.svg/300px-AXN_logo_2015.svg.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · AXN Séries Policiais, Investigação, CSI e Ação Pura",
+    "streamUrl": "http://170.83.16.50/AXN/index.m3u8"
+  },
+  {
+    "id": "ch_ae",
+    "name": "A&E HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/A%26E_Network_logo.svg/300px-A%26E_Network_logo.svg.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · A&E Séries e Reality Shows de Investigação e Crimes Reais",
+    "streamUrl": "http://170.83.16.50/AeE/index.m3u8"
+  },
+  {
+    "id": "ch_amc",
+    "name": "AMC Channel HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/AMC_logo_2019.svg/300px-AMC_logo_2019.svg.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · AMC The Walking Dead, Fear the Walking Dead e Filmes de Sucesso",
     "streamUrl": "http://170.83.49.66:8083/AMCHD/index.m3u8"
   },
   {
-    "id": "ch_canalrural",
-    "name": "Canal Rural",
-    "logo": "/logos/canalrural.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Canal Rural Ao Vivo",
-    "streamUrl": "https://janya-digimix.akamaized.net/vglive-sk-382409/portuese/ngrp:angelportuguese_all/playlist.m3u8"
+    "id": "ch_pluto_acao",
+    "name": "Pluto TV Filmes Ação",
+    "logo": "https://images.pluto.tv/channels/5f120e94a5714d00074576a1/logo.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · Pluto TV Filmes de Ação 24 Horas Dublado",
+    "streamUrl": "https://jmp2.uk/plu-5f120e94a5714d00074576a1.m3u8"
+  },
+  {
+    "id": "ch_pluto_cine_sucessos",
+    "name": "Pluto TV Cine Sucessos",
+    "logo": "https://images.pluto.tv/channels/5f12111c9e6c2c00078ef3bb/logo.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · Pluto TV Cine Sucessos Campeões de Bilheteria",
+    "streamUrl": "https://jmp2.uk/plu-5f12111c9e6c2c00078ef3bb.m3u8"
+  },
+  {
+    "id": "ch_pluto_comedia",
+    "name": "Pluto TV Cine Comédia",
+    "logo": "https://images.pluto.tv/channels/5f171f988ab9780007fa95ea/logo.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · Pluto TV Cine Comédia As Melhores Risadas do Cinema",
+    "streamUrl": "https://jmp2.uk/plu-5f171f988ab9780007fa95ea.m3u8"
+  },
+  {
+    "id": "ch_pluto_drama",
+    "name": "Pluto TV Cine Drama",
+    "logo": "https://images.pluto.tv/channels/5f357e91b18f0b00073583d2/logo.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · Pluto TV Cine Drama Grandes Histórias Emocionantes",
+    "streamUrl": "https://jmp2.uk/plu-5f357e91b18f0b00073583d2.m3u8"
+  },
+  {
+    "id": "ch_pluto_terror",
+    "name": "Pluto TV Terror",
+    "logo": "https://images.pluto.tv/channels/5f5a545d0dbf7f0007c09408/logo.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · Pluto TV Terror Sobrenatural, Suspense e Terror 24 Horas",
+    "streamUrl": "https://jmp2.uk/plu-5f5a545d0dbf7f0007c09408.m3u8"
+  },
+  {
+    "id": "ch_pluto_series",
+    "name": "Pluto TV Séries",
+    "logo": "https://images.pluto.tv/channels/63d2ba2f60bc8f0008981a0e/logo.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · Pluto TV Séries e Maratonas Completas",
+    "streamUrl": "https://jmp2.uk/plu-63d2ba2f60bc8f0008981a0e.m3u8"
+  },
+  {
+    "id": "ch_pluto_novelas",
+    "name": "Pluto TV Novelas",
+    "logo": "https://images.pluto.tv/channels/638df93ae2f2a3000737c168/logo.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · Pluto TV Telenovelas Internacionais Dubladas",
+    "streamUrl": "https://jmp2.uk/plu-638df93ae2f2a3000737c168.m3u8"
+  },
+  {
+    "id": "ch_pluto_scifi",
+    "name": "Pluto TV Sci-Fi",
+    "logo": "https://images.pluto.tv/channels/6474ab1da51cb80008bfb5f4/logo.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · Pluto TV Ficção Científica, Espaço e Futuro",
+    "streamUrl": "https://jmp2.uk/plu-6474ab1da51cb80008bfb5f4.m3u8"
+  },
+  {
+    "id": "ch_pluto_misterio",
+    "name": "Pluto TV Mistério",
+    "logo": "https://images.pluto.tv/channels/6474ab5cdc7a760008745008/logo.png",
+    "category": "filmes_series",
+    "epg": "Guia EPG · Pluto TV Suspense, Investigações e Mistérios",
+    "streamUrl": "https://jmp2.uk/plu-6474ab5cdc7a760008745008.m3u8"
   },
   {
     "id": "ch_cartoon_network",
     "name": "Cartoon Network HD",
-    "logo": "/logos/cartoon_network.png",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Cartoon_Network_2010_logo.svg/300px-Cartoon_Network_2010_logo.svg.png",
     "category": "infantil",
-    "epg": "Guia EPG · Programação Cartoon Network HD Ao Vivo",
-    "streamUrl": "http://168.197.104.22/CARTOON_NETWORK/index.m3u8"
+    "epg": "Guia EPG · Cartoon Network O Melhor em Desenhos Animados 24h",
+    "streamUrl": "http://170.83.16.50/CARTOON/index.m3u8"
   },
   {
-    "id": "ch_casadopatrao",
-    "name": "Casa do Patrão",
-    "logo": "/logos/casadopatrao.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Casa do Patrão Ao Vivo",
-    "streamUrl": "https://video05.logicahost.com.br/ararunatv/ararunatv/playlist.m3u8"
+    "id": "ch_cartoonito",
+    "name": "Cartoonito HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Cartoonito_2021_logo.svg/300px-Cartoonito_2021_logo.svg.png",
+    "category": "infantil",
+    "epg": "Guia EPG · Cartoonito Conteúdo Especial para a Primeira Infância",
+    "streamUrl": "http://170.83.16.50/CARTOONITO/index.m3u8"
   },
   {
-    "id": "ch_cinemax",
-    "name": "Cinemax HD",
-    "logo": "/logos/cinemax.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Cinemax HD Ao Vivo",
-    "streamUrl": "http://170.83.16.50/AeE/index.m3u8"
+    "id": "ch_tooncast",
+    "name": "Tooncast HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Tooncast_logo.svg/300px-Tooncast_logo.svg.png",
+    "category": "infantil",
+    "epg": "Guia EPG · Tooncast Desenhos Clássicos Hanna-Barbera e Looney Tunes",
+    "streamUrl": "http://170.83.16.50/TOONCAST/index.m3u8"
   },
   {
-    "id": "ch_cinesky",
-    "name": "Cine Sky HD",
-    "logo": "/logos/cinesky.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Cine Sky HD Ao Vivo",
-    "streamUrl": "http://170.83.49.66:8083/AMCHD/index.m3u8"
-  },
-  {
-    "id": "ch_cnn_brasil",
-    "name": "CNN Brasil HD",
-    "logo": "/logos/cnn_brasil.png",
-    "category": "noticias_docs",
-    "epg": "Guia EPG · Programação CNN Brasil HD Ao Vivo",
-    "streamUrl": "http://168.197.104.22/CNN_BRASIL/index.m3u8"
-  },
-  {
-    "id": "ch_combate",
-    "name": "Canal Combate HD",
-    "logo": "/logos/combate.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação Canal Combate HD Ao Vivo",
-    "streamUrl": "http://181.78.197.59:8000/play/a07z/index.m3u8"
-  },
-  {
-    "id": "ch_comedy_central",
-    "name": "Comedy Central HD",
-    "logo": "/logos/comedy_central.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Comedy Central HD Ao Vivo",
-    "streamUrl": "https://cdn.live.br1.jmvstream.com/w/LVW-9359/LVW9359_XSyReL0QVf/playlist.m3u8"
-  },
-  {
-    "id": "ch_conmebol",
-    "name": "CONMEBOL TV HD",
-    "logo": "/logos/conmebol.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação CONMEBOL TV HD Ao Vivo",
-    "streamUrl": "https://ogc-nsprt-tcl-roku-syndication.otteravision.com/ogc/nsprt/nsprt.m3u8"
-  },
-  {
-    "id": "ch_discovery_channel",
-    "name": "Discovery Channel HD",
-    "logo": "/logos/discovery_channel.png",
-    "category": "noticias_docs",
-    "epg": "Guia EPG · Programação Discovery Channel HD Ao Vivo",
-    "streamUrl": "http://168.197.104.22/DISCOVERY_CHANNEL/index.m3u8"
-  },
-  {
-    "id": "ch_discovery_civilization",
-    "name": "Discovery Civilization",
-    "logo": "/logos/discovery_civilization.png",
-    "category": "noticias_docs",
-    "epg": "Guia EPG · Programação Discovery Civilization Ao Vivo",
-    "streamUrl": "http://79.127.238.228:14093"
-  },
-  {
-    "id": "ch_discovery_home_health",
-    "name": "Discovery Home & Health HD",
-    "logo": "/logos/discovery_home_health.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Discovery Home & Health HD Ao Vivo",
-    "streamUrl": "http://170.83.16.50/DISCOVERY_HOME_HEALTH/index.m3u8"
-  },
-  {
-    "id": "ch_discovery_investigation",
-    "name": "Investigation Discovery (ID) HD",
-    "logo": "/logos/discovery_investigation.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Investigation Discovery (ID) HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-6759eeb1bd523200083b4f29.m3u8"
+    "id": "ch_boomerang",
+    "name": "Boomerang HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Boomerang_2014_logo.svg/300px-Boomerang_2014_logo.svg.png",
+    "category": "infantil",
+    "epg": "Guia EPG · Boomerang Clássicos da Animação",
+    "streamUrl": "http://168.197.104.22/BOOMERANG/index.m3u8"
   },
   {
     "id": "ch_discovery_kids",
     "name": "Discovery Kids HD",
-    "logo": "/logos/discovery_kids.png",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Discovery_Kids_logo_2016.svg/300px-Discovery_Kids_logo_2016.svg.png",
     "category": "infantil",
-    "epg": "Guia EPG · Programação Discovery Kids HD Ao Vivo",
+    "epg": "Guia EPG · Discovery Kids Peppa Pig, Doki e Aventuras Educativas",
     "streamUrl": "http://170.83.16.50/DISCOVERY_KIDS/index.m3u8"
   },
   {
-    "id": "ch_discovery_science",
-    "name": "Discovery Science",
-    "logo": "/logos/discovery_science.png",
+    "id": "ch_box_kids",
+    "name": "Box Kids HD",
+    "logo": "https://images.unsplash.com/photo-1560169897-fc0cdbdfa4d5?w=300&auto=format&fit=crop&q=80",
+    "category": "infantil",
+    "epg": "Guia EPG · Box Kids Desenhos Animados 24 Horas",
+    "streamUrl": "http://170.83.49.66:8083/BOXKIDSHD/index.m3u8"
+  },
+  {
+    "id": "ch_zoomoo_kids",
+    "name": "ZooMoo Kids HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/ZooMoo_Kids_logo.png/300px-ZooMoo_Kids_logo.png",
+    "category": "infantil",
+    "epg": "Guia EPG · ZooMoo Kids Natureza, Animais e Educação Infantil",
+    "streamUrl": "http://45.162.64.114/ZOOMOO_KIDS/index.m3u8"
+  },
+  {
+    "id": "ch_pluto_kids",
+    "name": "Pluto TV Kids",
+    "logo": "https://images.pluto.tv/channels/6759eeb1bd523200083b4f29/logo.png",
+    "category": "infantil",
+    "epg": "Guia EPG · Pluto TV Kids Programação Infantil 24h",
+    "streamUrl": "https://jmp2.uk/plu-6759eeb1bd523200083b4f29.m3u8"
+  },
+  {
+    "id": "ch_pluto_desenhos",
+    "name": "Pluto TV Desenhos",
+    "logo": "https://images.pluto.tv/channels/6806d62369aec5b19cd628c0/logo.png",
+    "category": "infantil",
+    "epg": "Guia EPG · Pluto TV Desenhos Animados",
+    "streamUrl": "https://jmp2.uk/plu-6806d62369aec5b19cd628c0.m3u8"
+  },
+  {
+    "id": "ch_pluto_anime",
+    "name": "Pluto TV Anime",
+    "logo": "https://images.pluto.tv/channels/5f5c216df68f920007888315/logo.png",
+    "category": "infantil",
+    "epg": "Guia EPG · Pluto TV Anime Clássicos da Animação Japonesa",
+    "streamUrl": "https://jmp2.uk/plu-5f5c216df68f920007888315.m3u8"
+  },
+  {
+    "id": "ch_cnn_brasil",
+    "name": "CNN Brasil HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/CNN_Brasil_logo.svg/300px-CNN_Brasil_logo.svg.png",
     "category": "noticias_docs",
-    "epg": "Guia EPG · Programação Discovery Science Ao Vivo",
+    "epg": "Guia EPG · CNN Brasil Notícias, Política, Economia e Análises 24 Horas",
+    "streamUrl": "http://170.83.16.50/CNN_BRASIL/index.m3u8"
+  },
+  {
+    "id": "ch_band_news",
+    "name": "BandNews TV HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/BandNews_TV_logo_2022.svg/300px-BandNews_TV_logo_2022.svg.png",
+    "category": "noticias_docs",
+    "epg": "Guia EPG · BandNews TV Em 20 Minutos Tudo Pode Mudar",
+    "streamUrl": "http://170.83.16.50/BAND_NEWS/index.m3u8"
+  },
+  {
+    "id": "ch_record_news",
+    "name": "Record News HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Record_News_logo_2023.svg/300px-Record_News_logo_2023.svg.png",
+    "category": "noticias_docs",
+    "epg": "Guia EPG · Record News Informação e Jornalismo Ao Vivo",
+    "streamUrl": "http://170.83.16.50/RECORD_NEWS/index.m3u8"
+  },
+  {
+    "id": "ch_discovery_channel",
+    "name": "Discovery Channel HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Discovery_Channel_2019.svg/300px-Discovery_Channel_2019.svg.png",
+    "category": "noticias_docs",
+    "epg": "Guia EPG · Discovery Channel Ciência, Sobrevivência e Engenharia",
+    "streamUrl": "http://170.83.16.50/DISCOVERY_CHANNEL/index.m3u8"
+  },
+  {
+    "id": "ch_discovery_world",
+    "name": "Discovery World HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Discovery_World_logo.svg/300px-Discovery_World_logo.svg.png",
+    "category": "noticias_docs",
+    "epg": "Guia EPG · Discovery World Documentários e Culturas do Mundo",
+    "streamUrl": "http://170.83.16.50/DISCOVERY_WORLD/index.m3u8"
+  },
+  {
+    "id": "ch_discovery_turbo",
+    "name": "Discovery Turbo HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Discovery_Turbo_logo.svg/300px-Discovery_Turbo_logo.svg.png",
+    "category": "noticias_docs",
+    "epg": "Guia EPG · Discovery Turbo Carros, Motores e Máquinas Poderosas",
+    "streamUrl": "http://170.83.16.50/DISCOVERY_TURBO/index.m3u8"
+  },
+  {
+    "id": "ch_discovery_science",
+    "name": "Discovery Science HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Discovery_Science_logo.svg/300px-Discovery_Science_logo.svg.png",
+    "category": "noticias_docs",
+    "epg": "Guia EPG · Discovery Science O Universo, Tecnologia e Inovações",
     "streamUrl": "http://170.83.16.50/DISCOVERY_SCIENCE/index.m3u8"
   },
   {
     "id": "ch_discovery_theater",
     "name": "Discovery Theater HD",
-    "logo": "/logos/discovery_theater.png",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Discovery_Theater_logo.png/300px-Discovery_Theater_logo.png",
     "category": "noticias_docs",
-    "epg": "Guia EPG · Programação Discovery Theater HD Ao Vivo",
-    "streamUrl": "http://170.83.49.66:8083/JOVEMPANNEWSHD/index.m3u8"
+    "epg": "Guia EPG · Discovery Theater Vida Selvagem e Imagens Espetaculares",
+    "streamUrl": "http://170.83.16.50/DISCOVERY_THEATER/index.m3u8"
   },
   {
-    "id": "ch_discovery_turbo",
-    "name": "Discovery Turbo HD",
-    "logo": "/logos/discovery_turbo.png",
+    "id": "ch_animal_planet",
+    "name": "Animal Planet HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Animal_Planet_2018.svg/300px-Animal_Planet_2018.svg.png",
     "category": "noticias_docs",
-    "epg": "Guia EPG · Programação Discovery Turbo HD Ao Vivo",
-    "streamUrl": "http://168.197.104.22/DISCOVERY_TURBO/index.m3u8"
-  },
-  {
-    "id": "ch_discovery_world",
-    "name": "Discovery World HD",
-    "logo": "/logos/discovery_world.png",
-    "category": "noticias_docs",
-    "epg": "Guia EPG · Programação Discovery World HD Ao Vivo",
-    "streamUrl": "http://168.197.104.22/DISCOVERY_WORLD/index.m3u8"
-  },
-  {
-    "id": "ch_disney_channel",
-    "name": "Disney Channel HD",
-    "logo": "/logos/disney_channel.png",
-    "category": "infantil",
-    "epg": "Guia EPG · Programação Disney Channel HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-6824ce95f09106f4b18f4114.m3u8"
-  },
-  {
-    "id": "ch_disney_junior",
-    "name": "Disney Junior",
-    "logo": "/logos/disney_junior.png",
-    "category": "infantil",
-    "epg": "Guia EPG · Programação Disney Junior Ao Vivo",
-    "streamUrl": "https://stmv2.srvif.com/nicktoons/nicktoons/playlist.m3u8"
-  },
-  {
-    "id": "ch_disney_xd",
-    "name": "Disney XD",
-    "logo": "/logos/disney_xd.png",
-    "category": "infantil",
-    "epg": "Guia EPG · Programação Disney XD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-6824ce10c5d53e1351ceb8d1.m3u8"
-  },
-  {
-    "id": "ch_djing",
-    "name": "Djing TV",
-    "logo": "/logos/djing.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Djing TV Ao Vivo",
-    "streamUrl": "https://awtv.nuvemplay.live/hls/stream.m3u8"
-  },
-  {
-    "id": "ch_e!",
-    "name": "E! Entertainment HD",
-    "logo": "/logos/e!.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação E! Entertainment HD Ao Vivo",
-    "streamUrl": "http://170.83.16.50/AXN/index.m3u8"
-  },
-  {
-    "id": "ch_ei1",
-    "name": "Esporte Interativo 1",
-    "logo": "/logos/ei1.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação Esporte Interativo 1 Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5f32d2db0af67400077f29c4.m3u8"
-  },
-  {
-    "id": "ch_ei2",
-    "name": "Esporte Interativo 2",
-    "logo": "/logos/ei2.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação Esporte Interativo 2 Ao Vivo",
-    "streamUrl": "http://195.178.110.110/sportv2/index.m3u8"
-  },
-  {
-    "id": "ch_eimaxx",
-    "name": "EI Maxx HD",
-    "logo": "/logos/eimaxx.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação EI Maxx HD Ao Vivo",
-    "streamUrl": "http://195.178.110.110/sportv3/index.m3u8"
-  },
-  {
-    "id": "ch_eimaxx2",
-    "name": "EI Maxx 2 HD",
-    "logo": "/logos/eimaxx2.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação EI Maxx 2 HD Ao Vivo",
-    "streamUrl": "http://195.178.110.110/sportv/index.m3u8"
-  },
-  {
-    "id": "ch_espn",
-    "name": "ESPN HD",
-    "logo": "/logos/espn.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação ESPN Brasil HD Ao Vivo",
-    "streamUrl": "http://170.83.16.50/ESPN/index.m3u8"
-  },
-  {
-    "id": "ch_espn_brasil",
-    "name": "ESPN 2 HD",
-    "logo": "/logos/espn_brasil.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação ESPN 2 HD Ao Vivo",
-    "streamUrl": "http://181.78.197.59:8000/play/a07n/index.m3u8"
-  },
-  {
-    "id": "ch_espn_extra",
-    "name": "ESPN Extra HD",
-    "logo": "/logos/espn_extra.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação ESPN Extra HD Ao Vivo",
-    "streamUrl": "http://181.78.197.59:8000/play/a07n/index.m3u8"
-  },
-  {
-    "id": "ch_espn_plus",
-    "name": "ESPN Plus HD",
-    "logo": "/logos/espn_plus.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação ESPN Plus HD Ao Vivo",
-    "streamUrl": "http://181.78.197.59:8000/play/a07n/index.m3u8"
-  },
-  {
-    "id": "ch_fishtv",
-    "name": "Fish TV HD",
-    "logo": "/logos/fishtv.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Fish TV HD Ao Vivo",
-    "streamUrl": "https://video09.logicahost.com.br/bemmaistv01/bemmaistv01/playlist.m3u8"
-  },
-  {
-    "id": "ch_food_network",
-    "name": "Food Network HD",
-    "logo": "/logos/food_network.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Food Network HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5ff768b6a4c8b80008498610.m3u8"
-  },
-  {
-    "id": "ch_foxsports",
-    "name": "Fox Sports 1 HD",
-    "logo": "/logos/foxsports.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação Fox Sports 1 HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-61b790b985706b00072cb797.m3u8"
-  },
-  {
-    "id": "ch_foxsports2",
-    "name": "Fox Sports 2 HD",
-    "logo": "/logos/foxsports2.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação Fox Sports 2 HD Ao Vivo",
-    "streamUrl": "http://181.78.197.59:8000/play/a07n/index.m3u8"
-  },
-  {
-    "id": "ch_foxsports_full",
-    "name": "Fox Sports Premium",
-    "logo": "/logos/foxsports_full.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação Fox Sports Premium Ao Vivo",
-    "streamUrl": "http://181.78.197.59:8000/play/a07z/index.m3u8"
-  },
-  {
-    "id": "ch_fox_premium",
-    "name": "Fox Premium 1 HD",
-    "logo": "/logos/fox_premium.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Fox Premium 1 HD Ao Vivo",
-    "streamUrl": "https://stmv1.transmissaodigital.com/blitstv/blitstv/playlist.m3u8"
-  },
-  {
-    "id": "ch_fx",
-    "name": "FX HD",
-    "logo": "/logos/fx.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação FX HD Ao Vivo",
-    "streamUrl": "http://170.83.16.50/AXN/index.m3u8"
-  },
-  {
-    "id": "ch_globo",
-    "name": "Rede Globo HD",
-    "logo": "/logos/globo.png",
-    "category": "aberta",
-    "epg": "Guia EPG · Programação Rede Globo HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-61b790b985706b00072cb797.m3u8"
-  },
-  {
-    "id": "ch_globonews",
-    "name": "GloboNews HD",
-    "logo": "/logos/globonews.png",
-    "category": "noticias_docs",
-    "epg": "Guia EPG · Programação GloboNews HD Ao Vivo",
-    "streamUrl": "https://dai.google.com/linear/hls/event/1XSOdtQ0SH2G8OEmEfGgjQ/master.m3u8"
-  },
-  {
-    "id": "ch_gloob",
-    "name": "Gloob HD",
-    "logo": "/logos/gloob.png",
-    "category": "infantil",
-    "epg": "Guia EPG · Programação Gloob HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-60f5fabf0721880007cd50e3.m3u8"
-  },
-  {
-    "id": "ch_gloobinho",
-    "name": "Gloobinho",
-    "logo": "/logos/gloobinho.png",
-    "category": "infantil",
-    "epg": "Guia EPG · Programação Gloobinho Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-645951c0e94c38000802d2cb.m3u8"
-  },
-  {
-    "id": "ch_gnt",
-    "name": "GNT HD",
-    "logo": "/logos/gnt.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação GNT HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-666c9c60a7efd40008f552f0.m3u8"
-  },
-  {
-    "id": "ch_gospelmusic_tv",
-    "name": "Gospel Music TV",
-    "logo": "/logos/gospelmusic_tv.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Gospel Music TV Ao Vivo",
-    "streamUrl": "https://cdn.jmvstream.com/w/LVW-9375/LVW9375_6i0wPBCHYc/playlist.m3u8"
-  },
-  {
-    "id": "ch_h2",
-    "name": "History 2 (H2) HD",
-    "logo": "/logos/h2.png",
-    "category": "noticias_docs",
-    "epg": "Guia EPG · Programação History 2 (H2) HD Ao Vivo",
-    "streamUrl": "https://video01.logicahost.com.br/tvideonews/tvideonews/playlist.m3u8"
-  },
-  {
-    "id": "ch_hbo",
-    "name": "HBO HD",
-    "logo": "/logos/hbo.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação HBO HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5f12111c9e6c2c00078ef3bb.m3u8"
-  },
-  {
-    "id": "ch_hbo2",
-    "name": "HBO 2 HD",
-    "logo": "/logos/hbo2.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação HBO 2 HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5f171d3442a0500007362f22.m3u8"
-  },
-  {
-    "id": "ch_hbo_family",
-    "name": "HBO Family HD",
-    "logo": "/logos/hbo_family.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação HBO Family HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-620fdc7d8a36fc000710e3ba.m3u8"
-  },
-  {
-    "id": "ch_hbo_max",
-    "name": "HBO Max Live",
-    "logo": "/logos/hbo_max.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação HBO Max Live Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-61099df8cee03b00074b2ecf.m3u8"
-  },
-  {
-    "id": "ch_hbo_mundi",
-    "name": "HBO Mundi HD",
-    "logo": "/logos/hbo_mundi.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação HBO Mundi HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5fa1612a669ba0000702017b.m3u8"
-  },
-  {
-    "id": "ch_hbo_plus",
-    "name": "HBO Plus HD",
-    "logo": "/logos/hbo_plus.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação HBO Plus HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5f12101f0b12f00007844c7c.m3u8"
-  },
-  {
-    "id": "ch_hbo_plus_e",
-    "name": "HBO Plus Extra",
-    "logo": "/logos/hbo_plus_e.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação HBO Plus Extra Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-62545ed3dab4380007582f7c.m3u8"
-  },
-  {
-    "id": "ch_hbo_pop",
-    "name": "HBO Pop HD",
-    "logo": "/logos/hbo_pop.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação HBO Pop HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-6479ff764f5ba5000878dfe2.m3u8"
-  },
-  {
-    "id": "ch_hbo_signature",
-    "name": "HBO Signature HD",
-    "logo": "/logos/hbo_signature.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação HBO Signature HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5f1210d14ae1f80007bafb1d.m3u8"
-  },
-  {
-    "id": "ch_hbo_xtreme",
-    "name": "HBO Xtreme HD",
-    "logo": "/logos/hbo_xtreme.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação HBO Xtreme HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5f171f032cd22e0007f17f3d.m3u8"
-  },
-  {
-    "id": "ch_heartv",
-    "name": "Hear TV HD",
-    "logo": "/logos/heartv.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Hear TV HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-62545c0b002f4b0007688b61.m3u8"
-  },
-  {
-    "id": "ch_hgtv",
-    "name": "HGTV Home & Garden HD",
-    "logo": "/logos/hgtv.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação HGTV Home & Garden HD Ao Vivo",
-    "streamUrl": "http://170.83.49.66:8083/BOXKIDSHD/index.m3u8"
+    "epg": "Guia EPG · Animal Planet O Reino Animal e Aventuras Selvagens",
+    "streamUrl": "http://170.83.16.50/ANIMAL_PLANET/index.m3u8"
   },
   {
     "id": "ch_history",
     "name": "History Channel HD",
-    "logo": "/logos/history.png",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/History_Logo.svg/300px-History_Logo.svg.png",
     "category": "noticias_docs",
-    "epg": "Guia EPG · Programação History Channel HD Ao Vivo",
+    "epg": "Guia EPG · History Trato Feito, Alienígenas do Passado e História",
     "streamUrl": "http://170.83.16.50/HISTORY/index.m3u8"
   },
   {
-    "id": "ch_hittv",
-    "name": "Hit TV",
-    "logo": "/logos/hittv.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Hit TV Ao Vivo",
-    "streamUrl": "https://cdn.jmvstream.com/w/LVW-8503/LVW8503_d0V5oduFlK/playlist.m3u8"
-  },
-  {
-    "id": "ch_lifetime",
-    "name": "Lifetime HD",
-    "logo": "/logos/lifetime.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Lifetime HD Ao Vivo",
-    "streamUrl": "http://45.162.64.114/CANAL_DO_BOI/index.m3u8"
-  },
-  {
-    "id": "ch_loading",
-    "name": "Loading TV",
-    "logo": "/logos/loading.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Loading TV Ao Vivo",
-    "streamUrl": "http://45.162.64.114/CANAL_EDUCACAO/index.m3u8"
-  },
-  {
-    "id": "ch_megapix",
-    "name": "Megapix HD",
-    "logo": "/logos/megapix.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Megapix HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5fa991b1f09e020007e78626.m3u8"
-  },
-  {
-    "id": "ch_mimusica",
-    "name": "Mi Música TV",
-    "logo": "/logos/mimusica.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Mi Música TV Ao Vivo",
-    "streamUrl": "https://v-us-01.wisestream.io/memfs/e4ade538-7924-4359-81ef-b9d4dd229e91.m3u8"
-  },
-  {
-    "id": "ch_mixtv",
-    "name": "Mix TV",
-    "logo": "/logos/mixtv.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Mix TV Ao Vivo",
-    "streamUrl": "http://45.162.64.114/FUTURA/index.m3u8"
-  },
-  {
-    "id": "ch_modo_viagem",
-    "name": "Modo Viagem HD",
-    "logo": "/logos/modo_viagem.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Modo Viagem HD Ao Vivo",
-    "streamUrl": "https://stmv5.samcast.com.br/claudio8701/claudio8701/playlist.m3u8"
-  },
-  {
-    "id": "ch_mtv",
-    "name": "MTV Brasil HD",
-    "logo": "/logos/mtv.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação MTV Brasil HD Ao Vivo",
-    "streamUrl": "http://play.canalsete.com.br:1935/canalsete/xpl-c7_source/playlist.m3u8"
-  },
-  {
-    "id": "ch_multishow",
-    "name": "Multishow HD",
-    "logo": "/logos/multishow.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Multishow HD Ao Vivo",
-    "streamUrl": "https://video24.mais.uol.com.br/live/6146.m3u8"
-  },
-  {
-    "id": "ch_muztv",
-    "name": "Muz TV",
-    "logo": "/logos/muztv.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Muz TV Ao Vivo",
-    "streamUrl": "https://5b33b873179a2.streamlock.net:1443/catve2/catve2/playlist.m3u8"
-  },
-  {
-    "id": "ch_natgeo",
-    "name": "National Geographic HD",
-    "logo": "/logos/natgeo.png",
+    "id": "ch_arte1",
+    "name": "Arte 1 HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Arte_1_logo.png/300px-Arte_1_logo.png",
     "category": "noticias_docs",
-    "epg": "Guia EPG · Programação National Geographic HD Ao Vivo",
-    "streamUrl": "http://45.162.64.114/AGROMAIS/index.m3u8"
+    "epg": "Guia EPG · Arte 1 Cinema, Artes Visuais, Dança, Música e Teatro",
+    "streamUrl": "http://170.83.16.50/ARTE_1/index.m3u8"
   },
   {
-    "id": "ch_natgeo_kids",
-    "name": "Nat Geo Kids",
-    "logo": "/logos/natgeo_kids.png",
-    "category": "infantil",
-    "epg": "Guia EPG · Programação Nat Geo Kids Ao Vivo",
-    "streamUrl": "https://x1colegal.com/hls/stream.m3u8"
-  },
-  {
-    "id": "ch_natgeo_wild",
-    "name": "Nat Geo Wild HD",
-    "logo": "/logos/natgeo_wild.png",
+    "id": "ch_nasa_tv",
+    "name": "NASA TV HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/NASA_logo.svg/300px-NASA_logo.svg.png",
     "category": "noticias_docs",
-    "epg": "Guia EPG · Programação Nat Geo Wild HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-666c9c60a7efd40008f552f0.m3u8"
+    "epg": "Guia EPG · NASA TV Transmissões Espaciais Oficiais e Lançamentos",
+    "streamUrl": "https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8"
   },
   {
-    "id": "ch_nick",
-    "name": "Nickelodeon HD",
-    "logo": "/logos/nick.png",
-    "category": "infantil",
-    "epg": "Guia EPG · Programação Nickelodeon HD Ao Vivo",
-    "streamUrl": "https://stmv2.srvif.com/nicktoons/nicktoons/playlist.m3u8"
-  },
-  {
-    "id": "ch_nick_jr",
-    "name": "Nick Jr. HD",
-    "logo": "/logos/nick_jr.png",
-    "category": "infantil",
-    "epg": "Guia EPG · Programação Nick Jr. HD Ao Vivo",
-    "streamUrl": "https://stmv2.srvif.com/nicktoons/nicktoons/playlist.m3u8"
-  },
-  {
-    "id": "ch_nosso_futebol",
-    "name": "Nosso Futebol HD",
-    "logo": "/logos/nosso_futebol.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação Nosso Futebol HD Ao Vivo",
-    "streamUrl": "https://ogc-nsprt-tcl-roku-syndication.otteravision.com/ogc/nsprt/nsprt.m3u8"
-  },
-  {
-    "id": "ch_nsports",
-    "name": "NSports Ao Vivo",
-    "logo": "/logos/nsports.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação NSports Ao Vivo Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5f32d2db0af67400077f29c4.m3u8"
-  },
-  {
-    "id": "ch_off",
-    "name": "Canal Off HD",
-    "logo": "/logos/off.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Canal Off HD Ao Vivo",
-    "streamUrl": "https://5b33b873179a2.streamlock.net:1443/radiocamera/livestream/playlist.m3u8"
-  },
-  {
-    "id": "ch_paramount_network",
-    "name": "Paramount Network HD",
-    "logo": "/logos/paramount_network.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Paramount Network HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5f171f988ab9780007fa95ea.m3u8"
-  },
-  {
-    "id": "ch_paramount_plus",
-    "name": "Paramount+ Live",
-    "logo": "/logos/paramount_plus.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Paramount+ Live Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5f120e94a5714d00074576a1.m3u8"
-  },
-  {
-    "id": "ch_playboytv",
-    "name": "Playboy TV",
-    "logo": "/logos/playboytv.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Playboy TV Ao Vivo",
-    "streamUrl": "https://5b33b873179a2.streamlock.net:1443/mastertv/livestream/playlist.m3u8"
-  },
-  {
-    "id": "ch_playtv",
-    "name": "PlayTV",
-    "logo": "/logos/playtv.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação PlayTV Ao Vivo",
-    "streamUrl": "http://45.162.64.114/PLAY_TV/index.m3u8"
-  },
-  {
-    "id": "ch_premiere",
-    "name": "Premiere Clubes HD",
-    "logo": "/logos/premiere.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação Premiere Clubes HD Ao Vivo",
-    "streamUrl": "http://195.178.110.110/sportv2/index.m3u8"
-  },
-  {
-    "id": "ch_prime_video",
-    "name": "Prime Video Live",
-    "logo": "/logos/prime_video.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Prime Video Live Ao Vivo",
-    "streamUrl": "http://168.197.104.22/CHEF_TV/index.m3u8"
-  },
-  {
-    "id": "ch_radiomontecarlo",
-    "name": "Rádio Monte Carlo TV",
-    "logo": "/logos/radiomontecarlo.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Rádio Monte Carlo TV Ao Vivo",
-    "streamUrl": "https://5c483b9d1019c.streamlock.net/8054/8054/playlist.m3u8"
-  },
-  {
-    "id": "ch_rbstv",
-    "name": "RBS TV HD",
-    "logo": "/logos/rbstv.png",
-    "category": "aberta",
-    "epg": "Guia EPG · Programação RBS TV HD Ao Vivo",
-    "streamUrl": "https://janya-digimix.akamaized.net/vglive-sk-382409/portuese/ngrp:angelportuguese_all/playlist.m3u8"
-  },
-  {
-    "id": "ch_record",
-    "name": "Record TV HD",
-    "logo": "/logos/record.png",
-    "category": "aberta",
-    "epg": "Guia EPG · Programação Record TV HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-6102e04e9ab1db0007a980a1.m3u8"
-  },
-  {
-    "id": "ch_record_news",
-    "name": "Record News HD",
-    "logo": "/logos/record_news.png",
-    "category": "aberta",
-    "epg": "Guia EPG · Programação Record News HD Ao Vivo",
-    "streamUrl": "http://168.197.104.22/RECORD_NEWS/index.m3u8"
-  },
-  {
-    "id": "ch_redebrasil",
-    "name": "Rede Brasil HD",
-    "logo": "/logos/redebrasil.png",
-    "category": "aberta",
-    "epg": "Guia EPG · Programação Rede Brasil HD Ao Vivo",
-    "streamUrl": "https://awtv.nuvemplay.live/hls/stream.m3u8"
-  },
-  {
-    "id": "ch_redetv",
-    "name": "RedeTV! HD",
-    "logo": "/logos/redetv.png",
-    "category": "aberta",
-    "epg": "Guia EPG · Programação RedeTV! HD Ao Vivo",
-    "streamUrl": "https://video09.logicahost.com.br/bemmaistv01/bemmaistv01/playlist.m3u8"
-  },
-  {
-    "id": "ch_rede_vida",
-    "name": "Rede Vida HD",
-    "logo": "/logos/rede_vida.png",
-    "category": "aberta",
-    "epg": "Guia EPG · Programação Rede Vida HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5ff768b6a4c8b80008498610.m3u8"
-  },
-  {
-    "id": "ch_retro_cartoon",
-    "name": "Boomerang / Clássicos Cartoon",
-    "logo": "/logos/retro_cartoon.png",
-    "category": "infantil",
-    "epg": "Guia EPG · Programação Retro Cartoon Clássicos Ao Vivo",
-    "streamUrl": "http://168.197.104.22/BOOMERANG/index.m3u8"
-  },
-  {
-    "id": "ch_sbt",
-    "name": "SBT HD",
-    "logo": "/logos/sbt.png",
-    "category": "aberta",
-    "epg": "Guia EPG · Programação SBT HD Ao Vivo",
-    "streamUrl": "https://cdn.jmvstream.com/w/LVW-10801/LVW10801_Xvg4R0u57n/playlist.m3u8"
-  },
-  {
-    "id": "ch_sextreme",
-    "name": "Sextreme TV",
-    "logo": "/logos/sextreme.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Sextreme TV Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5f12111c9e6c2c00078ef3bb.m3u8"
-  },
-  {
-    "id": "ch_sexyhot",
-    "name": "Sexy Hot HD",
-    "logo": "/logos/sexyhot.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Sexy Hot HD Ao Vivo",
-    "streamUrl": "https://stmv1.srvif.com/classique/classique/playlist.m3u8"
-  },
-  {
-    "id": "ch_slam",
-    "name": "Slam TV",
-    "logo": "/logos/slam.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação Slam TV Ao Vivo",
-    "streamUrl": "https://dfr80qz435crc.cloudfront.net/EFGH/Amagi/NewCo/New_Brasil_BR/New_Brasil.m3u8"
-  },
-  {
-    "id": "ch_sony",
-    "name": "Sony Channel HD",
-    "logo": "/logos/sony.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Sony Channel HD Ao Vivo",
-    "streamUrl": "http://170.83.16.50/SONY_CHANNEL/index.m3u8"
-  },
-  {
-    "id": "ch_space",
-    "name": "Space HD",
-    "logo": "/logos/space.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Space HD Ao Vivo",
-    "streamUrl": "http://168.197.104.22/SPACE/index.m3u8"
-  },
-  {
-    "id": "ch_sportv",
-    "name": "SporTV HD",
-    "logo": "/logos/sportv.png",
-    "category": "esportes",
-    "epg": "Guia EPG · Programação SporTV HD Ao Vivo",
-    "streamUrl": "http://195.178.110.110/sportv3/index.m3u8"
-  },
-  {
-    "id": "ch_star_channel",
-    "name": "Star Channel HD",
-    "logo": "/logos/star_channel.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Star Channel HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-6806d62369aec5b19cd628c0.m3u8"
-  },
-  {
-    "id": "ch_star_hits",
-    "name": "Star Hits HD",
-    "logo": "/logos/star_hits.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Star Hits HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5f5a545d0dbf7f0007c09408.m3u8"
-  },
-  {
-    "id": "ch_star_life",
-    "name": "Star Life HD",
-    "logo": "/logos/star_life.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Star Life HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5f512365abe1f50007d3ff56.m3u8"
-  },
-  {
-    "id": "ch_star_plus",
-    "name": "Star+ Live",
-    "logo": "/logos/star_plus.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Star+ Live Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-6474ab1da51cb80008bfb5f4.m3u8"
-  },
-  {
-    "id": "ch_studio_universal",
-    "name": "Studio Universal HD",
-    "logo": "/logos/studio_universal.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Studio Universal HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-655e5bc94261ca000810cb17.m3u8"
-  },
-  {
-    "id": "ch_syfy",
-    "name": "Syfy HD",
-    "logo": "/logos/syfy.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Syfy HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-6474ab5cdc7a760008745008.m3u8"
-  },
-  {
-    "id": "ch_tbs",
-    "name": "TBS HD",
-    "logo": "/logos/tbs.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação TBS HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5f357e91b18f0b00073583d2.m3u8"
-  },
-  {
-    "id": "ch_tcm",
-    "name": "TCM Clássicos",
-    "logo": "/logos/tcm.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação TCM Clássicos Ao Vivo",
+    "id": "ch_pluto_docs",
+    "name": "Pluto TV Documentários",
+    "logo": "https://images.pluto.tv/channels/65f060d84e01740008d7421f/logo.png",
+    "category": "noticias_docs",
+    "epg": "Guia EPG · Pluto TV Documentários 24 Horas",
     "streamUrl": "https://jmp2.uk/plu-65f060d84e01740008d7421f.m3u8"
   },
   {
-    "id": "ch_tc_action",
-    "name": "Telecine Action HD",
-    "logo": "/logos/tc_action.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Telecine Action HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-691627e4a29a6123e400b3e0.m3u8"
-  },
-  {
-    "id": "ch_tc_cult",
-    "name": "Telecine Cult HD",
-    "logo": "/logos/tc_cult.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Telecine Cult HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-63d2ba2f60bc8f0008981a0e.m3u8"
-  },
-  {
-    "id": "ch_tc_fun",
-    "name": "Telecine Fun HD",
-    "logo": "/logos/tc_fun.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Telecine Fun HD Ao Vivo",
-    "streamUrl": "http://187.102.210.46/universo/index.m3u8"
-  },
-  {
-    "id": "ch_tc_pipoca",
-    "name": "Telecine Pipoca HD",
-    "logo": "/logos/tc_pipoca.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Telecine Pipoca HD Ao Vivo",
-    "streamUrl": "http://46.151.196.223:14326/"
-  },
-  {
-    "id": "ch_tc_premium",
-    "name": "Telecine Premium HD",
-    "logo": "/logos/tc_premium.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Telecine Premium HD Ao Vivo",
-    "streamUrl": "http://45.162.64.114/TERRAVIVA/index.m3u8"
-  },
-  {
-    "id": "ch_tc_touch",
-    "name": "Telecine Touch HD",
-    "logo": "/logos/tc_touch.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Telecine Touch HD Ao Vivo",
-    "streamUrl": "http://45.162.64.114/TNT_NOVELAS/index.m3u8"
-  },
-  {
-    "id": "ch_tlc",
-    "name": "TLC HD",
-    "logo": "/logos/tlc.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação TLC HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-609ae66b359b270007869ff1.m3u8"
-  },
-  {
-    "id": "ch_tnt",
-    "name": "TNT HD",
-    "logo": "/logos/tnt.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação TNT HD Ao Vivo",
-    "streamUrl": "http://168.197.104.22/TNT/index.m3u8"
-  },
-  {
-    "id": "ch_tnt_novelas",
-    "name": "TNT Novelas HD",
-    "logo": "/logos/tnt_novelas.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação TNT Novelas HD Ao Vivo",
-    "streamUrl": "http://45.162.64.114/TNT_NOVELAS/index.m3u8"
-  },
-  {
-    "id": "ch_tnt_series",
-    "name": "TNT Series HD",
-    "logo": "/logos/tnt_series.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação TNT Series HD Ao Vivo",
-    "streamUrl": "http://170.83.16.50/TNT_SERIES/index.m3u8"
-  },
-  {
-    "id": "ch_tooncast",
-    "name": "Tooncast HD",
-    "logo": "/logos/tooncast.png",
-    "category": "infantil",
-    "epg": "Guia EPG · Programação Tooncast HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-5f5c216df68f920007888315.m3u8"
-  },
-  {
-    "id": "ch_trutv",
-    "name": "TruTV HD",
-    "logo": "/logos/trutv.png",
-    "category": "variedades",
-    "epg": "Guia EPG · Programação TruTV HD Ao Vivo",
-    "streamUrl": "https://adylnet.streampool.net/10324/live/hls/Conecta/index.m3u8"
-  },
-  {
-    "id": "ch_tvclima",
-    "name": "TV Clima Tempo",
-    "logo": "/logos/tvclima.png",
+    "id": "ch_pluto_natureza",
+    "name": "Pluto TV Natureza",
+    "logo": "https://images.pluto.tv/channels/666c9c60a7efd40008f552f0/logo.png",
     "category": "noticias_docs",
-    "epg": "Guia EPG · Programação TV Clima Tempo Ao Vivo",
-    "streamUrl": "https://stmv5.samcast.com.br/claudio8701/claudio8701/playlist.m3u8"
+    "epg": "Guia EPG · Pluto TV Natureza e Meio Ambiente",
+    "streamUrl": "https://jmp2.uk/plu-666c9c60a7efd40008f552f0.m3u8"
   },
   {
-    "id": "ch_tvcultura",
-    "name": "TV Cultura HD",
-    "logo": "/logos/tvcultura.png",
-    "category": "aberta",
-    "epg": "Guia EPG · Programação TV Cultura HD Ao Vivo",
-    "streamUrl": "https://fpa-gateway.tvcultura.com.br:8181/memfs/606caef0-a290-413d-9f1f-8fcdb3a73831.m3u8"
-  },
-  {
-    "id": "ch_tvescola",
-    "name": "TV Escola",
-    "logo": "/logos/tvescola.png",
+    "id": "ch_adult_swim",
+    "name": "Adult Swim HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Adult_Swim_2003_logo.svg/300px-Adult_Swim_2003_logo.svg.png",
     "category": "variedades",
-    "epg": "Guia EPG · Programação TV Escola Ao Vivo",
-    "streamUrl": "https://stream01.msolutionbrasil.com.br/hls/conectv/live.m3u8"
+    "epg": "Guia EPG · Adult Swim Rick and Morty, Frango Robô e Animações Adultas",
+    "streamUrl": "http://168.197.104.22/ADULT_SWIM/index.m3u8"
   },
   {
-    "id": "ch_tvgazeta",
-    "name": "TV Gazeta HD",
-    "logo": "/logos/tvgazeta.png",
-    "category": "aberta",
-    "epg": "Guia EPG · Programação TV Gazeta HD Ao Vivo",
-    "streamUrl": "http://170.83.49.66:8083/BOXKIDSHD/index.m3u8"
+    "id": "ch_play_tv",
+    "name": "PlayTV HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/PlayTV_logo.svg/300px-PlayTV_logo.svg.png",
+    "category": "variedades",
+    "epg": "Guia EPG · PlayTV Games, Animes, Música e Cultura Pop",
+    "streamUrl": "http://168.197.104.22/PLAY_TV/index.m3u8"
   },
   {
-    "id": "ch_tvpontanegra",
-    "name": "TV Ponta Negra",
-    "logo": "/logos/tvpontanegra.png",
-    "category": "aberta",
-    "epg": "Guia EPG · Programação TV Ponta Negra Ao Vivo",
-    "streamUrl": "https://5b33b873179a2.streamlock.net:1443/mastertv/livestream/playlist.m3u8"
-  },
-  {
-    "id": "ch_tvtem",
-    "name": "TV TEM Globo",
-    "logo": "/logos/tvtem.png",
-    "category": "aberta",
-    "epg": "Guia EPG · Programação TV TEM Globo Ao Vivo",
+    "id": "ch_chef_tv",
+    "name": "Chef TV HD",
+    "logo": "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=300&auto=format&fit=crop&q=80",
+    "category": "variedades",
+    "epg": "Guia EPG · Chef TV Gastronomia, Receitas e Culinária Ao Vivo",
     "streamUrl": "http://168.197.104.22/CHEF_TV/index.m3u8"
   },
   {
-    "id": "ch_tv_aparecida",
-    "name": "TV Aparecida HD",
-    "logo": "/logos/tv_aparecida.png",
-    "category": "aberta",
-    "epg": "Guia EPG · Programação TV Aparecida HD Ao Vivo",
-    "streamUrl": "https://5c483b9d1019c.streamlock.net/8054/8054/playlist.m3u8"
-  },
-  {
-    "id": "ch_universal_premiere",
-    "name": "Universal Premiere HD",
-    "logo": "/logos/universal_premiere.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Universal Premiere HD Ao Vivo",
-    "streamUrl": "https://video09.logicahost.com.br/tvparaense/tvparaense/playlist.m3u"
-  },
-  {
-    "id": "ch_universal_reality",
-    "name": "Universal Reality HD",
-    "logo": "/logos/universal_reality.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Universal Reality HD Ao Vivo",
-    "streamUrl": "https://stmv1.srvif.com/tvserie/tvserie/playlist.m3u8"
-  },
-  {
-    "id": "ch_universal_tv",
-    "name": "Universal TV HD",
-    "logo": "/logos/universal_tv.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Universal TV HD Ao Vivo",
-    "streamUrl": "https://644398c.ha.azioncdn.net/primary/tvuniversal_480p.sdp/playlist.m3u8"
-  },
-  {
-    "id": "ch_usa_network",
-    "name": "USA Network HD",
-    "logo": "/logos/usa_network.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação USA Network HD Ao Vivo",
-    "streamUrl": "http://170.83.16.50/AeE/index.m3u8"
-  },
-  {
-    "id": "ch_venus",
-    "name": "Venus TV",
-    "logo": "/logos/venus.png",
+    "id": "ch_agromais",
+    "name": "AgroMais HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/AgroMais_logo.png/300px-AgroMais_logo.png",
     "category": "variedades",
-    "epg": "Guia EPG · Programação Venus TV Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-63eb9c5351f5d000085e8d7e.m3u8"
+    "epg": "Guia EPG · AgroMais Notícias e Cotações do Agronegócio",
+    "streamUrl": "http://168.197.104.22/AGROMAIS/index.m3u8"
   },
   {
-    "id": "ch_vh1",
-    "name": "VH1 HD",
-    "logo": "/logos/vh1.png",
+    "id": "ch_agro_canal",
+    "name": "Agro Canal",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Agro_Canal_logo.png/300px-Agro_Canal_logo.png",
     "category": "variedades",
-    "epg": "Guia EPG · Programação VH1 HD Ao Vivo",
-    "streamUrl": "https://fpa-gateway.tvcultura.com.br:8181/memfs/606caef0-a290-413d-9f1f-8fcdb3a73831.m3u8"
+    "epg": "Guia EPG · Agro Canal Leilões e Informações do Campo",
+    "streamUrl": "http://168.197.104.22/AGRO_CANAL/index.m3u8"
   },
   {
-    "id": "ch_virgintv",
-    "name": "Virgin TV",
-    "logo": "/logos/virgintv.png",
+    "id": "ch_terraviva",
+    "name": "Terraviva HD",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Terraviva_logo.png/300px-Terraviva_logo.png",
     "category": "variedades",
-    "epg": "Guia EPG · Programação Virgin TV Ao Vivo",
-    "streamUrl": "https://br.conectmy.com.br/DespertarTV/index.m3u8"
+    "epg": "Guia EPG · Terraviva O Canal do Agronegócio da Band",
+    "streamUrl": "http://168.197.104.22/TERRAVIVA/index.m3u8"
   },
   {
-    "id": "ch_viva",
-    "name": "Canal Viva HD",
-    "logo": "/logos/viva.png",
+    "id": "ch_canal_do_boi",
+    "name": "Canal do Boi",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Canal_do_Boi_logo.png/300px-Canal_do_Boi_logo.png",
     "category": "variedades",
-    "epg": "Guia EPG · Programação Canal Viva HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-638df93ae2f2a3000737c168.m3u8"
+    "epg": "Guia EPG · Canal do Boi Pecuária e Transmissões Rurais",
+    "streamUrl": "http://170.83.16.50/CANAL_DO_BOI/index.m3u8"
   },
   {
-    "id": "ch_warner_channel",
-    "name": "Warner Channel HD",
-    "logo": "/logos/warner_channel.png",
-    "category": "filmes_series",
-    "epg": "Guia EPG · Programação Warner Channel HD Ao Vivo",
-    "streamUrl": "http://170.83.49.66:8083/AMCHD/index.m3u8"
-  },
-  {
-    "id": "ch_woohoo",
-    "name": "Woohoo HD",
-    "logo": "/logos/woohoo.png",
+    "id": "ch_canal_educacao",
+    "name": "Canal Educação",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Canal_Educa%C3%A7%C3%A3o_logo.png/300px-Canal_Educa%C3%A7%C3%A3o_logo.png",
     "category": "variedades",
-    "epg": "Guia EPG · Programação Woohoo HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-61f1d27a189ed10007b7393e.m3u8"
+    "epg": "Guia EPG · Canal Educação Ministério da Educação Ao Vivo",
+    "streamUrl": "http://168.197.104.22/CANAL_EDUCACAO/index.m3u8"
   },
   {
-    "id": "ch_cartoonito",
-    "name": "Cartoonito HD",
-    "logo": "/logos/cartoonito.png",
-    "category": "infantil",
-    "epg": "Guia EPG · Programação Cartoonito Ao Vivo",
-    "streamUrl": "http://170.83.16.50/CARTOONITO/index.m3u8"
+    "id": "ch_pluto_retro",
+    "name": "Pluto TV Retrô",
+    "logo": "https://images.pluto.tv/channels/5fa991b1f09e020007e78626/logo.png",
+    "category": "variedades",
+    "epg": "Guia EPG · Pluto TV Clássicos da Televisão e Séries Retrô",
+    "streamUrl": "https://jmp2.uk/plu-5fa991b1f09e020007e78626.m3u8"
   },
   {
-    "id": "ch_zoomoo_kids",
-    "name": "ZooMoo Kids HD",
-    "logo": "/logos/zoomoo.png",
-    "category": "infantil",
-    "epg": "Guia EPG · Programação ZooMoo Kids Ao Vivo",
-    "streamUrl": "http://45.162.64.114/ZOOMOO_KIDS/index.m3u8"
+    "id": "ch_pluto_vida_real",
+    "name": "Pluto TV Vida Real",
+    "logo": "https://images.pluto.tv/channels/655e5bc94261ca000810cb17/logo.png",
+    "category": "variedades",
+    "epg": "Guia EPG · Pluto TV Reality Shows e Histórias Reais",
+    "streamUrl": "https://jmp2.uk/plu-655e5bc94261ca000810cb17.m3u8"
   }
 ];
 

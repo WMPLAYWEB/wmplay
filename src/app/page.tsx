@@ -308,33 +308,11 @@ export default function KodiApp() {
           type: "video",
         });
 
-        const lowerTitle = title.toLowerCase();
-        if (lowerTitle.includes("cartoon")) {
+        // Adicionar espelho apenas se for exatamente o mesmo canal
+        if (title.toLowerCase() === "cartoon network hd") {
           servers.push({
-            name: "Sinal Ao Vivo 3 (Cartoon Network HD Reserva 1)",
-            url: "http://170.83.16.50/CARTOON/index.m3u8",
-            type: "video",
-          });
-          servers.push({
-            name: "Sinal Ao Vivo 4 (Cartoon Network HD Reserva 2)",
+            name: "Sinal Ao Vivo 3 (Cartoon Network Backup HD)",
             url: "http://170.83.49.66:8083/CARTOONHD/index.m3u8",
-            type: "video",
-          });
-          servers.push({
-            name: "Sinal Ao Vivo 5 (Cartoon Network HD Reserva 3)",
-            url: "http://45.162.64.114/CARTOON_NETWORK/index.m3u8",
-            type: "video",
-          });
-        } else if (lowerTitle.includes("discovery") || lowerTitle.includes("animal planet")) {
-          servers.push({
-            name: "Sinal Ao Vivo 3 (Fonte Alternativa 1)",
-            url: "http://170.83.16.50/DISCOVERY_CHANNEL/index.m3u8",
-            type: "video",
-          });
-        } else if (lowerTitle.includes("tnt") || lowerTitle.includes("space")) {
-          servers.push({
-            name: "Sinal Ao Vivo 3 (Fonte Alternativa TNT/Space)",
-            url: "http://170.83.16.50/TNT/index.m3u8",
             type: "video",
           });
         }

@@ -4,6 +4,17 @@ import https from 'https';
 
 export const dynamic = 'force-dynamic';
 
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': '*',
+    },
+  });
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const targetUrl = searchParams.get('url');
@@ -23,7 +34,7 @@ export async function GET(req: NextRequest) {
           'Referer': parsed.origin + '/',
           'Origin': parsed.origin
         },
-        timeout: 9000
+        timeout: 10000
       }, (res) => {
         // Tratar Redirecionamentos 301, 302, 307, 308
         if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
@@ -42,9 +53,27 @@ export async function GET(req: NextRequest) {
             const lines = body.split('\n');
             const rewritten = lines.map(line => {
               const trimmed = line.trim();
-              if (!trimmed || trimmed.startsWith('#')) return line;
-              const fullSegmentUrl = new URL(trimmed, targetUrl).toString();
-              return `/api/proxy-stream?url=${encodeURIComponent(fullSegmentUrl)}`;
+              if (!trimmed) return line;
+              if (trimmed.startsWith('#')) {
+                // Reescrever URIs em tags como #EXT-X-MEDIA:URI="..."
+                if (trimmed.includes('URI="')) {
+                  return line.replace(/URI="([^"]+)"/g, (_, uri) => {
+                    try {
+                      const full = new URL(uri, targetUrl).toString();
+                      return `URI="/api/proxy-stream?url=${encodeURIComponent(full)}"`;
+                    } catch {
+                      return _;
+                    }
+                  });
+                }
+                return line;
+              }
+              try {
+                const fullSegmentUrl = new URL(trimmed, targetUrl).toString();
+                return `/api/proxy-stream?url=${encodeURIComponent(fullSegmentUrl)}`;
+              } catch {
+                return line;
+              }
             }).join('\n');
 
             resolve(new NextResponse(rewritten, {
@@ -58,21 +87,39 @@ export async function GET(req: NextRequest) {
             }));
           });
         } else {
-          // Streaming de chunks de vídeo (.ts, .aac, .m4s)
-          const chunks: Buffer[] = [];
-          res.on('data', c => { chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c)); });
-          res.on('end', () => {
-            const buffer = Buffer.concat(chunks);
-            resolve(new NextResponse(buffer, {
-              status: 200,
-              headers: {
-                'Content-Type': contentType.includes('video') || targetUrl.includes('.ts') ? 'video/mp2t' : contentType,
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, OPTIONS',
-                'Cache-Control': 'public, max-age=3600',
-              }
-            }));
+          // Streaming em tempo real (ReadableStream) para início instantâneo de vídeo sem travar buffer
+          const stream = new ReadableStream({
+            start(controller) {
+              res.on('data', chunk => {
+                try {
+                  controller.enqueue(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+                } catch {}
+              });
+              res.on('end', () => {
+                try {
+                  controller.close();
+                } catch {}
+              });
+              res.on('error', (err) => {
+                try {
+                  controller.error(err);
+                } catch {}
+              });
+            },
+            cancel() {
+              res.destroy();
+            }
           });
+
+          resolve(new NextResponse(stream as any, {
+            status: 200,
+            headers: {
+              'Content-Type': contentType.includes('video') || targetUrl.includes('.ts') ? 'video/mp2t' : contentType,
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, OPTIONS',
+              'Cache-Control': 'public, max-age=3600',
+            }
+          }));
         }
       });
 
@@ -88,3 +135,4 @@ export async function GET(req: NextRequest) {
     return new NextResponse(`Exceção no Proxy: ${err.message}`, { status: 500 });
   }
 }
+
