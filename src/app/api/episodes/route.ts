@@ -69,8 +69,8 @@ async function callResolver(resolverNum: number, requestStr: string): Promise<an
 }
 
 async function fetchOverflixEpisodes(seriesId: string, season: number, referer: string): Promise<any[]> {
-  const url = `https://${OVERFLIX_HOST}/index.php?app=videobox&module=video&controller=view&do=episodesList&id=${seriesId}&season=${season}&audio=Dublado`;
-  return new Promise((resolve) => {
+  const fetchAudio = (audio: string) => new Promise<any[]>((resolve) => {
+    const url = `https://${OVERFLIX_HOST}/index.php?app=videobox&module=video&controller=view&do=episodesList&id=${seriesId}&season=${season}&audio=${audio}`;
     https.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -95,6 +95,12 @@ async function fetchOverflixEpisodes(seriesId: string, season: number, referer: 
       });
     }).on('error', () => resolve([]));
   });
+
+  let eps = await fetchAudio('Dublado');
+  if (eps.length === 0) {
+    eps = await fetchAudio('Legendado');
+  }
+  return eps;
 }
 
 async function fetchTmdbTvShow(tmdbId: string): Promise<any> {
@@ -270,12 +276,23 @@ export async function GET(req: NextRequest) {
     // =========================================================================
     // 3. PRIORIDADE 3: BRAZUCA PLAY RESOLVER 3 (Wasabi S3)
     // =========================================================================
-    if (Object.keys(seasonsMap).length === 0 && (link.includes('resolver3_tvshows=') || link.includes('animes2='))) {
+    if (Object.keys(seasonsMap).length === 0 && (link.includes('resolver3_tvshows=') || link.includes('animes2=') || link.includes('doramas_resolver1='))) {
       try {
-        const slug = link.includes('resolver3_tvshows=')
-          ? link.split('resolver3_tvshows=')[1].split('|')[0]
-          : link.split('animes2=')[1].split('|')[0];
-        const data = await callResolver(3, `tvshows=${slug}`);
+        let slug = '';
+        let isDorama = false;
+        if (link.includes('resolver3_tvshows=')) {
+          slug = link.split('resolver3_tvshows=')[1].split('|')[0];
+        } else if (link.includes('animes2=')) {
+          slug = link.split('animes2=')[1].split('|')[0];
+        } else {
+          slug = link.split('doramas_resolver1=')[1].split('|')[0].split('&')[0];
+          isDorama = true;
+        }
+
+        let data = isDorama ? await callResolver(1, `tvshows=${slug}`) : null;
+        if (!data || typeof data !== 'object') {
+          data = await callResolver(3, `tvshows=${slug}`);
+        }
         if (data && typeof data === 'object' && !data.result) {
           for (const [seasonKey, seasonVal] of Object.entries(data)) {
             const sNum = parseInt(seasonKey, 10) || 1;
@@ -288,7 +305,9 @@ export async function GET(req: NextRequest) {
                 number: epNum,
                 title: epTitle,
                 duration: '45m',
-                link: `resolver3_episodes=${slug}#${sNum}#${epNum}#Dublado&season=${sNum}&episode=${epNum}`,
+                link: isDorama
+                  ? `doramas_resolver1=${slug}&season=${sNum}&episode=${epNum}`
+                  : `resolver3_episodes=${slug}#${sNum}#${epNum}#Dublado&season=${sNum}&episode=${epNum}`,
                 streamUrl: ''
               });
             }

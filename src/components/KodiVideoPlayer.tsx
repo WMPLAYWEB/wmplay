@@ -152,6 +152,9 @@ export default function KodiVideoPlayer({
         });
       } else {
         // Native HTML5 video (.mp4 or native HLS support)
+        try {
+          (video as any).referrerPolicy = "no-referrer";
+        } catch {}
         video.src = streamUrl;
         video.load();
 
@@ -166,6 +169,15 @@ export default function KodiVideoPlayer({
         };
 
         const handleError = () => {
+          if (servers.length > 1 && activeServerIndex + 1 < servers.length) {
+            console.warn(
+              `[WMPLAY] Falha no servidor ${activeServerIndex + 1}, alternando automaticamente para o servidor reserva: ${
+                servers[activeServerIndex + 1]?.name
+              }`
+            );
+            onSelectServer(activeServerIndex + 1);
+            return;
+          }
           setIsLoading(false);
           setHasError(true);
           setErrorMessage("Erro ao carregar o arquivo de vídeo. Tente outro servidor.");
@@ -474,7 +486,7 @@ export default function KodiVideoPlayer({
               key={currentServer?.url + (antiPopupMode ? "-sandboxed" : "-direct")}
               src={currentServer?.url}
               title={title}
-              referrerPolicy="origin"
+              referrerPolicy="no-referrer"
               sandbox={
                 antiPopupMode
                   ? "allow-scripts allow-forms allow-presentation allow-encrypted-media"

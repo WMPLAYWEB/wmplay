@@ -396,7 +396,11 @@ export async function GET(req: NextRequest) {
           if (seriesId && /^\d+$/.test(seriesId)) {
             const referer = `https://${OVERFLIX_HOST}/series/online/${slug}/`;
             const epListPath = `/index.php?app=videobox&module=video&controller=view&do=episodesList&id=${seriesId}&season=${season}&audio=Dublado`;
-            const epListData = await fetchOverflix(epListPath, referer);
+            let epListData = await fetchOverflix(epListPath, referer);
+            if (!epListData || !Array.isArray(epListData.episodes) || epListData.episodes.length === 0) {
+              const legListPath = `/index.php?app=videobox&module=video&controller=view&do=episodesList&id=${seriesId}&season=${season}&audio=Legendado`;
+              epListData = await fetchOverflix(legListPath, referer);
+            }
 
             if (epListData && Array.isArray(epListData.episodes)) {
               const targetEp = epListData.episodes.find((e: any) => String(e.number) === String(episode));
@@ -418,11 +422,48 @@ export async function GET(req: NextRequest) {
     }
 
     // =========================================================================
+    // 5.5 REPRODUÇÃO DE DORAMAS (doramas_resolver1=...)
+    // =========================================================================
+    if (servers.length === 0 && link.includes('doramas_resolver1=')) {
+      try {
+        const slug = link.split('doramas_resolver1=')[1].split('|')[0].split('&')[0];
+        let directWasabi = await callResolver(1, `episodes=${slug}#${season}#${episode}#Dublado`);
+        if (!directWasabi) {
+          directWasabi = await callResolver(1, `episodes=${slug}#${season}#${episode}#Legendado`);
+        }
+        if (!directWasabi) {
+          directWasabi = await callResolver(3, `episodes=${slug}#${season}#${episode}#Dublado`);
+        }
+        if (!directWasabi) {
+          directWasabi = await callResolver(3, `episodes=${slug}#${season}#${episode}#Legendado`);
+        }
+        if (directWasabi && directWasabi.startsWith('http')) {
+          servers.push({
+            name: `Transmissão Dorama Full HD T${season}E${episode} (Sem Anúncios)`,
+            url: directWasabi,
+            type: 'video',
+            isDubbed: true
+          });
+        }
+      } catch (err) {
+        console.error('Erro ao resolver doramas_resolver1:', err);
+      }
+    }
+
+    // =========================================================================
     // 6. STREAMS DIRETOS (HLS .m3u8 ou MP4 nativo)
     // =========================================================================
-    if (link.startsWith('http') && (link.includes('.m3u8') || link.includes('.mp4'))) {
-      if (!servers.some(s => s.url === link)) {
-        servers.unshift({
+    if (servers.length === 0 && link.startsWith('http') && (link.includes('.m3u8') || link.includes('.mp4'))) {
+      if (link.includes('source.apperror404.com')) {
+        const finalUrl = await getRedirectLocation(link);
+        servers.push({
+          name: `Transmissão Direta Full HD Dublado (Sem Anúncios)`,
+          url: finalUrl,
+          type: 'video',
+          isDubbed: true
+        });
+      } else {
+        servers.push({
           name: link.includes('.m3u8') ? 'Sinal Direto HD (Sem Anúncios)' : 'Transmissão Direta MP4 Dublado (Sem Anúncios)',
           url: link,
           type: 'video',
@@ -481,7 +522,10 @@ export async function GET(req: NextRequest) {
                 const seriesId = sSlug.split('-').pop();
                 if (seriesId && /^\d+$/.test(seriesId)) {
                   const referer = `https://${OVERFLIX_HOST}/series/online/${sSlug}/`;
-                  const epList = await fetchOverflix(`/index.php?app=videobox&module=video&controller=view&do=episodesList&id=${seriesId}&season=${season}&audio=Dublado`, referer);
+                  let epList = await fetchOverflix(`/index.php?app=videobox&module=video&controller=view&do=episodesList&id=${seriesId}&season=${season}&audio=Dublado`, referer);
+                  if (!epList || !Array.isArray(epList.episodes) || epList.episodes.length === 0) {
+                    epList = await fetchOverflix(`/index.php?app=videobox&module=video&controller=view&do=episodesList&id=${seriesId}&season=${season}&audio=Legendado`, referer);
+                  }
                   if (epList && Array.isArray(epList.episodes)) {
                     const targetEp = epList.episodes.find((e: any) => String(e.number) === String(episode));
                     if (targetEp && targetEp.url) {

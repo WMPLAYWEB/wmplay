@@ -278,8 +278,21 @@ export default function KodiApp() {
   ) => {
     const servers: { name: string; url: string; type: "video" | "embed" }[] = [];
 
+    const isTv = Boolean(seasonNum && epNum);
+    const isDirectStream =
+      !isTv &&
+      Boolean(directUrl) &&
+      (directUrl!.startsWith("http://") || directUrl!.startsWith("https://")) &&
+      !directUrl!.includes("resolver") &&
+      !directUrl!.includes("serie3") &&
+      !directUrl!.includes("movie2") &&
+      !directUrl!.includes("doramas") &&
+      !directUrl!.includes("source.apperror404") &&
+      !directUrl!.includes("#") &&
+      (directUrl!.includes(".m3u8") || directUrl!.endsWith(".mp4") || directUrl!.includes(".mp4?"));
+
     // 1. Stream direto já fornecido (Ex.: TV ao Vivo .m3u8 ou MP4 direto)
-    if (directUrl && (directUrl.includes(".m3u8") || directUrl.endsWith(".mp4") || directUrl.includes(".mp4?"))) {
+    if (isDirectStream && directUrl) {
       const isLiveHls = directUrl.includes(".m3u8");
       servers.push({
         name: isLiveHls ? "Sinal Ao Vivo 1 (Direto HD)" : "Transmissão Direta Full HD Dublado (MP4)",
@@ -352,7 +365,6 @@ export default function KodiApp() {
       activeServerIndex: 0,
     });
 
-    const isTv = Boolean(seasonNum && epNum);
     const params = new URLSearchParams({
       link: directUrl || "",
       title: title || "",
