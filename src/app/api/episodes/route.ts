@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import https from 'https';
+import path from 'path';
+import { DatabaseSync } from 'node:sqlite';
+
+let dbInstance: DatabaseSync | null = null;
+function getDb(): DatabaseSync {
+  if (!dbInstance) {
+    const dbPath = path.join(process.cwd(), 'src', 'data', 'catalog.db');
+    dbInstance = new DatabaseSync(dbPath, { open: true, readOnly: true });
+  }
+  return dbInstance;
+}
 
 const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXNvbHZlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc5MDk4OTczfQ.WzQBuOqMai96Afleh9g-i7NXo6h-YsjPUbOgxlUqVsU';
 const HOSTS = ['api.geekantenado.online', 'geekantenado.fly.dev'];
@@ -259,9 +270,11 @@ export async function GET(req: NextRequest) {
     // =========================================================================
     // 3. PRIORIDADE 3: BRAZUCA PLAY RESOLVER 3 (Wasabi S3)
     // =========================================================================
-    if (Object.keys(seasonsMap).length === 0 && link.includes('resolver3_tvshows=')) {
+    if (Object.keys(seasonsMap).length === 0 && (link.includes('resolver3_tvshows=') || link.includes('animes2='))) {
       try {
-        const slug = link.split('resolver3_tvshows=')[1].split('|')[0];
+        const slug = link.includes('resolver3_tvshows=')
+          ? link.split('resolver3_tvshows=')[1].split('|')[0]
+          : link.split('animes2=')[1].split('|')[0];
         const data = await callResolver(3, `tvshows=${slug}`);
         if (data && typeof data === 'object' && !data.result) {
           for (const [seasonKey, seasonVal] of Object.entries(data)) {
@@ -275,7 +288,7 @@ export async function GET(req: NextRequest) {
                 number: epNum,
                 title: epTitle,
                 duration: '45m',
-                link: `resolver3_episodes=${slug}/${sNum}/${epNum}&season=${sNum}&episode=${epNum}`,
+                link: `resolver3_episodes=${slug}#${sNum}#${epNum}#Dublado&season=${sNum}&episode=${epNum}`,
                 streamUrl: ''
               });
             }
@@ -283,6 +296,80 @@ export async function GET(req: NextRequest) {
         }
       } catch (err) {
         console.error('Resolver 3 error:', err);
+      }
+    }
+
+    // =========================================================================
+    // 3.5 BUSCA AUTOMÁTICA DE SÉRIE ALTERNATIVA NO CATÁLOGO POR TÍTULO
+    // =========================================================================
+    if (Object.keys(seasonsMap).length === 0 && title && title !== 'Série') {
+      try {
+        const cleanTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        const db = getDb();
+        const altRow = db.prepare(
+          `SELECT link FROM items WHERE type IN ('series', 'animes', 'doramas', 'desenhos', 'novelas') AND (title LIKE ? OR title LIKE ?) AND (link LIKE '%resolver2_tvshows=%' OR link LIKE '%serie3=%' OR link LIKE '%#series_list=%') AND link != ? LIMIT 1`
+        ).get(`%${cleanTitle}%`, `%${title}%`, link) as { link: string } | undefined;
+
+        if (altRow && altRow.link) {
+          const altLink = altRow.link;
+          // Tentar resolver2 na linha alternativa
+          if (altLink.includes('resolver2_tvshows=')) {
+            let sSlug = altLink.split('resolver2_tvshows=')[1].split('|')[0].split('&')[0];
+            if (!sSlug.includes('#')) sSlug = 'series#' + sSlug;
+            const resData = await callResolver(2, `tvshows=${sSlug}`);
+            if (Array.isArray(resData)) {
+              resData.forEach((sObj: any, idx: number) => {
+                const sNum = sObj.season_number || (idx + 1);
+                seasonsMap[sNum] = seasonsMap[sNum] || [];
+                if (Array.isArray(sObj.episodes)) {
+                  sObj.episodes.forEach((ep: any) => {
+                    const epNum = ep.episode_number || 1;
+                    seasonsMap[sNum].push({
+                      number: epNum,
+                      title: ep.episode_name || `Episódio ${epNum}`,
+                      duration: '45m',
+                      link: `resolver2_episodes=${ep.link || ''}&season=${sNum}&episode=${epNum}`,
+                      streamUrl: ep.link || ''
+                    });
+                  });
+                }
+              });
+            }
+          }
+
+          // Se ainda vazio, tentar serie3 na linha alternativa
+          if (Object.keys(seasonsMap).length === 0 && altLink.includes('serie3=')) {
+            const match = altLink.match(/serie3=([a-zA-Z0-9_\-]+)/);
+            if (match && match[1]) {
+              const sSlug = match[1];
+              const seriesId = sSlug.split('-').pop();
+              if (seriesId && /^\d+$/.test(seriesId)) {
+                const referer = `https://${OVERFLIX_HOST}/series/online/${sSlug}/`;
+                for (let s = 1; s <= 10; s++) {
+                  const epList = await fetchOverflixEpisodes(seriesId, s, referer);
+                  if (Array.isArray(epList) && epList.length > 0) {
+                    seasonsMap[s] = [];
+                    epList.forEach((ep: any) => {
+                      const epNum = parseInt(ep.number, 10) || 1;
+                      seasonsMap[s].push({
+                        number: epNum,
+                        title: ep.title || `Episódio ${epNum}`,
+                        duration: ep.duration || '45m',
+                        thumbnail: ep.thumb || '',
+                        link: `serie3_ep=${encodeURIComponent(ep.url || '')}&season=${s}&episode=${epNum}`,
+                        streamUrl: ''
+                      });
+                    });
+                  } else {
+                    if (s > 1) break;
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Erro na busca de episódios alternativos no catálogo:', err);
       }
     }
 

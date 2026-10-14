@@ -234,9 +234,10 @@ export async function GET(req: NextRequest) {
           epUrl = epUrl.split('&season=')[0];
         }
         if (epUrl && epUrl.startsWith('http')) {
+          const finalUrl = await getRedirectLocation(epUrl);
           servers.push({
             name: `Transmissão Direta Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
-            url: epUrl,
+            url: finalUrl,
             type: 'video',
             isDubbed: true
           });
@@ -247,24 +248,69 @@ export async function GET(req: NextRequest) {
     }
 
     // =========================================================================
-    // 2. REPRODUÇÃO DIRETA DO RESOLVER 3 EPISODES (Wasabi S3 MP4 Sem Anúncios)
+    // 1.5 REPRODUÇÃO DIRETA DO RESOLVER 2 TVSHOWS (MP4 Direto Sem Anúncios)
     // =========================================================================
-    if (link.includes('resolver3_episodes=')) {
+    if (servers.length === 0 && link.includes('resolver2_tvshows=')) {
       try {
-        let epSlug = link.split('resolver3_episodes=')[1];
-        if (epSlug.includes('&season=')) {
-          epSlug = epSlug.split('&season=')[0];
+        let slug = link.split('resolver2_tvshows=')[1].split('|')[0].split('&')[0];
+        if (!slug.includes('#')) slug = 'series#' + slug;
+        const resData = await callResolver(2, `tvshows=${slug}`);
+        if (resData) {
+          try {
+            const seasons = typeof resData === 'string' ? JSON.parse(resData) : resData;
+            if (Array.isArray(seasons)) {
+              const targetSeason = seasons.find((s: any) => String(s.season_number) === String(season)) || seasons[0];
+              const targetEp = targetSeason?.episodes?.find((e: any) => String(e.episode_number) === String(episode));
+              if (targetEp?.link && targetEp.link.startsWith('http')) {
+                const finalUrl = await getRedirectLocation(targetEp.link);
+                servers.push({
+                  name: `Transmissão Direta Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
+                  url: finalUrl,
+                  type: 'video',
+                  isDubbed: true
+                });
+              }
+            }
+          } catch {}
         }
-        if (epSlug) {
-          const directWasabi = await callResolver(3, `episodes=${epSlug}`);
-          if (directWasabi && directWasabi.startsWith('http')) {
-            servers.push({
-              name: `Transmissão Wasabi Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
-              url: directWasabi,
-              type: 'video',
-              isDubbed: true
-            });
-          }
+      } catch (err) {
+        console.error('Erro ao resolver resolver2_tvshows em resolve-stream:', err);
+      }
+    }
+
+    // =========================================================================
+    // 2. REPRODUÇÃO DIRETA DO RESOLVER 3 EPISODES OU TVSHOWS (Wasabi S3 MP4 Sem Anúncios)
+    // =========================================================================
+    if (servers.length === 0 && (link.includes('resolver3_episodes=') || link.includes('resolver3_tvshows=') || link.includes('animes2='))) {
+      try {
+        let epSlug = '';
+        if (link.includes('resolver3_episodes=')) {
+          epSlug = link.split('resolver3_episodes=')[1].split('&')[0];
+        } else if (link.includes('resolver3_tvshows=')) {
+          epSlug = link.split('resolver3_tvshows=')[1].split('|')[0].split('&')[0];
+        } else {
+          epSlug = link.split('animes2=')[1].split('|')[0].split('&')[0];
+        }
+
+        const parts = epSlug.split(/[#/]/);
+        const slug = parts[0];
+        const s = parts[1] || season || '1';
+        const e = parts[2] || episode || '1';
+
+        let directWasabi = await callResolver(3, `episodes=${slug}#${s}#${e}#Dublado`);
+        if (!directWasabi) {
+          directWasabi = await callResolver(3, `episodes=${slug}#${s}#${e}#Legendado`);
+        }
+        if (!directWasabi) {
+          directWasabi = await callResolver(3, `episodes=${slug}#${s}#${e}`);
+        }
+        if (directWasabi && directWasabi.startsWith('http')) {
+          servers.push({
+            name: `Transmissão Wasabi Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
+            url: directWasabi,
+            type: 'video',
+            isDubbed: true
+          });
         }
       } catch (err) {
         console.error('Erro ao resolver resolver3_episodes:', err);
@@ -390,31 +436,104 @@ export async function GET(req: NextRequest) {
     // =========================================================================
     if (servers.length === 0 && title) {
       try {
-        const cleanTitle = title.replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        const baseTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
         const db = getDb();
-        const altRow = db.prepare(
-          'SELECT link FROM items WHERE type = ? AND (title LIKE ? OR title LIKE ?) AND (link LIKE ? OR link LIKE ?) LIMIT 1'
-        ).get(
-          mediaType === 'tv' ? 'series' : 'filmes',
-          `%${cleanTitle}%`,
-          `%${title}%`,
-          '%movie2=%',
-          '%#movies_list=%'
-        ) as { link: string } | undefined;
 
-        if (altRow && altRow.link && altRow.link !== link) {
-          const altLink = altRow.link;
-          if (altLink.includes('movie2=')) {
-            const match = altLink.match(/movie2=([a-zA-Z0-9_\-]+)/);
-            if (match && match[1]) {
-              const slug = match[1];
-              const videoId = slug.split('-').pop();
-              if (videoId && /^\d+$/.test(videoId)) {
-                const referer = `https://${OVERFLIX_HOST}/filmes/online/${slug}/`;
-                const p = `/index.php?app=videobox&module=video&controller=view&do=playerData&id=${videoId}`;
-                const playerData = await fetchOverflix(p, referer);
-                const ovServers = await buildOverflixServers(playerData, 'Dublado PT-BR');
-                servers.push(...ovServers);
+        if (mediaType === 'tv') {
+          // Fallback para Séries, Animes, Doramas, Desenhos e Novelas
+          const altRow = db.prepare(
+            `SELECT link FROM items WHERE type IN ('series', 'animes', 'doramas', 'desenhos', 'novelas') AND (title LIKE ? OR title LIKE ?) AND (link LIKE '%resolver2_tvshows=%' OR link LIKE '%serie3=%' OR link LIKE '%#series_list=%' OR link LIKE '%resolver3_tvshows=%') AND link != ? LIMIT 1`
+          ).get(`%${baseTitle}%`, `%${title}%`, link) as { link: string } | undefined;
+
+          if (altRow && altRow.link) {
+            const altLink = altRow.link;
+
+            // 1. Tentar resolver2_tvshows na rota alternativa
+            if (altLink.includes('resolver2_tvshows=')) {
+              let sSlug = altLink.split('resolver2_tvshows=')[1].split('|')[0].split('&')[0];
+              if (!sSlug.includes('#')) sSlug = 'series#' + sSlug;
+              const resData = await callResolver(2, `tvshows=${sSlug}`);
+              if (resData) {
+                try {
+                  const seasons = typeof resData === 'string' ? JSON.parse(resData) : resData;
+                  if (Array.isArray(seasons)) {
+                    const targetSeason = seasons.find((s: any) => String(s.season_number) === String(season)) || seasons[0];
+                    const targetEp = targetSeason?.episodes?.find((e: any) => String(e.episode_number) === String(episode));
+                    if (targetEp?.link && targetEp.link.startsWith('http')) {
+                      const finalUrl = await getRedirectLocation(targetEp.link);
+                      servers.push({
+                        name: `Transmissão Direta Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
+                        url: finalUrl,
+                        type: 'video',
+                        isDubbed: true
+                      });
+                    }
+                  }
+                } catch {}
+              }
+            }
+
+            // 2. Tentar serie3 na rota alternativa
+            if (servers.length === 0 && altLink.includes('serie3=')) {
+              const match = altLink.match(/serie3=([a-zA-Z0-9_\-]+)/);
+              if (match && match[1]) {
+                const sSlug = match[1];
+                const seriesId = sSlug.split('-').pop();
+                if (seriesId && /^\d+$/.test(seriesId)) {
+                  const referer = `https://${OVERFLIX_HOST}/series/online/${sSlug}/`;
+                  const epList = await fetchOverflix(`/index.php?app=videobox&module=video&controller=view&do=episodesList&id=${seriesId}&season=${season}&audio=Dublado`, referer);
+                  if (epList && Array.isArray(epList.episodes)) {
+                    const targetEp = epList.episodes.find((e: any) => String(e.number) === String(episode));
+                    if (targetEp && targetEp.url) {
+                      const epId = targetEp.url.replace(/\/$/, '').split('/').pop()?.split('-').pop();
+                      if (epId && /^\d+$/.test(epId)) {
+                        const epPData = await fetchOverflix(`/index.php?app=videobox&module=video&controller=view&do=playerData&id=${epId}`, targetEp.url);
+                        const ovServers = await buildOverflixServers(epPData, `Dublado PT-BR T${season}E${episode}`);
+                        servers.push(...ovServers);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            // 3. Tentar resolver3_tvshows na rota alternativa
+            if (servers.length === 0 && altLink.includes('resolver3_tvshows=')) {
+              const sSlug = altLink.split('resolver3_tvshows=')[1].split('|')[0].split('&')[0];
+              let directWasabi = await callResolver(3, `episodes=${sSlug}#${season}#${episode}#Dublado`);
+              if (!directWasabi) {
+                directWasabi = await callResolver(3, `episodes=${sSlug}#${season}#${episode}#Legendado`);
+              }
+              if (directWasabi && directWasabi.startsWith('http')) {
+                servers.push({
+                  name: `Transmissão Wasabi Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
+                  url: directWasabi,
+                  type: 'video',
+                  isDubbed: true
+                });
+              }
+            }
+          }
+        } else {
+          // Fallback para Filmes
+          const altRow = db.prepare(
+            'SELECT link FROM items WHERE type = ? AND (title LIKE ? OR title LIKE ?) AND (link LIKE ? OR link LIKE ?) LIMIT 1'
+          ).get('filmes', `%${baseTitle}%`, `%${title}%`, '%movie2=%', '%#movies_list=%') as { link: string } | undefined;
+
+          if (altRow && altRow.link && altRow.link !== link) {
+            const altLink = altRow.link;
+            if (altLink.includes('movie2=')) {
+              const match = altLink.match(/movie2=([a-zA-Z0-9_\-]+)/);
+              if (match && match[1]) {
+                const slug = match[1];
+                const videoId = slug.split('-').pop();
+                if (videoId && /^\d+$/.test(videoId)) {
+                  const referer = `https://${OVERFLIX_HOST}/filmes/online/${slug}/`;
+                  const p = `/index.php?app=videobox&module=video&controller=view&do=playerData&id=${videoId}`;
+                  const playerData = await fetchOverflix(p, referer);
+                  const ovServers = await buildOverflixServers(playerData, 'Dublado PT-BR');
+                  servers.push(...ovServers);
+                }
               }
             }
           }
