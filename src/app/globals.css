@@ -469,3 +469,54 @@ body {
 .theme-offwhite ::-webkit-scrollbar-thumb:hover {
   background: #dc2626 !important;
 }
+
+/* ============================================================== */
+/* MODO LITE PARA SMART TVS ANTIGAS (LG, PHILCO, SAMSUNG, ETC.)   */
+/* ============================================================== */
+.mode-tv-lite * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  transition: none !important;
+  animation-duration: 0.001s !important;
+}
+
+/* Ocultar imagens de fundo com efeito blur pesado para poupar GPU/RAM da TV */
+.mode-tv-lite .fixed.inset-0.bg-cover,
+.mode-tv-lite .fixed.inset-0.pointer-events-none.transition-colors {
+  display: none !important;
+}
+
+/* Fundo estático puro, ultra-leve e de altíssimo contraste */
+.mode-tv-lite {
+  background-color: #000000 !important;
+}
+
+.mode-tv-lite.theme-offwhite {
+  background-color: #f4f4f6 !important;
+}
+
+/* Desativar transições de escala/zoom que travam TVs antigas */
+.mode-tv-lite *:hover {
+  transform: none !important;
+}
+
+/* Foco nítido com controle remoto da TV (Navegação D-Pad / Setas) */
+.mode-tv-lite button:focus,
+.mode-tv-lite a:focus,
+.mode-tv-lite input:focus,
+.mode-tv-lite [tabindex]:focus,
+.mode-tv-lite .cursor-pointer:focus {
+  outline: 3px solid #dc2626 !important;
+  outline-offset: 2px !important;
+}
+
+/* Player de vídeo em TVs antigas: 100% sólido sem transparências lentas */
+.mode-tv-lite #kodi-player-container,
+.mode-tv-lite .fixed.inset-0.z-50 {
+  background: #000000 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+

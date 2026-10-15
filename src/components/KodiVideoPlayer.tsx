@@ -15,7 +15,8 @@ import {
   RotateCw,
   AlertCircle,
   Loader2,
-  Tv2
+  Tv2,
+  Zap
 } from "lucide-react";
 
 export interface ServerOption {
@@ -32,6 +33,7 @@ interface KodiVideoPlayerProps {
   activeServerIndex: number;
   onSelectServer: (index: number) => void;
   onClose: () => void;
+  isLiteMode?: boolean;
 }
 
 export default function KodiVideoPlayer({
@@ -42,6 +44,7 @@ export default function KodiVideoPlayer({
   activeServerIndex,
   onSelectServer,
   onClose,
+  isLiteMode = false,
 }: KodiVideoPlayerProps) {
   const currentServer = servers[activeServerIndex] || servers[0];
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -67,6 +70,59 @@ export default function KodiVideoPlayer({
       window.open = originalOpen;
     };
   }, []);
+
+  // Suporte Nativo a Controles Remotos de Smart TVs (LG NetCast/webOS, Samsung Tizen/Orsay, Philco)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleTvRemote = (e: KeyboardEvent) => {
+      // Teclas de Voltar da TV:
+      // 461 = LG webOS / NetCast Back
+      // 10009 = Samsung Tizen / Orsay Return
+      // 27 = Escape
+      // 8 = Backspace
+      if (
+        e.keyCode === 461 ||
+        e.keyCode === 10009 ||
+        e.key === "Escape" ||
+        e.key === "GoBack" ||
+        e.key === "Back"
+      ) {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
+      // Play / Pause no controle remoto (179 = MediaPlayPause, 250 = Play, 19 = Pause)
+      if (
+        e.key === "MediaPlayPause" ||
+        e.keyCode === 179 ||
+        e.keyCode === 250 ||
+        e.keyCode === 19
+      ) {
+        e.preventDefault();
+        togglePlay();
+        return;
+      }
+
+      // Avançar / Retroceder 10s nas setas do controle
+      if (e.key === "ArrowLeft") {
+        if (videoRef.current && !isMiniPlayer) {
+          videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10);
+        }
+      } else if (e.key === "ArrowRight") {
+        if (videoRef.current && !isMiniPlayer) {
+          videoRef.current.currentTime = Math.min(
+            videoRef.current.duration || 999999,
+            videoRef.current.currentTime + 10
+          );
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleTvRemote);
+    return () => window.removeEventListener("keydown", handleTvRemote);
+  }, [onClose, isMiniPlayer]);
 
   // Setup Video / Hls playback
   useEffect(() => {
@@ -104,16 +160,65 @@ export default function KodiVideoPlayer({
 
       const streamUrl = currentServer.url;
       const isHls = streamUrl.includes(".m3u8");
+      const canNativeHls = Boolean(
+        video.canPlayType && video.canPlayType("application/vnd.apple.mpegurl")
+      );
 
-      if (isHls && Hls.isSupported()) {
+      // Em Smart TVs antigas (LG webOS, NetCast, Philco, Samsung), usar hardware nativo sem Web Workers
+      if (isHls && isLiteMode && canNativeHls) {
+        console.log("[WMPLAY TV Lite] Usando decodificador nativo de hardware da Smart TV...");
+        try {
+          (video as any).referrerPolicy = "no-referrer";
+        } catch {}
+        video.src = streamUrl;
+        video.load();
+
+        const handleReady = () => {
+          setIsLoading(false);
+          video
+            .play()
+            .then(() => setIsPlaying(true))
+            .catch(() => {
+              setIsPlaying(false);
+              setIsLoading(false);
+            });
+        };
+
+        const handleError = () => {
+          if (servers.length > 1 && activeServerIndex + 1 < servers.length) {
+            onSelectServer(activeServerIndex + 1);
+            return;
+          }
+          setIsLoading(false);
+          setHasError(true);
+          setErrorMessage("Erro ao decodificar sinal no player nativo da TV.");
+        };
+
+        video.addEventListener("loadedmetadata", handleReady);
+        video.addEventListener("canplay", handleReady);
+        video.addEventListener("playing", handleReady);
+        video.addEventListener("error", handleError);
+
+        const fallbackTimer = setTimeout(() => {
+          setIsLoading(false);
+        }, 1800);
+
+        return () => {
+          clearTimeout(fallbackTimer);
+          video.removeEventListener("loadedmetadata", handleReady);
+          video.removeEventListener("canplay", handleReady);
+          video.removeEventListener("playing", handleReady);
+          video.removeEventListener("error", handleError);
+        };
+      } else if (isHls && Hls.isSupported()) {
         const hls = new Hls({
-          enableWorker: true,
-          lowLatencyMode: false, // Desativado para IPTV: evita travamentos e buffer starvation em chunks de 4-6s
-          liveSyncDurationCount: 3, // Mantém 3 chunks de margem segura (~12s) para sinal 100% fluido
-          liveMaxLatencyDurationCount: 8,
-          maxBufferLength: 30, // 30s de buffer prévio
-          maxMaxBufferLength: 60,
-          backBufferLength: 30,
+          enableWorker: !isLiteMode, // Desativa Web Workers pesados em TVs com pouca RAM
+          lowLatencyMode: false,
+          liveSyncDurationCount: isLiteMode ? 2 : 3,
+          liveMaxLatencyDurationCount: isLiteMode ? 5 : 8,
+          maxBufferLength: isLiteMode ? 10 : 30, // TV Lite: buffer de 10s para não estourar memória RAM da TV
+          maxMaxBufferLength: isLiteMode ? 20 : 60,
+          backBufferLength: isLiteMode ? 10 : 30,
           maxBufferHole: 0.5,
           highBufferWatchdogPeriod: 2,
           nudgeOffset: 0.1,
@@ -308,7 +413,9 @@ export default function KodiVideoPlayer({
       className={
         isMiniPlayer
           ? "fixed bottom-5 right-5 z-50 w-[320px] sm:w-[380px] md:w-[420px] aspect-video rounded-2xl shadow-2xl border-2 border-red-500/80 bg-black overflow-hidden group animate-in slide-in-from-bottom-5 duration-200 shadow-red-950/60"
-          : "fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center backdrop-blur-xl animate-in fade-in duration-200"
+          : `fixed inset-0 z-50 bg-black flex flex-col items-center justify-center ${
+              isLiteMode ? "" : "backdrop-blur-xl animate-in fade-in duration-200"
+            }`
       }
     >
       {/* ============================================================== */}
@@ -323,6 +430,12 @@ export default function KodiVideoPlayer({
                   <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
                   WMPLAY · Reprodução
                 </p>
+                {isLiteMode && (
+                  <span className="text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full font-mono flex items-center gap-1.5 text-amber-300 bg-amber-950/80 border border-amber-500/50">
+                    <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                    ⚡ Modo TV Lite (Acelerado)
+                  </span>
+                )}
                 {currentServer?.type === "video" ? (
                   <span className="text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full font-mono flex items-center gap-1.5 text-emerald-300 bg-emerald-950/80 border border-emerald-500/50">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />

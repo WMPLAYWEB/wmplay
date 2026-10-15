@@ -48,7 +48,8 @@ import {
   ListMusic,
   Menu,
   Sun,
-  Moon
+  Moon,
+  Zap
 } from "lucide-react";
 import { SAMPLE_MEDIA, MediaItem } from "@/data/media";
 import { INITIAL_ADDONS, Addon } from "@/data/addons";
@@ -145,6 +146,43 @@ export default function KodiApp() {
     });
   };
 
+  // Modo TV Lite para Smart TVs Antigas (LG NetCast/webOS 1-3, Philco Linux, Samsung Orsay, etc.)
+  const [isLiteMode, setIsLiteMode] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      const savedLite = localStorage.getItem("wmplay_lite_mode");
+      if (savedLite !== null) {
+        setIsLiteMode(savedLite === "true");
+      } else {
+        // Auto-detectar navegadores de Smart TVs antigas
+        const ua = (typeof navigator !== "undefined" ? navigator.userAgent : "").toLowerCase();
+        const isTv =
+          ua.includes("webos") ||
+          ua.includes("netcast") ||
+          ua.includes("philco") ||
+          ua.includes("smart-tv") ||
+          ua.includes("smarttv") ||
+          ua.includes("tizen") ||
+          ua.includes("hbbtv") ||
+          ua.includes("viera");
+        if (isTv) {
+          setIsLiteMode(true);
+        }
+      }
+    } catch {}
+  }, []);
+
+  const toggleLiteMode = () => {
+    setIsLiteMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("wmplay_lite_mode", String(next));
+      } catch {}
+      return next;
+    });
+  };
+
   // Addons State
   const [addons, setAddons] = useState<Addon[]>(INITIAL_ADDONS);
   const [addonFilter, setAddonFilter] = useState<"all" | "installed" | "available">("all");
@@ -208,14 +246,15 @@ export default function KodiApp() {
   }, [activeAddonView, activeBrazucaCategory, activeCategory]);
 
   // Fetch Catalog Items from API
-  const fetchCatalogData = useCallback(async (type: string, page: number, search: string, genre: string) => {
+  const fetchCatalogData = useCallback(async (type: string, page: number, search: string, genre: string, customLimit?: number) => {
     if (!type) return;
     setCatalogLoading(true);
     try {
+      const pageLimit = customLimit ? customLimit.toString() : (isLiteMode ? "24" : "48");
       const params = new URLSearchParams({
         type,
         page: page.toString(),
-        limit: "48",
+        limit: pageLimit,
       });
       if (search) params.set("search", search);
       if (genre) params.set("genre", genre);
@@ -233,7 +272,7 @@ export default function KodiApp() {
     } finally {
       setCatalogLoading(false);
     }
-  }, []);
+  }, [isLiteMode]);
 
   // Trigger catalog fetch when category / view changes
   useEffect(() => {
@@ -245,7 +284,7 @@ export default function KodiApp() {
       setJumpPageInput("");
       fetchCatalogData(type, 1, "", "");
     }
-  }, [getCurrentCatalogType, fetchCatalogData]);
+  }, [getCurrentCatalogType, fetchCatalogData, isLiteMode]);
 
   // Load Episodes for a Series/Anime/Novela/Dorama
   const handleOpenSeriesEpisodes = async (item: CatalogItem) => {
@@ -581,28 +620,32 @@ export default function KodiApp() {
         theme === "offwhite"
           ? "theme-offwhite bg-[#f4f4f6] text-[#111827]"
           : "theme-dark bg-black text-slate-100"
-      }`}
+      } ${isLiteMode ? "mode-tv-lite" : ""}`}
     >
-      {/* Background Fanart */}
-      <div
-        className={`fixed inset-0 bg-cover bg-center transition-all duration-700 filter blur-sm transform scale-105 pointer-events-none ${
-          isLight ? "opacity-10" : "opacity-25"
-        }`}
-        style={{
-          backgroundImage: `url(${
-            activeAddonView === "brazucaplay"
-              ? "/brazuca_fanart.jpg"
-              : selectedMedia.backdrop
-          })`,
-        }}
-      />
-      <div
-        className={`fixed inset-0 pointer-events-none transition-colors duration-500 ${
-          isLight
-            ? "bg-gradient-to-t from-[#f4f4f6] via-[#f4f4f6]/85 to-[#f4f4f6]/40"
-            : "bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-950/40"
-        }`}
-      />
+      {/* Background Fanart (Desativado em Modo TV Lite para evitar travamentos de GPU em TVs antigas) */}
+      {!isLiteMode && (
+        <>
+          <div
+            className={`fixed inset-0 bg-cover bg-center transition-all duration-700 filter blur-sm transform scale-105 pointer-events-none ${
+              isLight ? "opacity-10" : "opacity-25"
+            }`}
+            style={{
+              backgroundImage: `url(${
+                activeAddonView === "brazucaplay"
+                  ? "/brazuca_fanart.jpg"
+                  : selectedMedia.backdrop
+              })`,
+            }}
+          />
+          <div
+            className={`fixed inset-0 pointer-events-none transition-colors duration-500 ${
+              isLight
+                ? "bg-gradient-to-t from-[#f4f4f6] via-[#f4f4f6]/85 to-[#f4f4f6]/40"
+                : "bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-950/40"
+            }`}
+          />
+        </>
+      )}
 
       {/* Kodi Estuary Sidebar (Desktop) */}
       <aside className={`hidden md:flex relative z-20 w-64 border-r backdrop-blur-md flex-col justify-between shrink-0 shadow-2xl transition-colors ${
@@ -659,7 +702,7 @@ export default function KodiApp() {
 
         {/* Rodapé da Barra Lateral */}
         <div className={`p-4 border-t space-y-2.5 ${isLight ? "border-zinc-200" : "border-zinc-800/60"}`}>
-          {/* Botão de Teste: Alternar Tema */}
+          {/* Botão de Alternar Tema */}
           <button
             onClick={toggleTheme}
             className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-black transition-all shadow-sm cursor-pointer ${
@@ -680,6 +723,22 @@ export default function KodiApp() {
                 <span className="text-slate-200 font-bold">Tema: Modo Escuro</span>
               </>
             )}
+          </button>
+
+          {/* Botão: Modo Lite para Smart TVs Antigas */}
+          <button
+            onClick={toggleLiteMode}
+            className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-black transition-all shadow-sm cursor-pointer ${
+              isLiteMode
+                ? "bg-amber-500 border-2 border-amber-600 text-black shadow-amber-500/20"
+                : isLight
+                ? "bg-white border-2 border-zinc-300 text-zinc-950 hover:text-amber-600 hover:border-amber-500 hover:bg-amber-50 shadow-sm"
+                : "bg-zinc-900 border-zinc-700 text-slate-200 hover:text-amber-400 hover:bg-zinc-850"
+            }`}
+            title="Modo Lite para Smart TVs Antigas (LG, Philco, Samsung, etc.): Remove efeitos pesados, acelera a reprodução e reduz consumo de memória."
+          >
+            <Zap className={`w-3.5 h-3.5 ${isLiteMode ? "fill-black text-black" : "text-amber-500"}`} />
+            <span>{isLiteMode ? "Modo TV Antiga: Ativo ⚡" : "Ativar Modo TV Lite"}</span>
           </button>
 
           <div className={`flex items-center justify-between px-2 text-xs font-bold ${isLight ? "text-zinc-700" : "text-slate-400"}`}>
@@ -789,7 +848,7 @@ export default function KodiApp() {
 
             {/* Rodapé do Drawer Mobile */}
             <div className={`pt-4 border-t space-y-2.5 ${isLight ? "border-zinc-200" : "border-zinc-800/80"}`}>
-              {/* Botão de Teste: Alternar Tema */}
+              {/* Botão de Alternar Tema */}
               <button
                 onClick={toggleTheme}
                 className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-black transition-all shadow-sm cursor-pointer ${
@@ -810,6 +869,22 @@ export default function KodiApp() {
                     <span className="text-slate-200 font-bold">Tema: Modo Escuro</span>
                   </>
                 )}
+              </button>
+
+              {/* Botão: Modo Lite para Smart TVs Antigas */}
+              <button
+                onClick={toggleLiteMode}
+                className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-black transition-all shadow-sm cursor-pointer ${
+                  isLiteMode
+                    ? "bg-amber-500 border-2 border-amber-600 text-black shadow-amber-500/20"
+                    : isLight
+                    ? "bg-white border-2 border-zinc-300 text-zinc-950 hover:text-amber-600 hover:border-amber-500 hover:bg-amber-50 shadow-sm"
+                    : "bg-zinc-900 border-zinc-700 text-slate-200 hover:text-amber-400 hover:bg-zinc-850"
+                }`}
+                title="Modo Lite para Smart TVs Antigas (LG, Philco, Samsung, etc.): Remove efeitos pesados, acelera a reprodução e reduz consumo de memória."
+              >
+                <Zap className={`w-3.5 h-3.5 ${isLiteMode ? "fill-black text-black" : "text-amber-500"}`} />
+                <span>{isLiteMode ? "Modo TV Antiga: Ativo ⚡" : "Ativar Modo TV Lite"}</span>
               </button>
 
               <div className={`flex items-center justify-between px-2 text-xs font-bold ${
@@ -1007,6 +1082,23 @@ export default function KodiApp() {
                   <span className="font-bold text-slate-200 sm:hidden">Escuro</span>
                 </>
               )}
+            </button>
+
+            {/* Botão: Modo TV Lite (Otimizado para Smart TVs antigas: LG, Philco, Samsung, etc.) */}
+            <button
+              onClick={toggleLiteMode}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black transition-all shadow-sm cursor-pointer ${
+                isLiteMode
+                  ? "bg-amber-500 border-2 border-amber-600 text-black shadow-amber-500/20"
+                  : isLight
+                  ? "bg-white border-2 border-zinc-300 text-zinc-950 hover:text-amber-600 hover:border-amber-500 hover:bg-amber-50 shadow-sm"
+                  : "bg-zinc-900 border-zinc-700 text-slate-200 hover:text-amber-400 hover:bg-zinc-800"
+              }`}
+              title="Modo Lite para Smart TVs Antigas (LG, Philco, Samsung, etc.): Remove efeitos pesados, acelera a reprodução e reduz consumo de memória."
+            >
+              <Zap className={`w-3.5 h-3.5 ${isLiteMode ? "fill-black text-black" : "text-amber-500"}`} />
+              <span className="font-black hidden sm:inline">{isLiteMode ? "TV Lite (Ativo)" : "Modo TV Lite"}</span>
+              <span className="font-black sm:hidden">{isLiteMode ? "Lite On" : "Lite"}</span>
             </button>
 
             <button
@@ -1415,6 +1507,7 @@ export default function KodiApp() {
                   jumpPageInput={jumpPageInput}
                   genresList={GENRES_LIST}
                   isLight={isLight}
+                  isLiteMode={isLiteMode}
                   onSelectGenre={(g) => {
                     const newGenre = g === "Todos" ? "" : g;
                     setCatalogGenre(newGenre);
@@ -1614,6 +1707,7 @@ export default function KodiApp() {
                 jumpPageInput={jumpPageInput}
                 genresList={GENRES_LIST}
                 isLight={isLight}
+                isLiteMode={isLiteMode}
                 onSelectGenre={(g) => {
                   const newGenre = g === "Todos" ? "" : g;
                   setCatalogGenre(newGenre);
@@ -1953,6 +2047,7 @@ export default function KodiApp() {
             )
           }
           onClose={() => setPlayingMedia(null)}
+          isLiteMode={isLiteMode}
         />
       )}
 
@@ -2069,6 +2164,7 @@ function CatalogBrowseView({
   setJumpPageInput,
   onItemClick,
   isLight = false,
+  isLiteMode = false,
 }: {
   title: string;
   badge?: string;
@@ -2087,6 +2183,7 @@ function CatalogBrowseView({
   setJumpPageInput: (val: string) => void;
   onItemClick: (item: CatalogItem) => void;
   isLight?: boolean;
+  isLiteMode?: boolean;
 }) {
   return (
     <div className="space-y-4 sm:space-y-5 pb-16">
@@ -2109,10 +2206,16 @@ function CatalogBrowseView({
             }`}>
               {catalogTotalCount.toLocaleString("pt-BR")} títulos
             </span>
+            {isLiteMode && (
+              <span className="text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 rounded-full font-mono text-amber-900 bg-amber-400 border border-amber-500 flex items-center gap-1">
+                <Zap className="w-3 h-3 fill-black text-black" />
+                Modo TV Lite
+              </span>
+            )}
           </h3>
           <p className={`text-[11px] sm:text-xs mt-1 ${isLight ? "text-zinc-600 font-semibold" : "text-slate-400"}`}>
             Pág. <span className={`font-bold ${isLight ? "text-zinc-950" : "text-white"}`}>{catalogPage}</span> de{" "}
-            <span className={`font-bold ${isLight ? "text-zinc-950" : "text-white"}`}>{catalogTotalPages}</span> · 48 títulos por página
+            <span className={`font-bold ${isLight ? "text-zinc-950" : "text-white"}`}>{catalogTotalPages}</span> · {isLiteMode ? "24 títulos por pág. (Modo TV Lite)" : "48 títulos por página"}
           </p>
         </div>
 
