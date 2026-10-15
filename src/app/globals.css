@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f4f4f6;
+  --foreground: #111827;
 }
 
 @theme inline {
@@ -12,16 +12,7 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: #000000;
-  color: #f4f4f5;
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -42,4 +33,258 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #dc2626;
+}
+
+/* ============================================================== */
+/* TEMA OFF-WHITE COM DETALHES VERMELHOS (MODO DE TESTE WMPLAY)    */
+/* ============================================================== */
+.theme-offwhite {
+  background-color: #f4f4f6 !important;
+  color: #111827 !important;
+}
+
+/* Base de Fundo & Superfícies */
+.theme-offwhite .bg-black {
+  background-color: #f4f4f6 !important;
+}
+
+.theme-offwhite .bg-slate-950,
+.theme-offwhite .bg-zinc-950,
+.theme-offwhite .bg-zinc-950\/95,
+.theme-offwhite .bg-zinc-950\/90,
+.theme-offwhite .bg-zinc-950\/80,
+.theme-offwhite .bg-zinc-950\/70 {
+  background-color: #ffffff !important;
+}
+
+.theme-offwhite .bg-zinc-900,
+.theme-offwhite .bg-zinc-900\/80,
+.theme-offwhite .bg-zinc-900\/60,
+.theme-offwhite .bg-slate-900 {
+  background-color: #edeef2 !important;
+}
+
+.theme-offwhite .bg-zinc-800,
+.theme-offwhite .bg-slate-800,
+.theme-offwhite .bg-slate-800\/80 {
+  background-color: #e2e4e9 !important;
+}
+
+/* Gradientes Suaves de Fundo */
+.theme-offwhite .from-slate-950 {
+  --tw-gradient-from: #f4f4f6 var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(244, 244, 246, 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), #f4f4f6 60%, var(--tw-gradient-to) !important;
+}
+
+.theme-offwhite .bg-gradient-to-t.from-slate-950 {
+  background: linear-gradient(to top, #f4f4f6 0%, rgba(244, 244, 246, 0.9) 65%, rgba(244, 244, 246, 0.4) 100%) !important;
+}
+
+.theme-offwhite .from-black {
+  --tw-gradient-from: #ffffff var(--tw-gradient-from-position) !important;
+}
+
+.theme-offwhite .via-black\/95,
+.theme-offwhite .via-black\/85 {
+  --tw-gradient-stops: var(--tw-gradient-from), rgba(255, 255, 255, 0.96) 65%, var(--tw-gradient-to) !important;
+}
+
+/* Fanart Suavizada */
+.theme-offwhite .fixed.inset-0.bg-cover {
+  opacity: 0.12 !important;
+}
+
+/* Tipografia em Alto Contraste */
+.theme-offwhite .text-white,
+.theme-offwhite .text-slate-100 {
+  color: #111827 !important;
+}
+
+.theme-offwhite .text-slate-200 {
+  color: #1f2937 !important;
+}
+
+.theme-offwhite .text-slate-300,
+.theme-offwhite .text-zinc-300 {
+  color: #374151 !important;
+}
+
+.theme-offwhite .text-slate-400,
+.theme-offwhite .text-zinc-400 {
+  color: #64748b !important;
+}
+
+/* Bordas em Off-White / Cinza Claro */
+.theme-offwhite .border-zinc-800,
+.theme-offwhite .border-zinc-850,
+.theme-offwhite .border-zinc-800\/80,
+.theme-offwhite .border-zinc-800\/60,
+.theme-offwhite .border-zinc-700,
+.theme-offwhite .border-zinc-700\/80,
+.theme-offwhite .border-slate-800 {
+  border-color: #e2e4e9 !important;
+}
+
+/* Barra Lateral (Sidebar) */
+.theme-offwhite aside {
+  background-color: #ffffff !important;
+  border-right-color: #e2e4e9 !important;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.04) !important;
+}
+
+.theme-offwhite aside h1 {
+  color: #111827 !important;
+}
+
+.theme-offwhite aside nav button:not([class*="from-red-"]):hover {
+  background-color: #fef2f2 !important;
+  color: #dc2626 !important;
+}
+
+.theme-offwhite aside nav button:not([class*="from-red-"]):hover svg {
+  color: #dc2626 !important;
+}
+
+/* Cabeçalho Superior */
+.theme-offwhite header {
+  background-color: rgba(255, 255, 255, 0.94) !important;
+  border-bottom-color: #e2e4e9 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Campo de Busca */
+.theme-offwhite input[type="text"] {
+  background-color: #ffffff !important;
+  border-color: #e2e4e9 !important;
+  color: #111827 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+.theme-offwhite input[type="text"]::placeholder {
+  color: #9ca3af !important;
+}
+
+.theme-offwhite input[type="text"]:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2) !important;
+}
+
+/* Cards de Filmes, Séries e Canais */
+.theme-offwhite .group.p-4.rounded-2xl,
+.theme-offwhite .group.relative.rounded-2xl,
+.theme-offwhite .group.relative.rounded-xl {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+.theme-offwhite .group.p-4.rounded-2xl:hover,
+.theme-offwhite .group.relative.rounded-2xl:hover,
+.theme-offwhite .group.relative.rounded-xl:hover {
+  border-color: #dc2626 !important;
+  box-shadow: 0 12px 28px -4px rgba(220, 38, 38, 0.16) !important;
+}
+
+.theme-offwhite .aspect-video.w-full.rounded-xl.bg-black\/60,
+.theme-offwhite .aspect-\[2\/3\].w-full.rounded-xl.bg-zinc-900 {
+  background-color: #f0f1f4 !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Botões de Categorias / Gêneros */
+.theme-offwhite .scrollbar-none button:not([class*="bg-red-"]) {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+  color: #374151 !important;
+}
+
+.theme-offwhite .scrollbar-none button:not([class*="bg-red-"]):hover {
+  border-color: #dc2626 !important;
+  color: #dc2626 !important;
+  background-color: #fef2f2 !important;
+}
+
+/* DESTAQUES E DETALHES EM VERMELHO VIBRANTE */
+.theme-offwhite .text-red-500,
+.theme-offwhite .text-red-600 {
+  color: #dc2626 !important;
+}
+
+.theme-offwhite .text-red-400 {
+  color: #b91c1c !important;
+}
+
+.theme-offwhite .border-red-600,
+.theme-offwhite .border-red-500,
+.theme-offwhite .border-red-600\/30,
+.theme-offwhite .border-red-600\/20,
+.theme-offwhite .border-red-600\/15 {
+  border-color: rgba(220, 38, 38, 0.35) !important;
+}
+
+/* Garantir que botões e badges com fundo vermelho tenham texto branco legível */
+.theme-offwhite [class*="bg-red-"],
+.theme-offwhite [class*="from-red-"] {
+  color: #ffffff !important;
+}
+
+.theme-offwhite [class*="bg-red-"] *,
+.theme-offwhite [class*="from-red-"] * {
+  color: #ffffff !important;
+}
+
+.theme-offwhite .bg-gradient-to-r.from-red-600.to-rose-700,
+.theme-offwhite .bg-gradient-to-r.from-red-700.to-rose-800 {
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3) !important;
+}
+
+/* Janelas Modais (Séries, Temporadas, Episódios, Instalação ZIP) */
+.theme-offwhite .fixed.inset-0.bg-black\/80,
+.theme-offwhite .fixed.inset-0.bg-black\/85 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.theme-offwhite .w-full.max-w-xl.bg-zinc-950,
+.theme-offwhite .w-full.max-w-4xl.bg-zinc-950,
+.theme-offwhite .w-full.max-w-5xl.bg-zinc-950 {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Área do Vídeo / Kodi Player */
+.theme-offwhite #kodi-player-container {
+  background-color: #000000 !important;
+}
+
+.theme-offwhite #kodi-player-container video {
+  background-color: #000000 !important;
+}
+
+.theme-offwhite #kodi-player-container .text-white {
+  color: #ffffff !important;
+}
+
+.theme-offwhite #kodi-player-container .text-slate-200 {
+  color: #e2e8f0 !important;
+}
+
+.theme-offwhite #kodi-player-container .text-zinc-400 {
+  color: #94a3b8 !important;
+}
+
+/* Scrollbar no Modo Off-White */
+.theme-offwhite ::-webkit-scrollbar-track {
+  background: #f4f4f6 !important;
+}
+
+.theme-offwhite ::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+}
+
+.theme-offwhite ::-webkit-scrollbar-thumb:hover {
+  background: #dc2626 !important;
 }

@@ -25,11 +25,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pt-BR" className="dark h-full">
+    <html lang="pt-BR" className="h-full">
       <head>
         <meta name="referrer" content="no-referrer" />
       </head>
-      <body className="min-h-full bg-black text-slate-100 antialiased overflow-hidden">
+      <body className="min-h-full antialiased overflow-hidden transition-colors duration-300">
         {children}
       </body>
     </html>

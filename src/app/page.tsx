@@ -46,7 +46,9 @@ import {
   Pause,
   Volume2,
   ListMusic,
-  Menu
+  Menu,
+  Sun,
+  Moon
 } from "lucide-react";
 import { SAMPLE_MEDIA, MediaItem } from "@/data/media";
 import { INITIAL_ADDONS, Addon } from "@/data/addons";
@@ -120,6 +122,28 @@ export default function KodiApp() {
   const [musicSearchTrigger, setMusicSearchTrigger] = useState(0);
   const [currentTime, setCurrentTime] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Theme State (Default Off-White com detalhes vermelhos para teste)
+  const [theme, setTheme] = useState<"offwhite" | "dark">("offwhite");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("wmplay_theme");
+      if (saved === "dark" || saved === "offwhite") {
+        setTheme(saved);
+      }
+    } catch {}
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === "offwhite" ? "dark" : "offwhite";
+      try {
+        localStorage.setItem("wmplay_theme", next);
+      } catch {}
+      return next;
+    });
+  };
 
   // Addons State
   const [addons, setAddons] = useState<Addon[]>(INITIAL_ADDONS);
@@ -551,7 +575,13 @@ export default function KodiApp() {
   ];
 
   return (
-    <div className="flex h-screen w-screen bg-black text-slate-100 font-sans overflow-hidden select-none">
+    <div
+      className={`flex h-screen w-screen font-sans overflow-hidden select-none transition-colors duration-300 ${
+        theme === "offwhite"
+          ? "theme-offwhite bg-[#f4f4f6] text-[#111827]"
+          : "theme-dark bg-black text-slate-100"
+      }`}
+    >
       {/* Background Fanart */}
       <div
         className="fixed inset-0 bg-cover bg-center transition-all duration-700 opacity-25 filter blur-sm transform scale-105 pointer-events-none"
@@ -615,7 +645,30 @@ export default function KodiApp() {
         </div>
 
         {/* Rodapé da Barra Lateral */}
-        <div className="p-4 border-t border-zinc-800/60 space-y-3">
+        <div className="p-4 border-t border-zinc-800/60 space-y-2.5">
+          {/* Botão de Teste: Alternar Tema */}
+          <button
+            onClick={toggleTheme}
+            className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-bold transition-all shadow-sm cursor-pointer ${
+              theme === "offwhite"
+                ? "bg-white border-red-500 text-red-600 hover:bg-red-50 shadow-red-500/10"
+                : "bg-zinc-900 border-zinc-700 text-slate-200 hover:bg-zinc-800"
+            }`}
+            title="Alternar entre Off-White e Modo Escuro (Teste)"
+          >
+            {theme === "offwhite" ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                <span>Tema: Off-White (Teste)</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
+                <span>Tema: Modo Escuro</span>
+              </>
+            )}
+          </button>
+
           <div className="flex items-center justify-between px-2 text-xs text-slate-400">
             <span className="flex items-center gap-2">
               <Wifi className="w-3.5 h-3.5 text-emerald-400" />
@@ -712,7 +765,30 @@ export default function KodiApp() {
             </div>
 
             {/* Rodapé do Drawer Mobile */}
-            <div className="pt-4 border-t border-zinc-800/80 space-y-3">
+            <div className="pt-4 border-t border-zinc-800/80 space-y-2.5">
+              {/* Botão de Teste: Alternar Tema */}
+              <button
+                onClick={toggleTheme}
+                className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-bold transition-all shadow-sm cursor-pointer ${
+                  theme === "offwhite"
+                    ? "bg-white border-red-500 text-red-600 hover:bg-red-50 shadow-red-500/10"
+                    : "bg-zinc-900 border-zinc-700 text-slate-200 hover:bg-zinc-800"
+                }`}
+                title="Alternar entre Off-White e Modo Escuro (Teste)"
+              >
+                {theme === "offwhite" ? (
+                  <>
+                    <Sun className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                    <span>Tema: Off-White (Teste)</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
+                    <span>Tema: Modo Escuro</span>
+                  </>
+                )}
+              </button>
+
               <div className="flex items-center justify-between px-2 text-xs text-slate-400">
                 <span className="flex items-center gap-2">
                   <Wifi className="w-3.5 h-3.5 text-emerald-400" />
@@ -856,13 +932,38 @@ export default function KodiApp() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Botão de Teste: Alternador de Tema Off-White / Escuro */}
+            <button
+              onClick={toggleTheme}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-sm cursor-pointer ${
+                theme === "offwhite"
+                  ? "bg-white border-red-500 text-red-600 hover:bg-red-50 shadow-red-500/10"
+                  : "bg-zinc-900 border-zinc-700 text-slate-200 hover:bg-zinc-800"
+              }`}
+              title="Clique para alternar entre Tema Off-White e Tema Escuro (Teste)"
+            >
+              {theme === "offwhite" ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                  <span className="font-extrabold hidden sm:inline">Off-White (Teste)</span>
+                  <span className="font-extrabold sm:hidden">Off-White</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
+                  <span className="hidden sm:inline">Modo Escuro</span>
+                  <span className="sm:hidden">Escuro</span>
+                </>
+              )}
+            </button>
+
             <button
               onClick={() => setIsZipModalOpen(true)}
               className="hidden md:flex items-center gap-2 bg-slate-800 hover:bg-red-950/80 border border-red-600/30 hover:border-red-500 text-red-400 text-xs font-semibold px-4 py-2 rounded-xl transition-all"
             >
               <UploadCloud className="w-4 h-4 text-red-500" />
-              <span>Instalar ZIP (WinRAR)</span>
+              <span>Instalar ZIP</span>
             </button>
             <div className="hidden sm:block h-6 w-px bg-slate-800" />
             <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-slate-400">
