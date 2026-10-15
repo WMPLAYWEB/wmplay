@@ -662,22 +662,22 @@ export default function KodiApp() {
           {/* Botão de Teste: Alternar Tema */}
           <button
             onClick={toggleTheme}
-            className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-bold transition-all shadow-sm cursor-pointer ${
+            className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-black transition-all shadow-sm cursor-pointer ${
               theme === "offwhite"
-                ? "bg-white border-red-500 text-red-600 hover:bg-red-50 shadow-red-500/10"
+                ? "bg-white border-2 border-red-500 text-red-600 hover:bg-red-50 shadow-red-500/10"
                 : "bg-zinc-900 border-zinc-700 text-slate-200 hover:bg-zinc-800"
             }`}
-            title="Alternar entre Off-White e Modo Escuro (Teste)"
+            title="Alternar entre Modo Claro e Modo Escuro"
           >
             {theme === "offwhite" ? (
               <>
                 <Sun className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                <span>Tema: Off-White (Teste)</span>
+                <span className="text-red-600 font-black">Tema: Modo Claro (Ativo)</span>
               </>
             ) : (
               <>
                 <Moon className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
-                <span>Tema: Modo Escuro</span>
+                <span className="text-slate-200 font-bold">Tema: Modo Escuro</span>
               </>
             )}
           </button>
@@ -792,22 +792,22 @@ export default function KodiApp() {
               {/* Botão de Teste: Alternar Tema */}
               <button
                 onClick={toggleTheme}
-                className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-bold transition-all shadow-sm cursor-pointer ${
+                className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-black transition-all shadow-sm cursor-pointer ${
                   theme === "offwhite"
-                    ? "bg-white border-red-500 text-red-600 hover:bg-red-50 shadow-red-500/10"
+                    ? "bg-white border-2 border-red-500 text-red-600 hover:bg-red-50 shadow-red-500/10"
                     : "bg-zinc-900 border-zinc-700 text-slate-200 hover:bg-zinc-800"
                 }`}
-                title="Alternar entre Off-White e Modo Escuro (Teste)"
+                title="Alternar entre Modo Claro e Modo Escuro"
               >
                 {theme === "offwhite" ? (
                   <>
-                    <Sun className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                    <span>Tema: Off-White (Teste)</span>
+                    <Sun className="w-4 h-4 text-amber-500 fill-amber-500" />
+                    <span className="text-red-600 font-black">Tema: Modo Claro (Ativo)</span>
                   </>
                 ) : (
                   <>
-                    <Moon className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
-                    <span>Tema: Modo Escuro</span>
+                    <Moon className="w-4 h-4 text-indigo-400 fill-indigo-400" />
+                    <span className="text-slate-200 font-bold">Tema: Modo Escuro</span>
                   </>
                 )}
               </button>
@@ -984,27 +984,27 @@ export default function KodiApp() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Botão de Teste: Alternador de Tema Off-White / Escuro */}
+            {/* Botão: Alternador de Tema Modo Claro / Escuro */}
             <button
               onClick={toggleTheme}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-sm cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black transition-all shadow-sm cursor-pointer ${
                 theme === "offwhite"
-                  ? "bg-white border-red-500 text-red-600 hover:bg-red-50 shadow-red-500/10"
+                  ? "bg-white border-2 border-red-500 text-red-600 hover:bg-red-50 shadow-red-500/10"
                   : "bg-zinc-900 border-zinc-700 text-slate-200 hover:bg-zinc-800"
               }`}
-              title="Clique para alternar entre Tema Off-White e Tema Escuro (Teste)"
+              title="Clique para alternar entre Modo Claro e Modo Escuro"
             >
               {theme === "offwhite" ? (
                 <>
                   <Sun className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                  <span className="font-extrabold hidden sm:inline">Off-White (Teste)</span>
-                  <span className="font-extrabold sm:hidden">Off-White</span>
+                  <span className="font-black text-red-600 hidden sm:inline">Modo Claro (Ativo)</span>
+                  <span className="font-black text-red-600 sm:hidden">Modo Claro</span>
                 </>
               ) : (
                 <>
                   <Moon className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
-                  <span className="hidden sm:inline">Modo Escuro</span>
-                  <span className="sm:hidden">Escuro</span>
+                  <span className="font-bold text-slate-200 hidden sm:inline">Modo Escuro</span>
+                  <span className="font-bold text-slate-200 sm:hidden">Escuro</span>
                 </>
               )}
             </button>
@@ -1181,15 +1181,17 @@ export default function KodiApp() {
                         <button
                           key={tab.id}
                           onClick={() => setChannelSubFilter(tab.id)}
-                          className={`px-3 py-1.5 rounded-lg transition-colors font-bold shrink-0 ${
+                          className={`px-3 py-1.5 rounded-lg transition-colors font-bold shrink-0 cursor-pointer ${
                             channelSubFilter === tab.id
                               ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-md shadow-red-600/20"
                               : isLight
-                              ? "text-zinc-800 hover:text-red-600 hover:bg-red-50 bg-zinc-100/80"
-                              : "text-slate-400 hover:text-white hover:bg-zinc-900"
+                              ? "text-zinc-950 hover:text-red-600 hover:bg-red-50 bg-zinc-100/80 border border-zinc-200"
+                              : "text-slate-300 hover:text-white hover:bg-zinc-900"
                           }`}
                         >
-                          {tab.label}
+                          <span className={channelSubFilter === tab.id ? "text-white font-black" : isLight ? "text-zinc-950 font-black hover:text-red-600" : "text-slate-300 font-bold"}>
+                            {tab.label}
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -1328,15 +1330,17 @@ export default function KodiApp() {
                             <button
                               key={s.seasonNumber}
                               onClick={() => setActiveSeasonTab(s.seasonNumber)}
-                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                              className={`px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer ${
                                 activeSeasonTab === s.seasonNumber
                                   ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-lg shadow-red-600/20"
                                   : isLight
-                                  ? "bg-white text-zinc-800 hover:text-red-600 hover:bg-red-50 border border-zinc-300 shadow-sm"
-                                  : "bg-zinc-950/90 text-slate-400 hover:text-white border border-zinc-800"
+                                  ? "bg-white text-zinc-950 hover:text-red-600 hover:bg-red-50 border-2 border-zinc-300 shadow-sm"
+                                  : "bg-zinc-950/90 text-slate-300 hover:text-white border border-zinc-800"
                               }`}
                             >
-                              {s.seasonTitle} ({s.episodes.length} eps)
+                              <span className={activeSeasonTab === s.seasonNumber ? "text-white font-black" : isLight ? "text-zinc-950 font-black hover:text-red-600" : "text-slate-300 font-bold"}>
+                                {s.seasonTitle} ({s.episodes.length} eps)
+                              </span>
                             </button>
                           ))}
                         </div>
@@ -1785,15 +1789,17 @@ export default function KodiApp() {
                       <button
                         key={filter}
                         onClick={() => setAddonFilter(filter)}
-                        className={`px-3 py-1.5 rounded-lg transition-colors font-bold capitalize ${
+                        className={`px-3 py-1.5 rounded-lg transition-colors font-bold capitalize cursor-pointer ${
                           addonFilter === filter
                             ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-md shadow-red-600/30"
                             : isLight
-                            ? "text-zinc-800 hover:text-red-600 hover:bg-red-50"
-                            : "text-slate-400 hover:text-white"
+                            ? "text-zinc-950 hover:text-red-600 hover:bg-red-50"
+                            : "text-slate-300 hover:text-white"
                         }`}
                       >
-                        {filter === "all" ? "Todos" : filter === "installed" ? "Instalados" : "Disponíveis"}
+                        <span className={addonFilter === filter ? "text-white font-black" : isLight ? "text-zinc-950 font-black hover:text-red-600" : "text-slate-300 font-bold"}>
+                          {filter === "all" ? "Todos" : filter === "installed" ? "Instalados" : "Disponíveis"}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -2115,29 +2121,29 @@ function CatalogBrowseView({
           <button
             onClick={() => onPageChange(catalogPage - 1)}
             disabled={catalogPage <= 1 || catalogLoading}
-            className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl border disabled:opacity-40 text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border disabled:opacity-40 text-xs font-black transition-all cursor-pointer ${
               isLight
-                ? "bg-white border-zinc-300 hover:border-red-500 text-zinc-800 hover:text-red-600 hover:bg-red-50 shadow-sm"
-                : "bg-zinc-950 border-zinc-700 hover:border-red-500 text-slate-300 hover:text-white"
+                ? "bg-white border-2 border-zinc-300 hover:border-red-500 text-zinc-950 hover:text-red-600 hover:bg-red-50 shadow-sm"
+                : "bg-zinc-950 border-zinc-700 hover:border-red-500 text-slate-200 hover:text-white"
             }`}
           >
-            <ChevronLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Anterior</span>
+            <ChevronLeft className="w-4 h-4 text-red-600 shrink-0" />
+            <span className={isLight ? "text-zinc-950 font-black" : "text-slate-200 font-bold"}>Anterior</span>
           </button>
-          <span className="text-xs font-mono font-bold text-red-600 px-1 sm:px-2">
+          <span className="text-xs font-mono font-black text-red-600 px-1 sm:px-2">
             {catalogPage} / {catalogTotalPages}
           </span>
           <button
             onClick={() => onPageChange(catalogPage + 1)}
             disabled={catalogPage >= catalogTotalPages || catalogLoading}
-            className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl border disabled:opacity-40 text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border disabled:opacity-40 text-xs font-black transition-all cursor-pointer ${
               isLight
-                ? "bg-white border-zinc-300 hover:border-red-500 text-zinc-800 hover:text-red-600 hover:bg-red-50 shadow-sm"
-                : "bg-zinc-950 border-zinc-700 hover:border-red-500 text-slate-300 hover:text-white"
+                ? "bg-white border-2 border-zinc-300 hover:border-red-500 text-zinc-950 hover:text-red-600 hover:bg-red-50 shadow-sm"
+                : "bg-zinc-950 border-zinc-700 hover:border-red-500 text-slate-200 hover:text-white"
             }`}
           >
-            <span className="hidden sm:inline">Próxima</span>
-            <ChevronRight className="w-4 h-4" />
+            <span className={isLight ? "text-zinc-950 font-black" : "text-slate-200 font-bold"}>Próxima</span>
+            <ChevronRight className="w-4 h-4 text-red-600 shrink-0" />
           </button>
         </div>
       </div>
@@ -2150,15 +2156,17 @@ function CatalogBrowseView({
             <button
               key={g}
               onClick={() => onSelectGenre(g)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer ${
                 isSelected
                   ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-md shadow-red-600/30"
                   : isLight
-                  ? "bg-white border border-zinc-300 text-zinc-800 hover:text-red-600 hover:border-red-500 hover:bg-red-50 shadow-sm"
-                  : "bg-zinc-950/90 border border-zinc-800 text-slate-400 hover:text-white hover:border-zinc-700"
+                  ? "bg-white border-2 border-zinc-300 text-zinc-950 hover:text-red-600 hover:border-red-500 hover:bg-red-50 shadow-sm"
+                  : "bg-zinc-950/90 border border-zinc-800 text-slate-300 hover:text-white hover:border-zinc-700"
               }`}
             >
-              {g}
+              <span className={isSelected ? "text-white font-black" : isLight ? "text-zinc-950 font-black hover:text-red-600" : "text-slate-300 font-bold"}>
+                {g}
+              </span>
             </button>
           );
         })}
@@ -2261,25 +2269,25 @@ function CatalogBrowseView({
             <button
               onClick={() => onPageChange(1)}
               disabled={catalogPage <= 1 || catalogLoading}
-              className={`px-3 py-2 rounded-xl border disabled:opacity-30 text-xs font-bold transition-all ${
+              className={`px-3 py-2 rounded-xl border disabled:opacity-30 text-xs font-black transition-all cursor-pointer ${
                 isLight
-                  ? "bg-white border-zinc-300 hover:border-red-500 text-zinc-800 hover:text-red-600 hover:bg-red-50 shadow-sm"
-                  : "bg-zinc-950 border-zinc-800 hover:border-red-500 text-slate-300 hover:text-white"
+                  ? "bg-white border-2 border-zinc-300 hover:border-red-500 text-zinc-950 hover:text-red-600 hover:bg-red-50 shadow-sm"
+                  : "bg-zinc-950 border-zinc-800 hover:border-red-500 text-slate-200 hover:text-white"
               }`}
             >
-              Primeira
+              <span className={isLight ? "text-zinc-950 font-black" : "text-slate-200 font-bold"}>Primeira</span>
             </button>
             <button
               onClick={() => onPageChange(catalogPage - 1)}
               disabled={catalogPage <= 1 || catalogLoading}
-              className={`flex items-center gap-1 px-4 py-2 rounded-xl border disabled:opacity-30 text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl border disabled:opacity-30 text-xs font-black transition-all cursor-pointer ${
                 isLight
-                  ? "bg-white border-zinc-300 hover:border-red-500 text-zinc-800 hover:text-red-600 hover:bg-red-50 shadow-sm"
-                  : "bg-zinc-950 border-zinc-800 hover:border-red-500 text-slate-300 hover:text-white"
+                  ? "bg-white border-2 border-zinc-300 hover:border-red-500 text-zinc-950 hover:text-red-600 hover:bg-red-50 shadow-sm"
+                  : "bg-zinc-950 border-zinc-800 hover:border-red-500 text-slate-200 hover:text-white"
               }`}
             >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Anterior</span>
+              <ChevronLeft className="w-4 h-4 text-red-600" />
+              <span className={isLight ? "text-zinc-950 font-black" : "text-slate-200 font-bold"}>Anterior</span>
             </button>
 
             {/* Páginas Adjacentes */}
@@ -2296,15 +2304,17 @@ function CatalogBrowseView({
                   <button
                     key={pageNum}
                     onClick={() => onPageChange(pageNum)}
-                    className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${
+                    className={`w-9 h-9 rounded-xl text-xs font-black transition-all cursor-pointer ${
                       catalogPage === pageNum
                         ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-lg shadow-red-600/30"
                         : isLight
-                        ? "bg-white border border-zinc-300 text-zinc-800 hover:text-red-600 hover:border-red-500 hover:bg-red-50 shadow-sm"
-                        : "bg-zinc-950 border border-zinc-800 text-slate-400 hover:text-white hover:border-zinc-700"
+                        ? "bg-white border-2 border-zinc-300 text-zinc-950 hover:text-red-600 hover:border-red-500 hover:bg-red-50 shadow-sm"
+                        : "bg-zinc-950 border border-zinc-800 text-slate-300 hover:text-white hover:border-zinc-700"
                     }`}
                   >
-                    {pageNum}
+                    <span className={catalogPage === pageNum ? "text-white font-black" : isLight ? "text-zinc-950 font-black" : "text-slate-300 font-bold"}>
+                      {pageNum}
+                    </span>
                   </button>
                 ))}
             </div>
@@ -2312,25 +2322,25 @@ function CatalogBrowseView({
             <button
               onClick={() => onPageChange(catalogPage + 1)}
               disabled={catalogPage >= catalogTotalPages || catalogLoading}
-              className={`flex items-center gap-1 px-4 py-2 rounded-xl border disabled:opacity-30 text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl border disabled:opacity-30 text-xs font-black transition-all cursor-pointer ${
                 isLight
-                  ? "bg-white border-zinc-300 hover:border-red-500 text-zinc-800 hover:text-red-600 hover:bg-red-50 shadow-sm"
-                  : "bg-zinc-950 border-zinc-800 hover:border-red-500 text-slate-300 hover:text-white"
+                  ? "bg-white border-2 border-zinc-300 hover:border-red-500 text-zinc-950 hover:text-red-600 hover:bg-red-50 shadow-sm"
+                  : "bg-zinc-950 border-zinc-800 hover:border-red-500 text-slate-200 hover:text-white"
               }`}
             >
-              <span>Próxima</span>
-              <ChevronRight className="w-4 h-4" />
+              <span className={isLight ? "text-zinc-950 font-black" : "text-slate-200 font-bold"}>Próxima</span>
+              <ChevronRight className="w-4 h-4 text-red-600" />
             </button>
             <button
               onClick={() => onPageChange(catalogTotalPages)}
               disabled={catalogPage >= catalogTotalPages || catalogLoading}
-              className={`px-3 py-2 rounded-xl border disabled:opacity-30 text-xs font-bold transition-all ${
+              className={`px-3 py-2 rounded-xl border disabled:opacity-30 text-xs font-black transition-all cursor-pointer ${
                 isLight
-                  ? "bg-white border-zinc-300 hover:border-red-500 text-zinc-800 hover:text-red-600 hover:bg-red-50 shadow-sm"
-                  : "bg-zinc-950 border-zinc-800 hover:border-red-500 text-slate-300 hover:text-white"
+                  ? "bg-white border-2 border-zinc-300 hover:border-red-500 text-zinc-950 hover:text-red-600 hover:bg-red-50 shadow-sm"
+                  : "bg-zinc-950 border-zinc-800 hover:border-red-500 text-slate-200 hover:text-white"
               }`}
             >
-              Última ({catalogTotalPages})
+              <span className={isLight ? "text-zinc-950 font-black" : "text-slate-200 font-bold"}>Última ({catalogTotalPages})</span>
             </button>
           </div>
 
@@ -2795,16 +2805,16 @@ function MusicHubView({
               setActivePlatform("youtube");
               setSearchError(null);
             }}
-            className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all text-center ${
+            className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all text-center cursor-pointer ${
               activePlatform === "youtube"
                 ? "bg-red-600 text-white shadow-lg shadow-red-600/30"
                 : isLight
-                ? "text-zinc-800 hover:text-red-600 hover:bg-white"
-                : "text-slate-400 hover:text-white hover:bg-zinc-900"
+                ? "text-zinc-950 hover:text-red-600 hover:bg-white"
+                : "text-slate-300 hover:text-white hover:bg-zinc-900"
             }`}
           >
             <Play className="w-3.5 h-3.5 fill-current shrink-0" />
-            <span className="truncate">YouTube</span>
+            <span className={activePlatform === "youtube" ? "text-white font-black truncate" : isLight ? "text-zinc-950 font-black truncate" : "text-slate-300 font-bold truncate"}>YouTube</span>
           </button>
 
           <button
@@ -2812,16 +2822,16 @@ function MusicHubView({
               setActivePlatform("spotify");
               setSearchError(null);
             }}
-            className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all text-center ${
+            className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all text-center cursor-pointer ${
               activePlatform === "spotify"
                 ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/30"
                 : isLight
-                ? "text-zinc-800 hover:text-emerald-700 hover:bg-white"
-                : "text-slate-400 hover:text-white hover:bg-zinc-900"
+                ? "text-zinc-950 hover:text-emerald-700 hover:bg-white"
+                : "text-slate-300 hover:text-white hover:bg-zinc-900"
             }`}
           >
             <Disc3 className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">Spotify</span>
+            <span className={activePlatform === "spotify" ? "text-white font-black truncate" : isLight ? "text-zinc-950 font-black truncate" : "text-slate-300 font-bold truncate"}>Spotify</span>
           </button>
 
           <button
@@ -2829,16 +2839,16 @@ function MusicHubView({
               setActivePlatform("soundcloud");
               setSearchError(null);
             }}
-            className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all text-center ${
+            className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all text-center cursor-pointer ${
               activePlatform === "soundcloud"
                 ? "bg-orange-600 text-white shadow-lg shadow-orange-600/30"
                 : isLight
-                ? "text-zinc-800 hover:text-orange-700 hover:bg-white"
-                : "text-slate-400 hover:text-white hover:bg-zinc-900"
+                ? "text-zinc-950 hover:text-orange-700 hover:bg-white"
+                : "text-slate-300 hover:text-white hover:bg-zinc-900"
             }`}
           >
             <Radio className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">SoundCloud</span>
+            <span className={activePlatform === "soundcloud" ? "text-white font-black truncate" : isLight ? "text-zinc-950 font-black truncate" : "text-slate-300 font-bold truncate"}>SoundCloud</span>
           </button>
         </div>
       </div>

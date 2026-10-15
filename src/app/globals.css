@@ -339,31 +339,25 @@ body {
 }
 
 /* ============================================================== */
-/* BOTÕES, SUBFILTROS E ABAS INATIVAS (NUNCA MAIS BRANCO NO BRANCO)*/
+/* BOTÕES, SUBFILTROS E ABAS NO MODO OFF-WHITE (NUNCA TEXTO BRANCO)*/
 /* ============================================================== */
 
-/* Botões inativos em listas, categorias e paginação */
-.theme-offwhite .scrollbar-none button:not([class*="bg-red-"]):not([class*="from-red-"]),
-.theme-offwhite button[class*="bg-zinc-950"]:not([class*="bg-red-"]):not([class*="from-red-"]),
-.theme-offwhite button[class*="text-slate-400"]:not([class*="bg-red-"]):not([class*="from-red-"]) {
-  background-color: #ffffff !important;
-  border-color: #cbd5e1 !important;
-  color: #1e293b !important;
-  font-weight: 600 !important;
+/* Botões inativos, paginação (Anterior, Próxima), chips de gênero e abas */
+.theme-offwhite button:not(.bg-red-600):not(.bg-red-700):not([class~="bg-red-600"]):not([class*="from-red-600"]) {
+  color: #0f172a !important;
 }
 
-/* Evitar que o texto fique branco quando o usuário passa o mouse! */
-.theme-offwhite .scrollbar-none button:not([class*="bg-red-"]):not([class*="from-red-"]):hover,
-.theme-offwhite button[class*="bg-zinc-950"]:not([class*="bg-red-"]):not([class*="from-red-"]):hover,
-.theme-offwhite button[class*="text-slate-400"]:not([class*="bg-red-"]):not([class*="from-red-"]):hover {
-  border-color: #dc2626 !important;
+.theme-offwhite button:not(.bg-red-600):not(.bg-red-700):not([class~="bg-red-600"]):not([class*="from-red-600"]) span:not([class*="text-red-"]):not([class*="text-amber-"]):not([class*="text-emerald-"]) {
+  color: #0f172a !important;
+}
+
+/* Hover em botões inativos: destaque em vermelho vivo nítido */
+.theme-offwhite button:not(.bg-red-600):not(.bg-red-700):not([class~="bg-red-600"]):not([class*="from-red-600"]):hover {
   color: #dc2626 !important;
-  background-color: #fef2f2 !important;
+  border-color: #dc2626 !important;
 }
 
-.theme-offwhite .scrollbar-none button:not([class*="bg-red-"]):hover *,
-.theme-offwhite button[class*="bg-zinc-950"]:hover *,
-.theme-offwhite button[class*="text-slate-400"]:hover * {
+.theme-offwhite button:not(.bg-red-600):not(.bg-red-700):not([class~="bg-red-600"]):not([class*="from-red-600"]):hover span:not([class*="text-white"]):not([class*="text-amber-"]):not([class*="text-emerald-"]) {
   color: #dc2626 !important;
 }
 
@@ -387,16 +381,24 @@ body {
   border-color: rgba(220, 38, 38, 0.4) !important;
 }
 
-/* Botões com fundo vermelho pleno: texto 100% branco e sombra nítida */
-.theme-offwhite [class*="bg-red-"],
-.theme-offwhite [class*="from-red-"],
-.theme-offwhite .bg-red-600,
-.theme-offwhite .bg-red-700 {
+/* APENAS botões com fundo vermelho pleno ativo recebem texto 100% branco */
+.theme-offwhite button.bg-red-600,
+.theme-offwhite button.bg-red-700,
+.theme-offwhite button[class*="from-red-600"],
+.theme-offwhite [class~="bg-red-600"],
+.theme-offwhite [class~="bg-red-700"],
+.theme-offwhite .bg-gradient-to-r.from-red-600,
+.theme-offwhite .bg-gradient-to-r.from-red-700 {
   color: #ffffff !important;
 }
 
-.theme-offwhite [class*="bg-red-"] *,
-.theme-offwhite [class*="from-red-"] * {
+.theme-offwhite button.bg-red-600 *,
+.theme-offwhite button.bg-red-700 *,
+.theme-offwhite button[class*="from-red-600"] *,
+.theme-offwhite [class~="bg-red-600"] *,
+.theme-offwhite [class~="bg-red-700"] *,
+.theme-offwhite .bg-gradient-to-r.from-red-600 *,
+.theme-offwhite .bg-gradient-to-r.from-red-700 * {
   color: #ffffff !important;
 }
 
