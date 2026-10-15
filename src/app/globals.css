@@ -2,7 +2,7 @@
 
 :root {
   --background: #f4f4f6;
-  --foreground: #111827;
+  --foreground: #0f172a;
 }
 
 @theme inline {
@@ -36,14 +36,14 @@ body {
 }
 
 /* ============================================================== */
-/* TEMA OFF-WHITE COM DETALHES VERMELHOS (MODO DE TESTE WMPLAY)    */
+/* TEMA OFF-WHITE COM DETALHES VERMELHOS (ALTO CONTRASTE E NITIDEZ)*/
 /* ============================================================== */
 .theme-offwhite {
   background-color: #f4f4f6 !important;
-  color: #111827 !important;
+  color: #0f172a !important;
 }
 
-/* Base de Fundo & Superfícies */
+/* Base de Fundo & Superfícies Claras */
 .theme-offwhite .bg-black {
   background-color: #f4f4f6 !important;
 }
@@ -53,7 +53,9 @@ body {
 .theme-offwhite .bg-zinc-950\/95,
 .theme-offwhite .bg-zinc-950\/90,
 .theme-offwhite .bg-zinc-950\/80,
-.theme-offwhite .bg-zinc-950\/70 {
+.theme-offwhite .bg-zinc-950\/70,
+.theme-offwhite .bg-zinc-950\/60,
+.theme-offwhite .bg-zinc-950\/50 {
   background-color: #ffffff !important;
 }
 
@@ -61,13 +63,13 @@ body {
 .theme-offwhite .bg-zinc-900\/80,
 .theme-offwhite .bg-zinc-900\/60,
 .theme-offwhite .bg-slate-900 {
-  background-color: #edeef2 !important;
+  background-color: #f1f3f7 !important;
 }
 
 .theme-offwhite .bg-zinc-800,
 .theme-offwhite .bg-slate-800,
 .theme-offwhite .bg-slate-800\/80 {
-  background-color: #e2e4e9 !important;
+  background-color: #e2e5eb !important;
 }
 
 /* Gradientes Suaves de Fundo */
@@ -78,7 +80,7 @@ body {
 }
 
 .theme-offwhite .bg-gradient-to-t.from-slate-950 {
-  background: linear-gradient(to top, #f4f4f6 0%, rgba(244, 244, 246, 0.9) 65%, rgba(244, 244, 246, 0.4) 100%) !important;
+  background: linear-gradient(to top, #f4f4f6 0%, rgba(244, 244, 246, 0.92) 65%, rgba(244, 244, 246, 0.4) 100%) !important;
 }
 
 .theme-offwhite .from-black {
@@ -90,32 +92,51 @@ body {
   --tw-gradient-stops: var(--tw-gradient-from), rgba(255, 255, 255, 0.96) 65%, var(--tw-gradient-to) !important;
 }
 
-/* Fanart Suavizada */
+/* Fanart Suavizada de Fundo */
 .theme-offwhite .fixed.inset-0.bg-cover {
-  opacity: 0.12 !important;
+  opacity: 0.08 !important;
 }
 
-/* Tipografia em Alto Contraste */
+/* ============================================================== */
+/* TIPOGRAFIA EM ALTO CONTRASTE (NUNCA MAIS LETRAS SUMIDAS)       */
+/* ============================================================== */
+
+/* Títulos, Cabeçalhos e Destaques */
+.theme-offwhite h1,
+.theme-offwhite h2,
+.theme-offwhite h3,
+.theme-offwhite h4,
+.theme-offwhite h5,
+.theme-offwhite strong,
+.theme-offwhite b {
+  color: #0f172a !important;
+}
+
+/* Textos gerais padrão */
 .theme-offwhite .text-white,
 .theme-offwhite .text-slate-100 {
-  color: #111827 !important;
+  color: #0f172a !important;
 }
 
 .theme-offwhite .text-slate-200 {
-  color: #1f2937 !important;
+  color: #1e293b !important;
 }
 
+/* Sinopses, Descrições e Parágrafos */
+.theme-offwhite p,
 .theme-offwhite .text-slate-300,
 .theme-offwhite .text-zinc-300 {
-  color: #374151 !important;
+  color: #334155 !important;
 }
 
+/* Metadados, Duração, Horário e Rótulos Secundários */
 .theme-offwhite .text-slate-400,
-.theme-offwhite .text-zinc-400 {
-  color: #64748b !important;
+.theme-offwhite .text-zinc-400,
+.theme-offwhite .text-slate-500 {
+  color: #475569 !important;
 }
 
-/* Bordas em Off-White / Cinza Claro */
+/* Bordas em Cinza Claro Refinado */
 .theme-offwhite .border-zinc-800,
 .theme-offwhite .border-zinc-850,
 .theme-offwhite .border-zinc-800\/80,
@@ -123,18 +144,31 @@ body {
 .theme-offwhite .border-zinc-700,
 .theme-offwhite .border-zinc-700\/80,
 .theme-offwhite .border-slate-800 {
-  border-color: #e2e4e9 !important;
+  border-color: #cbd5e1 !important;
 }
 
 /* Barra Lateral (Sidebar) */
 .theme-offwhite aside {
   background-color: #ffffff !important;
-  border-right-color: #e2e4e9 !important;
+  border-right-color: #cbd5e1 !important;
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.04) !important;
 }
 
 .theme-offwhite aside h1 {
-  color: #111827 !important;
+  color: #0f172a !important;
+}
+
+.theme-offwhite aside nav button:not([class*="from-red-"]) {
+  color: #1e293b !important;
+}
+
+.theme-offwhite aside nav button:not([class*="from-red-"]) span {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+.theme-offwhite aside nav button:not([class*="from-red-"]) svg {
+  color: #475569 !important;
 }
 
 .theme-offwhite aside nav button:not([class*="from-red-"]):hover {
@@ -142,70 +176,200 @@ body {
   color: #dc2626 !important;
 }
 
+.theme-offwhite aside nav button:not([class*="from-red-"]):hover span,
 .theme-offwhite aside nav button:not([class*="from-red-"]):hover svg {
   color: #dc2626 !important;
 }
 
 /* Cabeçalho Superior */
 .theme-offwhite header {
-  background-color: rgba(255, 255, 255, 0.94) !important;
-  border-bottom-color: #e2e4e9 !important;
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-bottom-color: #cbd5e1 !important;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
 }
 
-/* Campo de Busca */
-.theme-offwhite input[type="text"] {
+/* Campo de Busca & Inputs */
+.theme-offwhite input[type="text"],
+.theme-offwhite input[type="number"],
+.theme-offwhite input[type="search"] {
   background-color: #ffffff !important;
-  border-color: #e2e4e9 !important;
-  color: #111827 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
 }
 
-.theme-offwhite input[type="text"]::placeholder {
-  color: #9ca3af !important;
+.theme-offwhite input::placeholder {
+  color: #64748b !important;
 }
 
-.theme-offwhite input[type="text"]:focus {
+.theme-offwhite input:focus {
   border-color: #dc2626 !important;
   box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2) !important;
 }
 
-/* Cards de Filmes, Séries e Canais */
+/* ============================================================== */
+/* CARDS DO BRAZUCA PLAY & CATÁLOGO                               */
+/* ============================================================== */
+
+/* Cards do Menu Raiz do Brazuca Play */
+.theme-offwhite .group.relative.rounded-2xl {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04) !important;
+}
+
+.theme-offwhite .group.relative.rounded-2xl .bg-gradient-to-t.from-slate-950 {
+  background: linear-gradient(to top, #ffffff 45%, rgba(255, 255, 255, 0.85) 75%, transparent 100%) !important;
+}
+
+.theme-offwhite .group.relative.rounded-2xl h3 {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+.theme-offwhite .group.relative.rounded-2xl p {
+  color: #334155 !important;
+  font-weight: 500 !important;
+}
+
+/* Cards Gerais de Filmes, Séries e Canais */
 .theme-offwhite .group.p-4.rounded-2xl,
-.theme-offwhite .group.relative.rounded-2xl,
+.theme-offwhite .group.rounded-xl.overflow-hidden,
 .theme-offwhite .group.relative.rounded-xl {
   background-color: #ffffff !important;
-  border-color: #e5e7eb !important;
+  border-color: #e2e8f0 !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
 }
 
 .theme-offwhite .group.p-4.rounded-2xl:hover,
-.theme-offwhite .group.relative.rounded-2xl:hover,
-.theme-offwhite .group.relative.rounded-xl:hover {
+.theme-offwhite .group.rounded-xl.overflow-hidden:hover,
+.theme-offwhite .group.relative.rounded-2xl:hover {
   border-color: #dc2626 !important;
   box-shadow: 0 12px 28px -4px rgba(220, 38, 38, 0.16) !important;
 }
 
 .theme-offwhite .aspect-video.w-full.rounded-xl.bg-black\/60,
-.theme-offwhite .aspect-\[2\/3\].w-full.rounded-xl.bg-zinc-900 {
-  background-color: #f0f1f4 !important;
-  border-color: #e5e7eb !important;
+.theme-offwhite .aspect-\[2\/3\].w-full.bg-black {
+  background-color: #f1f3f7 !important;
+  border-color: #e2e8f0 !important;
 }
 
-/* Botões de Categorias / Gêneros */
-.theme-offwhite .scrollbar-none button:not([class*="bg-red-"]) {
+/* ============================================================== */
+/* CORREÇÃO CRÍTICA: HOVER E ELEMENTOS COM FUNDO ESCURO           */
+/* ============================================================== */
+
+/* Quando passar o mouse sobre o poster, o texto SOBRE A IMAGEM ESCURA permanece BRANCO */
+.theme-offwhite .group-hover\:opacity-100,
+.theme-offwhite .group-hover\:opacity-100 p,
+.theme-offwhite .group-hover\:opacity-100 span,
+.theme-offwhite .group-hover\:opacity-100 h4,
+.theme-offwhite .group:hover .absolute.inset-0.bg-gradient-to-t.from-black\/95 *,
+.theme-offwhite .group:hover .absolute.inset-0.bg-gradient-to-t.from-black\/95 p {
+  color: #ffffff !important;
+}
+
+/* Badges sobrepostas em imagens (Ex.: Ano e Avaliação no canto do poster) */
+.theme-offwhite .bg-black\/85,
+.theme-offwhite .bg-black\/85 span,
+.theme-offwhite .bg-black\/85 * {
+  color: #ffffff !important;
+}
+
+.theme-offwhite .bg-black\/85 .text-amber-300,
+.theme-offwhite .bg-black\/85 .text-amber-400 {
+  color: #fbbf24 !important;
+}
+
+.theme-offwhite .bg-black\/85 .text-slate-200 {
+  color: #f1f5f9 !important;
+}
+
+/* ============================================================== */
+/* BADGES EM MODO CLARO (CONTRASTE ALTO & TEXTO NÍTIDO)           */
+/* ============================================================== */
+
+/* Badges Âmbar / Amarelo (Ex.: Versão, Avaliação, Destaques) */
+.theme-offwhite .bg-amber-950,
+.theme-offwhite .bg-amber-950\/80,
+.theme-offwhite .bg-amber-950\/60 {
+  background-color: #fef3c7 !important;
+  border-color: #fcd34d !important;
+  color: #92400e !important;
+}
+
+.theme-offwhite .text-amber-300,
+.theme-offwhite .text-amber-400 {
+  color: #b45309 !important;
+}
+
+.theme-offwhite .bg-amber-950 * {
+  color: #92400e !important;
+}
+
+/* Badges Esmeralda / Verde (Ex.: Total de Títulos, Ao Vivo, Online) */
+.theme-offwhite .bg-emerald-950,
+.theme-offwhite .bg-emerald-950\/80,
+.theme-offwhite .bg-emerald-950\/60 {
+  background-color: #d1fae5 !important;
+  border-color: #6ee7b7 !important;
+  color: #065f46 !important;
+}
+
+.theme-offwhite .text-emerald-300,
+.theme-offwhite .text-emerald-400 {
+  color: #047857 !important;
+}
+
+.theme-offwhite .bg-emerald-950 * {
+  color: #065f46 !important;
+}
+
+/* Badges Vermelhas Secundárias */
+.theme-offwhite .bg-red-950,
+.theme-offwhite .bg-red-950\/80,
+.theme-offwhite .bg-red-950\/60,
+.theme-offwhite .bg-red-950\/40 {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #991b1b !important;
+}
+
+.theme-offwhite .bg-red-950 * {
+  color: #991b1b !important;
+}
+
+/* ============================================================== */
+/* BOTÕES, SUBFILTROS E ABAS INATIVAS (NUNCA MAIS BRANCO NO BRANCO)*/
+/* ============================================================== */
+
+/* Botões inativos em listas, categorias e paginação */
+.theme-offwhite .scrollbar-none button:not([class*="bg-red-"]):not([class*="from-red-"]),
+.theme-offwhite button[class*="bg-zinc-950"]:not([class*="bg-red-"]):not([class*="from-red-"]),
+.theme-offwhite button[class*="text-slate-400"]:not([class*="bg-red-"]):not([class*="from-red-"]) {
   background-color: #ffffff !important;
-  border-color: #e5e7eb !important;
-  color: #374151 !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+  font-weight: 600 !important;
 }
 
-.theme-offwhite .scrollbar-none button:not([class*="bg-red-"]):hover {
+/* Evitar que o texto fique branco quando o usuário passa o mouse! */
+.theme-offwhite .scrollbar-none button:not([class*="bg-red-"]):not([class*="from-red-"]):hover,
+.theme-offwhite button[class*="bg-zinc-950"]:not([class*="bg-red-"]):not([class*="from-red-"]):hover,
+.theme-offwhite button[class*="text-slate-400"]:not([class*="bg-red-"]):not([class*="from-red-"]):hover {
   border-color: #dc2626 !important;
   color: #dc2626 !important;
   background-color: #fef2f2 !important;
 }
 
-/* DESTAQUES E DETALHES EM VERMELHO VIBRANTE */
+.theme-offwhite .scrollbar-none button:not([class*="bg-red-"]):hover *,
+.theme-offwhite button[class*="bg-zinc-950"]:hover *,
+.theme-offwhite button[class*="text-slate-400"]:hover * {
+  color: #dc2626 !important;
+}
+
+/* ============================================================== */
+/* DESTAQUES E DETALHES EM VERMELHO VIBRANTE                      */
+/* ============================================================== */
 .theme-offwhite .text-red-500,
 .theme-offwhite .text-red-600 {
   color: #dc2626 !important;
@@ -220,12 +384,14 @@ body {
 .theme-offwhite .border-red-600\/30,
 .theme-offwhite .border-red-600\/20,
 .theme-offwhite .border-red-600\/15 {
-  border-color: rgba(220, 38, 38, 0.35) !important;
+  border-color: rgba(220, 38, 38, 0.4) !important;
 }
 
-/* Garantir que botões e badges com fundo vermelho tenham texto branco legível */
+/* Botões com fundo vermelho pleno: texto 100% branco e sombra nítida */
 .theme-offwhite [class*="bg-red-"],
-.theme-offwhite [class*="from-red-"] {
+.theme-offwhite [class*="from-red-"],
+.theme-offwhite .bg-red-600,
+.theme-offwhite .bg-red-700 {
   color: #ffffff !important;
 }
 
@@ -237,13 +403,13 @@ body {
 .theme-offwhite .bg-gradient-to-r.from-red-600.to-rose-700,
 .theme-offwhite .bg-gradient-to-r.from-red-700.to-rose-800 {
   color: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3) !important;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.28) !important;
 }
 
 /* Janelas Modais (Séries, Temporadas, Episódios, Instalação ZIP) */
 .theme-offwhite .fixed.inset-0.bg-black\/80,
 .theme-offwhite .fixed.inset-0.bg-black\/85 {
-  background-color: rgba(15, 23, 42, 0.45) !important;
+  background-color: rgba(15, 23, 42, 0.5) !important;
   backdrop-filter: blur(8px) !important;
 }
 
@@ -251,15 +417,14 @@ body {
 .theme-offwhite .w-full.max-w-4xl.bg-zinc-950,
 .theme-offwhite .w-full.max-w-5xl.bg-zinc-950 {
   background-color: #ffffff !important;
-  border-color: #e5e7eb !important;
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.2) !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.22) !important;
 }
 
-/* Área do Vídeo / Kodi Player */
-.theme-offwhite #kodi-player-container {
-  background-color: #000000 !important;
-}
-
+/* ============================================================== */
+/* PRESERVAÇÃO INTEGRAL DO PLAYER DE VÍDEO & YOUTUBE              */
+/* ============================================================== */
+.theme-offwhite #kodi-player-container,
 .theme-offwhite #kodi-player-container video {
   background-color: #000000 !important;
 }
@@ -274,6 +439,20 @@ body {
 
 .theme-offwhite #kodi-player-container .text-zinc-400 {
   color: #94a3b8 !important;
+}
+
+/* Player YouTube e Músicas */
+.theme-offwhite .rounded-2xl.overflow-hidden.bg-black\/95 {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.theme-offwhite .rounded-2xl.overflow-hidden.bg-black\/95 * {
+  color: #ffffff !important;
+}
+
+.theme-offwhite .rounded-2xl.overflow-hidden.bg-black\/95 .text-red-400 {
+  color: #f87171 !important;
 }
 
 /* Scrollbar no Modo Off-White */
