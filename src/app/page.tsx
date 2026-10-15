@@ -559,6 +559,7 @@ export default function KodiApp() {
       activeBrazucaCategory.type !== "settings");
 
   const currentCatalogType = getCurrentCatalogType();
+  const isLight = theme === "offwhite";
 
   const GENRES_LIST = [
     "Todos",
@@ -584,7 +585,9 @@ export default function KodiApp() {
     >
       {/* Background Fanart */}
       <div
-        className="fixed inset-0 bg-cover bg-center transition-all duration-700 opacity-25 filter blur-sm transform scale-105 pointer-events-none"
+        className={`fixed inset-0 bg-cover bg-center transition-all duration-700 filter blur-sm transform scale-105 pointer-events-none ${
+          isLight ? "opacity-10" : "opacity-25"
+        }`}
         style={{
           backgroundImage: `url(${
             activeAddonView === "brazucaplay"
@@ -593,20 +596,28 @@ export default function KodiApp() {
           })`,
         }}
       />
-      <div className="fixed inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-950/40 pointer-events-none" />
+      <div
+        className={`fixed inset-0 pointer-events-none transition-colors duration-500 ${
+          isLight
+            ? "bg-gradient-to-t from-[#f4f4f6] via-[#f4f4f6]/85 to-[#f4f4f6]/40"
+            : "bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-950/40"
+        }`}
+      />
 
       {/* Kodi Estuary Sidebar (Desktop) */}
-      <aside className="hidden md:flex relative z-20 w-64 bg-zinc-950/95 border-r border-zinc-850 backdrop-blur-md flex-col justify-between shrink-0 shadow-2xl">
+      <aside className={`hidden md:flex relative z-20 w-64 border-r backdrop-blur-md flex-col justify-between shrink-0 shadow-2xl transition-colors ${
+        isLight ? "bg-white border-zinc-200" : "bg-zinc-950/95 border-zinc-850"
+      }`}>
         <div>
           {/* Logo / Header */}
-          <div className="p-6 border-b border-zinc-800/60 flex items-center justify-between">
+          <div className={`p-6 border-b flex items-center justify-between ${isLight ? "border-zinc-200" : "border-zinc-800/60"}`}>
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-red-600 to-rose-600 flex items-center justify-center shadow-lg shadow-red-600/30">
                 <Tv2 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-black tracking-wider text-white">WM<span className="text-red-500">PLAY</span></h1>
-                <p className="text-[10px] text-red-500 font-bold tracking-widest uppercase">
+                <h1 className={`text-xl font-black tracking-wider ${isLight ? "text-zinc-950" : "text-white"}`}>WM<span className="text-red-600">PLAY</span></h1>
+                <p className="text-[10px] text-red-600 font-black tracking-widest uppercase">
                   Streaming & TV ao Vivo
                 </p>
               </div>
@@ -627,15 +638,17 @@ export default function KodiApp() {
                     setActiveBrazucaCategory(null);
                     setSelectedSeriesItem(null);
                   }}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer ${
                     isActive
-                      ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-lg shadow-red-600/30 font-bold"
+                      ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-lg shadow-red-600/30"
+                      : isLight
+                      ? "text-zinc-800 hover:text-red-600 hover:bg-red-50/80"
                       : "text-slate-400 hover:text-slate-200 hover:bg-zinc-900/60"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className={`w-5 h-5 ${isActive ? "text-white" : "text-slate-400"}`} />
-                    <span>{item.label}</span>
+                    <Icon className={`w-5 h-5 ${isActive ? "text-white" : isLight ? "text-zinc-700" : "text-slate-400"}`} />
+                    <span className={isActive ? "text-white" : isLight ? "text-zinc-900 font-bold" : "text-slate-300"}>{item.label}</span>
                   </div>
                   {isActive && <ChevronRight className="w-4 h-4 text-red-300" />}
                 </button>
@@ -645,7 +658,7 @@ export default function KodiApp() {
         </div>
 
         {/* Rodapé da Barra Lateral */}
-        <div className="p-4 border-t border-zinc-800/60 space-y-2.5">
+        <div className={`p-4 border-t space-y-2.5 ${isLight ? "border-zinc-200" : "border-zinc-800/60"}`}>
           {/* Botão de Teste: Alternar Tema */}
           <button
             onClick={toggleTheme}
@@ -669,12 +682,12 @@ export default function KodiApp() {
             )}
           </button>
 
-          <div className="flex items-center justify-between px-2 text-xs text-slate-400">
+          <div className={`flex items-center justify-between px-2 text-xs font-bold ${isLight ? "text-zinc-700" : "text-slate-400"}`}>
             <span className="flex items-center gap-2">
-              <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-              Online (38.6k DB)
+              <Wifi className="w-3.5 h-3.5 text-emerald-600 font-bold" />
+              <span className={isLight ? "text-zinc-800 font-bold" : ""}>Online (38.6k DB)</span>
             </span>
-            <span className="font-mono text-red-500 font-bold">{currentTime}</span>
+            <span className="font-mono text-red-600 font-black">{currentTime}</span>
           </div>
           <div className="flex gap-2">
             <button
@@ -691,7 +704,11 @@ export default function KodiApp() {
             </button>
             <button
               onClick={() => setIsZipModalOpen(true)}
-              className="p-2.5 rounded-lg bg-slate-800 hover:bg-zinc-800 text-slate-300 hover:text-white transition-colors"
+              className={`p-2.5 rounded-lg border transition-colors ${
+                isLight
+                  ? "bg-zinc-100 hover:bg-red-50 border-zinc-300 text-zinc-800 hover:text-red-600 shadow-sm"
+                  : "bg-slate-800 hover:bg-zinc-800 border-transparent text-slate-300 hover:text-white"
+              }`}
               title="Instalar via ZIP"
             >
               <UploadCloud className="w-4 h-4 text-red-500" />
@@ -707,26 +724,30 @@ export default function KodiApp() {
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <div
-            className="w-72 max-w-[85vw] h-full bg-zinc-950 border-r border-zinc-800 flex flex-col justify-between shadow-2xl p-5 animate-in slide-in-from-left duration-200"
+            className={`w-72 max-w-[85vw] h-full border-r flex flex-col justify-between shadow-2xl p-5 animate-in slide-in-from-left duration-200 ${
+              isLight ? "bg-white border-zinc-200" : "bg-zinc-950 border-zinc-800"
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             <div>
               {/* Header do Drawer */}
-              <div className="pb-4 border-b border-zinc-800/80 flex items-center justify-between">
+              <div className={`pb-4 border-b flex items-center justify-between ${isLight ? "border-zinc-200" : "border-zinc-800/80"}`}>
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-red-600 to-rose-600 flex items-center justify-center shadow-lg shadow-red-600/30">
                     <Tv2 className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-xl font-black tracking-wider text-white">WM<span className="text-red-500">PLAY</span></h1>
-                    <p className="text-[10px] text-red-500 font-bold tracking-widest uppercase">
+                    <h1 className={`text-xl font-black tracking-wider ${isLight ? "text-zinc-950" : "text-white"}`}>WM<span className="text-red-600">PLAY</span></h1>
+                    <p className="text-[10px] text-red-600 font-black tracking-widest uppercase">
                       Streaming & TV
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-slate-400 hover:text-white"
+                  className={`p-2 rounded-xl border ${
+                    isLight ? "bg-zinc-100 border-zinc-300 text-zinc-800 hover:text-red-600" : "bg-zinc-900 border-zinc-800 text-slate-400 hover:text-white"
+                  }`}
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -747,15 +768,17 @@ export default function KodiApp() {
                         setSelectedSeriesItem(null);
                         setIsMobileMenuOpen(false);
                       }}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer ${
                         isActive
-                          ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-lg shadow-red-600/30 font-bold"
+                          ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-lg shadow-red-600/30"
+                          : isLight
+                          ? "text-zinc-800 hover:text-red-600 hover:bg-red-50/80"
                           : "text-slate-400 hover:text-slate-200 hover:bg-zinc-900/60"
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <Icon className={`w-5 h-5 ${isActive ? "text-white" : "text-slate-400"}`} />
-                        <span>{item.label}</span>
+                        <Icon className={`w-5 h-5 ${isActive ? "text-white" : isLight ? "text-zinc-700" : "text-slate-400"}`} />
+                        <span className={isActive ? "text-white" : isLight ? "text-zinc-900 font-bold" : "text-slate-300"}>{item.label}</span>
                       </div>
                       {isActive && <ChevronRight className="w-4 h-4 text-red-300" />}
                     </button>
@@ -765,7 +788,7 @@ export default function KodiApp() {
             </div>
 
             {/* Rodapé do Drawer Mobile */}
-            <div className="pt-4 border-t border-zinc-800/80 space-y-2.5">
+            <div className={`pt-4 border-t space-y-2.5 ${isLight ? "border-zinc-200" : "border-zinc-800/80"}`}>
               {/* Botão de Teste: Alternar Tema */}
               <button
                 onClick={toggleTheme}
@@ -789,12 +812,14 @@ export default function KodiApp() {
                 )}
               </button>
 
-              <div className="flex items-center justify-between px-2 text-xs text-slate-400">
+              <div className={`flex items-center justify-between px-2 text-xs font-bold ${
+                isLight ? "text-zinc-700" : "text-slate-400"
+              }`}>
                 <span className="flex items-center gap-2">
-                  <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-                  Online (38.6k DB)
+                  <Wifi className="w-3.5 h-3.5 text-emerald-500 font-bold" />
+                  <span className={isLight ? "text-zinc-800 font-bold" : ""}>Online (38.6k DB)</span>
                 </span>
-                <span className="font-mono text-red-500 font-bold">{currentTime}</span>
+                <span className="font-mono text-red-600 font-black">{currentTime}</span>
               </div>
               <div className="flex gap-2">
                 <button
@@ -815,7 +840,11 @@ export default function KodiApp() {
                     setIsZipModalOpen(true);
                     setIsMobileMenuOpen(false);
                   }}
-                  className="p-2.5 rounded-xl bg-slate-800 hover:bg-zinc-800 text-slate-300 hover:text-white transition-colors"
+                  className={`p-2.5 rounded-xl border transition-colors ${
+                    isLight
+                      ? "bg-zinc-100 hover:bg-red-50 border-zinc-300 text-zinc-800 hover:text-red-600 shadow-sm"
+                      : "bg-slate-800 hover:bg-zinc-800 border-transparent text-slate-300 hover:text-white"
+                  }`}
                   title="Instalar via ZIP"
                 >
                   <UploadCloud className="w-4 h-4 text-red-500" />
@@ -829,12 +858,20 @@ export default function KodiApp() {
       {/* Conteúdo Principal do Kodi */}
       <main className="relative z-10 flex-1 flex flex-col h-full overflow-hidden">
         {/* Barra Superior Responsiva */}
-        <header className="h-14 sm:h-16 border-b border-zinc-800/60 bg-zinc-950/80 backdrop-blur-md px-3 sm:px-6 md:px-8 flex items-center justify-between shrink-0 gap-2 sm:gap-4">
+        <header className={`h-14 sm:h-16 border-b px-3 sm:px-6 md:px-8 flex items-center justify-between shrink-0 gap-2 sm:gap-4 backdrop-blur-md transition-colors ${
+          isLight
+            ? "bg-white/95 border-zinc-200 shadow-sm"
+            : "bg-zinc-950/80 border-zinc-800/60"
+        }`}>
           <div className="flex items-center gap-2 sm:gap-4 flex-1 max-w-2xl min-w-0">
             {/* Botão Hambúrguer Mobile */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="md:hidden p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-slate-300 hover:text-white shrink-0"
+              className={`md:hidden p-2 rounded-xl border shrink-0 transition-colors ${
+                isLight
+                  ? "bg-zinc-100 border-zinc-300 text-zinc-800 hover:text-red-600"
+                  : "bg-zinc-900 border-zinc-800 text-slate-300 hover:text-white"
+              }`}
               title="Abrir Menu WMPLAY"
             >
               <Menu className="w-5 h-5" />
@@ -845,7 +882,7 @@ export default function KodiApp() {
               <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-red-600 to-rose-600 flex items-center justify-center shadow-md shadow-red-600/30">
                 <Tv2 className="w-4 h-4 text-white" />
               </div>
-              <span className="font-black text-sm tracking-wider text-white">WM<span className="text-red-500">PLAY</span></span>
+              <span className={`font-black text-sm tracking-wider ${isLight ? "text-zinc-950" : "text-white"}`}>WM<span className="text-red-600">PLAY</span></span>
             </div>
 
             {activeAddonView && (
@@ -859,7 +896,11 @@ export default function KodiApp() {
                     setActiveAddonView(null);
                   }
                 }}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-zinc-800 text-red-500 text-xs font-bold transition-colors shrink-0"
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-colors shrink-0 ${
+                  isLight
+                    ? "bg-zinc-100 hover:bg-red-50 border-zinc-300 text-red-600 shadow-sm"
+                    : "bg-slate-800 hover:bg-zinc-800 border-transparent text-red-500"
+                }`}
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span className="hidden sm:inline">Voltar</span>
@@ -868,7 +909,9 @@ export default function KodiApp() {
 
             {/* Input de Busca Dinâmica */}
             <div className="relative w-full min-w-0">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 ${
+                isLight ? "text-zinc-600" : "text-slate-400"
+              }`} />
               <input
                 type="text"
                 value={
@@ -905,7 +948,11 @@ export default function KodiApp() {
                     ? "Pesquisar YouTube, Spotify, SoundCloud..."
                     : "Filtrar por nome ou canal..."
                 }
-                className="w-full bg-zinc-950/90 border border-zinc-700/80 rounded-xl pl-10 pr-9 sm:pr-10 py-1.5 sm:py-2 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-500 transition-all"
+                className={`w-full rounded-xl pl-10 pr-9 sm:pr-10 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all ${
+                  isLight
+                    ? "bg-zinc-50 border border-zinc-300 text-zinc-950 placeholder:text-zinc-500 focus:bg-white focus:border-red-600 focus:ring-1 focus:ring-red-500 shadow-inner"
+                    : "bg-zinc-950/90 border border-zinc-700/80 text-white placeholder-slate-400 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-500"
+                }`}
               />
               {isBrowsingCatalog && catalogSearch ? (
                 <button
@@ -914,7 +961,9 @@ export default function KodiApp() {
                     setCatalogPage(1);
                     fetchCatalogData(currentCatalogType, 1, "", catalogGenre);
                   }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 ${
+                    isLight ? "text-zinc-500 hover:text-zinc-950" : "text-slate-400 hover:text-white"
+                  }`}
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -924,7 +973,9 @@ export default function KodiApp() {
                     setMusicSearchQuery("");
                     setMusicSearchTrigger((prev) => prev + 1);
                   }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 ${
+                    isLight ? "text-zinc-500 hover:text-zinc-950" : "text-slate-400 hover:text-white"
+                  }`}
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -960,14 +1011,20 @@ export default function KodiApp() {
 
             <button
               onClick={() => setIsZipModalOpen(true)}
-              className="hidden md:flex items-center gap-2 bg-slate-800 hover:bg-red-950/80 border border-red-600/30 hover:border-red-500 text-red-400 text-xs font-semibold px-4 py-2 rounded-xl transition-all"
+              className={`hidden md:flex items-center gap-2 border text-xs font-bold px-4 py-2 rounded-xl transition-all ${
+                isLight
+                  ? "bg-zinc-100 hover:bg-red-50 border-zinc-300 hover:border-red-500 text-zinc-800 hover:text-red-600 shadow-sm"
+                  : "bg-slate-800 hover:bg-red-950/80 border-red-600/30 hover:border-red-500 text-red-400 font-semibold"
+              }`}
             >
               <UploadCloud className="w-4 h-4 text-red-500" />
               <span>Instalar ZIP</span>
             </button>
-            <div className="hidden sm:block h-6 w-px bg-slate-800" />
-            <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-slate-400">
-              <Clock className="w-4 h-4 text-red-500" />
+            <div className={`hidden sm:block h-6 w-px ${isLight ? "bg-zinc-300" : "bg-slate-800"}`} />
+            <div className={`hidden sm:flex items-center gap-2 text-xs font-mono font-bold ${
+              isLight ? "text-zinc-800" : "text-slate-400"
+            }`}>
+              <Clock className="w-4 h-4 text-red-600" />
               <span>{currentTime}</span>
             </div>
           </div>
@@ -981,7 +1038,9 @@ export default function KodiApp() {
           {activeAddonView === "brazucaplay" ? (
             <div className="space-y-6">
               {/* Header Oficial do Brazuca Play */}
-              <div className="relative rounded-2xl overflow-hidden border border-red-600/30 bg-zinc-950/90 p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl backdrop-blur-md">
+              <div className={`relative rounded-2xl overflow-hidden border p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl backdrop-blur-md transition-colors ${
+                isLight ? "bg-white border-zinc-300 shadow-sm" : "border-red-600/30 bg-zinc-950/90"
+              }`}>
                 <div className="flex items-center gap-5">
                   <div className="w-20 h-20 rounded-2xl overflow-hidden border border-red-500/50 shadow-xl bg-black flex items-center justify-center shrink-0">
                     <img
@@ -992,15 +1051,19 @@ export default function KodiApp() {
                   </div>
                   <div>
                     <div className="flex items-center gap-3">
-                      <h2 className="text-2xl font-black text-white">Brazuca Play</h2>
-                      <span className="text-xs font-bold text-amber-300 bg-amber-950/80 border border-amber-500/50 px-2.5 py-0.5 rounded-full font-mono">
+                      <h2 className={`text-2xl font-black ${isLight ? "text-zinc-950" : "text-white"}`}>Brazuca Play</h2>
+                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full font-mono ${
+                        isLight ? "text-amber-800 bg-amber-100 border border-amber-300" : "text-amber-300 bg-amber-950/80 border border-amber-500/50"
+                      }`}>
                         v2.1.4 OFICIAL
                       </span>
-                      <span className="text-xs font-bold text-emerald-300 bg-emerald-950/80 border border-emerald-500/50 px-2.5 py-0.5 rounded-full">
+                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                        isLight ? "text-emerald-800 bg-emerald-100 border border-emerald-300" : "text-emerald-300 bg-emerald-950/80 border border-emerald-500/50"
+                      }`}>
                         38.676 Títulos
                       </span>
                     </div>
-                    <p className="text-xs text-slate-300 mt-1 max-w-xl">
+                    <p className={`text-xs mt-1 max-w-xl ${isLight ? "text-zinc-700 font-semibold" : "text-slate-300"}`}>
                       Repositório oficial descompactado: Todos os 154 canais de TV ao vivo, mais de 17.800 filmes, 13.000 séries, animes e desenhos com episódios completos!
                     </p>
                   </div>
@@ -1012,7 +1075,11 @@ export default function KodiApp() {
                       setSelectedSeriesItem(null);
                       setActiveBrazucaCategory(null);
                     }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600/30 border border-red-500/40 text-red-400 hover:bg-red-600 hover:text-white text-xs font-bold transition-all shadow-md"
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md ${
+                      isLight
+                        ? "bg-zinc-100 hover:bg-red-50 border border-zinc-300 text-red-600"
+                        : "bg-red-600/30 border border-red-500/40 text-red-400 hover:bg-red-600 hover:text-white"
+                    }`}
                   >
                     <ArrowLeft className="w-4 h-4" />
                     <span>Voltar ao Menu Raiz</span>
@@ -1030,35 +1097,55 @@ export default function KodiApp() {
                         setActiveBrazucaCategory(cat);
                         setSelectedSeriesItem(null);
                       }}
-                      className="group relative rounded-2xl overflow-hidden border border-red-600/20 bg-zinc-950/70 hover:border-red-500 transition-all duration-300 cursor-pointer p-6 flex flex-col justify-between hover:scale-[1.02] shadow-xl hover:shadow-red-600/20"
+                      className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer p-6 flex flex-col justify-between hover:scale-[1.02] shadow-xl ${
+                        isLight
+                          ? "border-zinc-300 bg-white hover:border-red-500 hover:shadow-red-500/10"
+                          : "border-red-600/20 bg-zinc-950/70 hover:border-red-500 hover:shadow-red-600/20"
+                      }`}
                     >
                       <div
                         className="absolute inset-0 bg-cover bg-center opacity-20 group-hover:opacity-35 transition-opacity duration-500"
                         style={{ backgroundImage: `url(${cat.banner})` }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent" />
+                      <div className={`absolute inset-0 ${
+                        isLight
+                          ? "bg-gradient-to-t from-white via-white/85 to-white/40"
+                          : "bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent"
+                      }`} />
 
                       <div className="relative z-10">
                         <div className="flex items-center justify-between mb-4">
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-cyan-600/40 to-blue-500/30 border border-red-500/40 flex items-center justify-center text-red-400 group-hover:scale-110 transition-transform">
-                            <Folder className="w-6 h-6 fill-red-500/20 text-red-400" />
+                          <div className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-transform group-hover:scale-110 ${
+                            isLight
+                              ? "bg-red-50 border-red-200 text-red-600"
+                              : "bg-gradient-to-tr from-cyan-600/40 to-blue-500/30 border-red-500/40 text-red-400"
+                          }`}>
+                            <Folder className={`w-6 h-6 ${isLight ? "text-red-600 fill-red-100" : "fill-red-500/20 text-red-400"}`} />
                           </div>
                           {cat.badge && (
-                            <span className="text-xs font-bold text-amber-300 bg-amber-950/60 border border-amber-500/40 px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
+                            <span className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider font-mono ${
+                              isLight ? "text-amber-800 bg-amber-100 border border-amber-300" : "text-amber-300 bg-amber-950/60 border border-amber-500/40"
+                            }`}>
                               {cat.badge}
                             </span>
                           )}
                         </div>
 
-                        <h3 className="text-lg font-black text-white group-hover:text-red-400 transition-colors">
+                        <h3 className={`text-lg font-black transition-colors ${
+                          isLight ? "text-zinc-950 group-hover:text-red-600" : "text-white group-hover:text-red-400"
+                        }`}>
                           {cat.title}
                         </h3>
-                        <p className="text-xs text-slate-300 mt-2 line-clamp-2 leading-relaxed">
+                        <p className={`text-xs mt-2 line-clamp-2 leading-relaxed ${
+                          isLight ? "text-zinc-700 font-semibold" : "text-slate-300"
+                        }`}>
                           {cat.description}
                         </p>
                       </div>
 
-                      <div className="relative z-10 mt-6 pt-3 border-t border-zinc-800 flex items-center justify-between text-xs font-semibold text-red-500">
+                      <div className={`relative z-10 mt-6 pt-3 border-t flex items-center justify-between text-xs font-bold text-red-600 ${
+                        isLight ? "border-zinc-200" : "border-zinc-800"
+                      }`}>
                         <span>Abrir Categoria</span>
                         <ChevronRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
                       </div>
@@ -1069,15 +1156,19 @@ export default function KodiApp() {
                 /* TELA 2: CANAIS DE TV AO VIVO (154 CANAIS OFICIAIS) */
                 <div className="space-y-4">
                   <div className="flex items-center justify-between flex-wrap gap-4">
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <h3 className={`text-lg font-bold flex items-center gap-2 ${isLight ? "text-zinc-950" : "text-white"}`}>
                       <span>Grade Oficial de Canais</span>
-                      <span className="text-xs text-red-400 bg-red-950/60 border border-red-600/30 px-2.5 py-0.5 rounded-full font-mono">
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-mono font-bold ${
+                        isLight ? "text-red-700 bg-red-100 border border-red-300" : "text-red-400 bg-red-950/60 border border-red-600/30"
+                      }`}>
                         {filteredBrazucaChannels.length} canais ao vivo
                       </span>
                     </h3>
 
                     {/* Subfiltros de Canais */}
-                    <div className="flex items-center gap-1.5 bg-zinc-950/90 p-1 rounded-xl border border-zinc-800 text-xs">
+                    <div className={`flex items-center gap-1.5 p-1 rounded-xl border text-xs overflow-x-auto ${
+                      isLight ? "bg-white border-zinc-300 shadow-sm" : "bg-zinc-950/90 border-zinc-800"
+                    }`}>
                       {[
                         { id: "todos", label: "Todos (154)" },
                         { id: "aberta", label: "TV Aberta" },
@@ -1090,10 +1181,12 @@ export default function KodiApp() {
                         <button
                           key={tab.id}
                           onClick={() => setChannelSubFilter(tab.id)}
-                          className={`px-3 py-1.5 rounded-lg transition-colors font-medium ${
+                          className={`px-3 py-1.5 rounded-lg transition-colors font-bold shrink-0 ${
                             channelSubFilter === tab.id
-                              ? "bg-red-600 text-white font-bold"
-                              : "text-slate-400 hover:text-white"
+                              ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-md shadow-red-600/20"
+                              : isLight
+                              ? "text-zinc-800 hover:text-red-600 hover:bg-red-50 bg-zinc-100/80"
+                              : "text-slate-400 hover:text-white hover:bg-zinc-900"
                           }`}
                         >
                           {tab.label}
@@ -1115,9 +1208,15 @@ export default function KodiApp() {
                             ch.streamUrl
                           )
                         }
-                        className="group p-4 rounded-2xl border border-red-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-red-500 cursor-pointer transition-all duration-200 flex flex-col justify-between hover:scale-105 shadow-lg hover:shadow-red-600/20"
+                        className={`group p-4 rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col justify-between hover:scale-105 shadow-lg ${
+                          isLight
+                            ? "border-zinc-300 bg-white hover:bg-red-50/40 hover:border-red-500 hover:shadow-red-500/10"
+                            : "border-red-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-red-500 hover:shadow-red-600/20"
+                        }`}
                       >
-                        <div className="aspect-video w-full rounded-xl bg-black/60 border border-zinc-800 flex items-center justify-center p-3 relative overflow-hidden group-hover:border-red-600/40">
+                        <div className={`aspect-video w-full rounded-xl border flex items-center justify-center p-3 relative overflow-hidden ${
+                          isLight ? "bg-zinc-100 border-zinc-200" : "bg-black/60 border-zinc-800 group-hover:border-red-600/40"
+                        }`}>
                           <img
                             src={ch.logo}
                             alt={ch.name}
@@ -1129,20 +1228,26 @@ export default function KodiApp() {
                         </div>
 
                         <div className="mt-3">
-                          <h4 className="font-bold text-sm text-slate-100 truncate group-hover:text-red-400 transition-colors">
+                          <h4 className={`font-bold text-sm truncate transition-colors ${
+                            isLight ? "text-zinc-950 group-hover:text-red-600" : "text-slate-100 group-hover:text-red-400"
+                          }`}>
                             {ch.name}
                           </h4>
-                          <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                          <p className={`text-[11px] truncate mt-0.5 ${
+                            isLight ? "text-zinc-600 font-semibold" : "text-slate-400"
+                          }`}>
                             {ch.epg || "Transmissão Ao Vivo"}
                           </p>
                         </div>
 
-                        <div className="mt-3 pt-2 border-t border-zinc-850 flex items-center justify-between text-[11px]">
-                          <span className="text-red-500 font-mono uppercase font-bold">
+                        <div className={`mt-3 pt-2 border-t flex items-center justify-between text-[11px] ${
+                          isLight ? "border-zinc-200" : "border-zinc-850"
+                        }`}>
+                          <span className="text-red-600 font-mono uppercase font-black">
                             {ch.category}
                           </span>
-                          <span className="text-emerald-400 flex items-center gap-1 font-semibold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                          <span className="text-emerald-700 flex items-center gap-1 font-bold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                             AO VIVO
                           </span>
                         </div>
@@ -1153,7 +1258,9 @@ export default function KodiApp() {
               ) : selectedSeriesItem ? (
                 /* TELA 3: EPISÓDIOS DA SÉRIE / ANIME / NOVELA SELECIONADA */
                 <div className="space-y-6 pb-12">
-                  <div className="relative rounded-2xl overflow-hidden border border-red-600/25 bg-zinc-950/80 p-6 md:p-8 flex flex-col md:flex-row gap-6 items-start backdrop-blur-md shadow-2xl">
+                  <div className={`relative rounded-2xl overflow-hidden border p-6 md:p-8 flex flex-col md:flex-row gap-6 items-start backdrop-blur-md shadow-2xl ${
+                    isLight ? "bg-white border-zinc-300 shadow-sm" : "border-red-600/25 bg-zinc-950/80"
+                  }`}>
                     <div className="relative w-44 h-64 rounded-xl overflow-hidden shadow-2xl border border-red-500/30 shrink-0 bg-black">
                       <img
                         src={selectedSeriesItem.thumbnail || "/brazuca_icon.png"}
@@ -1163,33 +1270,39 @@ export default function KodiApp() {
                     </div>
                     <div className="space-y-3 flex-1">
                       <div className="flex items-center gap-2 flex-wrap text-xs">
-                        <span className="bg-red-600/20 text-red-400 font-bold px-2.5 py-0.5 rounded-full border border-red-500/30 uppercase font-mono">
+                        <span className={`font-bold px-2.5 py-0.5 rounded-full border uppercase font-mono ${
+                          isLight ? "bg-red-50 text-red-700 border-red-300" : "bg-red-600/20 text-red-400 border-red-500/30"
+                        }`}>
                           {selectedSeriesItem.type}
                         </span>
                         {selectedSeriesItem.year && (
-                          <span className="text-slate-300 flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5 text-red-500" />
+                          <span className={`flex items-center gap-1 font-semibold ${isLight ? "text-zinc-700" : "text-slate-300"}`}>
+                            <Calendar className="w-3.5 h-3.5 text-red-600" />
                             {selectedSeriesItem.year}
                           </span>
                         )}
                         {selectedSeriesItem.rating && (
-                          <span className="text-amber-400 font-bold flex items-center gap-1">
+                          <span className="text-amber-500 font-bold flex items-center gap-1">
                             <Star className="w-3.5 h-3.5 fill-current" />
                             {selectedSeriesItem.rating}
                           </span>
                         )}
                         {selectedSeriesItem.genres && (
-                          <span className="text-slate-400">· {selectedSeriesItem.genres}</span>
+                          <span className={`font-semibold ${isLight ? "text-zinc-600" : "text-slate-400"}`}>· {selectedSeriesItem.genres}</span>
                         )}
                       </div>
-                      <h2 className="text-3xl font-black text-white">{selectedSeriesItem.title}</h2>
-                      <p className="text-slate-300 text-sm leading-relaxed max-w-4xl line-clamp-4">
+                      <h2 className={`text-3xl font-black ${isLight ? "text-zinc-950" : "text-white"}`}>{selectedSeriesItem.title}</h2>
+                      <p className={`text-sm leading-relaxed max-w-4xl line-clamp-4 ${isLight ? "text-zinc-700 font-semibold" : "text-slate-300"}`}>
                         {selectedSeriesItem.synopsis || "Sinopse não informada pelo repositório."}
                       </p>
                       <div className="pt-2 flex items-center gap-3">
                         <button
                           onClick={() => setSelectedSeriesItem(null)}
-                          className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-zinc-800 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition-colors"
+                          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors border ${
+                            isLight
+                              ? "bg-zinc-100 hover:bg-red-50 border-zinc-300 text-zinc-800 hover:text-red-600 shadow-sm"
+                              : "bg-slate-800 hover:bg-zinc-800 border-transparent text-slate-300 hover:text-white"
+                          }`}
                         >
                           <ArrowLeft className="w-4 h-4" />
                           <span>Voltar para lista de títulos</span>
@@ -1200,15 +1313,17 @@ export default function KodiApp() {
 
                   {/* Seletor de Temporadas e Grade de Episódios */}
                   {loadingEpisodes ? (
-                    <div className="p-12 flex flex-col items-center justify-center gap-3 text-red-500">
+                    <div className="p-12 flex flex-col items-center justify-center gap-3 text-red-600">
                       <Loader2 className="w-10 h-10 animate-spin" />
-                      <p className="text-sm font-semibold">Carregando temporadas e episódios sincronizados...</p>
+                      <p className={`text-sm font-bold ${isLight ? "text-zinc-800" : "text-slate-300"}`}>Carregando temporadas e episódios sincronizados...</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {/* Abas de Temporada */}
+                      {/* Abas de Temporada (Subfiltros de Temporadas) */}
                       {seriesSeasons.length > 0 && (
-                        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-zinc-800">
+                        <div className={`flex items-center gap-2 overflow-x-auto pb-2 border-b ${
+                          isLight ? "border-zinc-200" : "border-zinc-800"
+                        }`}>
                           {seriesSeasons.map((s) => (
                             <button
                               key={s.seasonNumber}
@@ -1216,6 +1331,8 @@ export default function KodiApp() {
                               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
                                 activeSeasonTab === s.seasonNumber
                                   ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-lg shadow-red-600/20"
+                                  : isLight
+                                  ? "bg-white text-zinc-800 hover:text-red-600 hover:bg-red-50 border border-zinc-300 shadow-sm"
                                   : "bg-zinc-950/90 text-slate-400 hover:text-white border border-zinc-800"
                               }`}
                             >
@@ -1243,22 +1360,34 @@ export default function KodiApp() {
                                 ep.number
                               )
                             }
-                            className="group p-4 rounded-xl border border-red-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-red-500 cursor-pointer transition-all duration-200 flex items-center justify-between hover:scale-[1.01] shadow-lg"
+                            className={`group p-4 rounded-xl border cursor-pointer transition-all duration-200 flex items-center justify-between hover:scale-[1.01] shadow-md ${
+                              isLight
+                                ? "border-zinc-300 bg-white hover:bg-red-50/50 hover:border-red-500"
+                                : "border-red-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-red-500"
+                            }`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-10 h-10 rounded-lg bg-red-950/80 border border-red-600/30 flex items-center justify-center font-mono font-bold text-red-400 text-sm shrink-0 group-hover:bg-red-600 group-hover:text-white transition-colors">
+                              <div className={`w-10 h-10 rounded-lg border flex items-center justify-center font-mono font-bold text-sm shrink-0 transition-colors ${
+                                isLight
+                                  ? "bg-red-50 border-red-200 text-red-600 group-hover:bg-red-600 group-hover:text-white"
+                                  : "bg-red-950/80 border-red-600/30 text-red-400 group-hover:bg-red-600 group-hover:text-white"
+                              }`}>
                                 {ep.number}
                               </div>
                               <div className="min-w-0">
-                                <h4 className="font-bold text-sm text-slate-100 group-hover:text-red-400 truncate">
+                                <h4 className={`font-bold text-sm truncate ${
+                                  isLight ? "text-zinc-950 group-hover:text-red-600" : "text-slate-100 group-hover:text-red-400"
+                                }`}>
                                   {ep.title}
                                 </h4>
-                                <p className="text-xs text-slate-400 truncate mt-0.5">
+                                <p className={`text-xs truncate mt-0.5 ${
+                                  isLight ? "text-zinc-600 font-semibold" : "text-slate-400"
+                                }`}>
                                   {ep.duration || "45m"} · Full HD
                                 </p>
                               </div>
                             </div>
-                            <div className="w-8 h-8 rounded-full bg-red-600/30 border border-red-500/30 flex items-center justify-center text-red-400 group-hover:bg-red-600 group-hover:text-white transition-all shrink-0 ml-2">
+                            <div className="w-8 h-8 rounded-full bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-600 group-hover:bg-red-600 group-hover:text-white transition-all shrink-0 ml-2">
                               <Play className="w-4 h-4 fill-current ml-0.5" />
                             </div>
                           </div>
@@ -1281,6 +1410,7 @@ export default function KodiApp() {
                   catalogSearch={catalogSearch}
                   jumpPageInput={jumpPageInput}
                   genresList={GENRES_LIST}
+                  isLight={isLight}
                   onSelectGenre={(g) => {
                     const newGenre = g === "Todos" ? "" : g;
                     setCatalogGenre(newGenre);
@@ -1329,7 +1459,9 @@ export default function KodiApp() {
             /* ============================================================== */
             selectedSeriesItem ? (
               <div className="space-y-6 pb-12">
-                <div className="relative rounded-2xl overflow-hidden border border-red-600/25 bg-zinc-950/80 p-6 md:p-8 flex flex-col md:flex-row gap-6 items-start backdrop-blur-md shadow-2xl">
+                <div className={`relative rounded-2xl overflow-hidden border p-6 md:p-8 flex flex-col md:flex-row gap-6 items-start backdrop-blur-md shadow-2xl ${
+                  isLight ? "bg-white border-zinc-300 shadow-sm" : "border-red-600/25 bg-zinc-950/80"
+                }`}>
                   <div className="relative w-44 h-64 rounded-xl overflow-hidden shadow-2xl border border-red-500/30 shrink-0 bg-black">
                     <img
                       src={selectedSeriesItem.thumbnail || "/brazuca_icon.png"}
@@ -1339,33 +1471,39 @@ export default function KodiApp() {
                   </div>
                   <div className="space-y-3 flex-1">
                     <div className="flex items-center gap-2 flex-wrap text-xs">
-                      <span className="bg-red-600/20 text-red-400 font-bold px-2.5 py-0.5 rounded-full border border-red-500/30 uppercase font-mono">
+                      <span className={`font-bold px-2.5 py-0.5 rounded-full border uppercase font-mono ${
+                        isLight ? "bg-red-50 text-red-700 border-red-300" : "bg-red-600/20 text-red-400 border-red-500/30"
+                      }`}>
                         {selectedSeriesItem.type}
                       </span>
                       {selectedSeriesItem.year && (
-                        <span className="text-slate-300 flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5 text-red-500" />
+                        <span className={`flex items-center gap-1 font-semibold ${isLight ? "text-zinc-700" : "text-slate-300"}`}>
+                          <Calendar className="w-3.5 h-3.5 text-red-600" />
                           {selectedSeriesItem.year}
                         </span>
                       )}
                       {selectedSeriesItem.rating && (
-                        <span className="text-amber-400 font-bold flex items-center gap-1">
+                        <span className="text-amber-500 font-bold flex items-center gap-1">
                           <Star className="w-3.5 h-3.5 fill-current" />
                           {selectedSeriesItem.rating}
                         </span>
                       )}
                       {selectedSeriesItem.genres && (
-                        <span className="text-slate-400">· {selectedSeriesItem.genres}</span>
+                        <span className={`font-semibold ${isLight ? "text-zinc-600" : "text-slate-400"}`}>· {selectedSeriesItem.genres}</span>
                       )}
                     </div>
-                    <h2 className="text-3xl font-black text-white">{selectedSeriesItem.title}</h2>
-                    <p className="text-slate-300 text-sm leading-relaxed max-w-4xl line-clamp-4">
+                    <h2 className={`text-3xl font-black ${isLight ? "text-zinc-950" : "text-white"}`}>{selectedSeriesItem.title}</h2>
+                    <p className={`text-sm leading-relaxed max-w-4xl line-clamp-4 ${isLight ? "text-zinc-700 font-semibold" : "text-slate-300"}`}>
                       {selectedSeriesItem.synopsis || "Sinopse não informada pelo repositório."}
                     </p>
                     <div className="pt-2 flex items-center gap-3">
                       <button
                         onClick={() => setSelectedSeriesItem(null)}
-                        className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-zinc-800 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition-colors"
+                        className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors border ${
+                          isLight
+                            ? "bg-zinc-100 hover:bg-red-50 border-zinc-300 text-zinc-800 hover:text-red-600 shadow-sm"
+                            : "bg-slate-800 hover:bg-zinc-800 border-transparent text-slate-300 hover:text-white"
+                        }`}
                       >
                         <ArrowLeft className="w-4 h-4" />
                         <span>Voltar para lista de títulos</span>
@@ -1375,14 +1513,17 @@ export default function KodiApp() {
                 </div>
 
                 {loadingEpisodes ? (
-                  <div className="p-12 flex flex-col items-center justify-center gap-3 text-red-500">
+                  <div className="p-12 flex flex-col items-center justify-center gap-3 text-red-600">
                     <Loader2 className="w-10 h-10 animate-spin" />
-                    <p className="text-sm font-semibold">Carregando temporadas e episódios sincronizados...</p>
+                    <p className={`text-sm font-bold ${isLight ? "text-zinc-800" : "text-slate-300"}`}>Carregando temporadas e episódios sincronizados...</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
+                    {/* Abas de Temporada (Subfiltros de Temporadas) */}
                     {seriesSeasons.length > 0 && (
-                      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-zinc-800">
+                      <div className={`flex items-center gap-2 overflow-x-auto pb-2 border-b ${
+                        isLight ? "border-zinc-200" : "border-zinc-800"
+                      }`}>
                         {seriesSeasons.map((s) => (
                           <button
                             key={s.seasonNumber}
@@ -1390,6 +1531,8 @@ export default function KodiApp() {
                             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
                               activeSeasonTab === s.seasonNumber
                                 ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-lg shadow-red-600/20"
+                                : isLight
+                                ? "bg-white text-zinc-800 hover:text-red-600 hover:bg-red-50 border border-zinc-300 shadow-sm"
                                 : "bg-zinc-950/90 text-slate-400 hover:text-white border border-zinc-800"
                             }`}
                           >
@@ -1399,6 +1542,7 @@ export default function KodiApp() {
                       </div>
                     )}
 
+                    {/* Lista de Episódios da Temporada Ativa */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {(
                         seriesSeasons.find((s) => s.seasonNumber === activeSeasonTab)?.episodes || []
@@ -1416,22 +1560,34 @@ export default function KodiApp() {
                               ep.number
                             )
                           }
-                          className="group p-4 rounded-xl border border-red-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-red-500 cursor-pointer transition-all duration-200 flex items-center justify-between hover:scale-[1.01] shadow-lg"
+                          className={`group p-4 rounded-xl border cursor-pointer transition-all duration-200 flex items-center justify-between hover:scale-[1.01] shadow-md ${
+                            isLight
+                              ? "border-zinc-300 bg-white hover:bg-red-50/50 hover:border-red-500"
+                              : "border-red-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-red-500"
+                          }`}
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-lg bg-red-950/80 border border-red-600/30 flex items-center justify-center font-mono font-bold text-red-400 text-sm shrink-0 group-hover:bg-red-600 group-hover:text-white transition-colors">
+                            <div className={`w-10 h-10 rounded-lg border flex items-center justify-center font-mono font-bold text-sm shrink-0 transition-colors ${
+                              isLight
+                                ? "bg-red-50 border-red-200 text-red-600 group-hover:bg-red-600 group-hover:text-white"
+                                : "bg-red-950/80 border-red-600/30 text-red-400 group-hover:bg-red-600 group-hover:text-white"
+                            }`}>
                               {ep.number}
                             </div>
                             <div className="min-w-0">
-                              <h4 className="font-bold text-sm text-slate-100 group-hover:text-red-400 truncate">
+                              <h4 className={`font-bold text-sm truncate ${
+                                isLight ? "text-zinc-950 group-hover:text-red-600" : "text-slate-100 group-hover:text-red-400"
+                              }`}>
                                 {ep.title}
                               </h4>
-                              <p className="text-xs text-slate-400 truncate mt-0.5">
+                              <p className={`text-xs truncate mt-0.5 ${
+                                isLight ? "text-zinc-600 font-semibold" : "text-slate-400"
+                              }`}>
                                 {ep.duration || "45m"} · Full HD
                               </p>
                             </div>
                           </div>
-                          <div className="w-8 h-8 rounded-full bg-red-600/30 border border-red-500/30 flex items-center justify-center text-red-400 group-hover:bg-red-600 group-hover:text-white transition-all shrink-0 ml-2">
+                          <div className="w-8 h-8 rounded-full bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-600 group-hover:bg-red-600 group-hover:text-white transition-all shrink-0 ml-2">
                             <Play className="w-4 h-4 fill-current ml-0.5" />
                           </div>
                         </div>
@@ -1453,6 +1609,7 @@ export default function KodiApp() {
                 catalogSearch={catalogSearch}
                 jumpPageInput={jumpPageInput}
                 genresList={GENRES_LIST}
+                isLight={isLight}
                 onSelectGenre={(g) => {
                   const newGenre = g === "Todos" ? "" : g;
                   setCatalogGenre(newGenre);
@@ -1494,15 +1651,20 @@ export default function KodiApp() {
             /* ============================================================== */
             <div className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-4">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Radio className="w-6 h-6 text-red-500" />
+                <h3 className={`text-xl font-bold flex items-center gap-2 ${isLight ? "text-zinc-950" : "text-white"}`}>
+                  <Radio className="w-6 h-6 text-red-600" />
                   <span>Canais de TV ao Vivo</span>
-                  <span className="text-xs text-red-400 bg-red-950/60 border border-red-600/30 px-2.5 py-0.5 rounded-full font-mono">
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-mono font-bold ${
+                    isLight ? "text-red-700 bg-red-100 border border-red-300" : "text-red-400 bg-red-950/60 border border-red-600/30"
+                  }`}>
                     {filteredBrazucaChannels.length} canais
                   </span>
                 </h3>
 
-                <div className="flex items-center gap-1.5 bg-zinc-950/90 p-1 rounded-xl border border-zinc-800 text-xs">
+                {/* Subfiltros de Canais */}
+                <div className={`flex items-center gap-1.5 p-1 rounded-xl border text-xs overflow-x-auto ${
+                  isLight ? "bg-white border-zinc-300 shadow-sm" : "bg-zinc-950/90 border-zinc-800"
+                }`}>
                   {[
                     { id: "todos", label: "Todos (154)" },
                     { id: "aberta", label: "TV Aberta" },
@@ -1515,10 +1677,12 @@ export default function KodiApp() {
                     <button
                       key={tab.id}
                       onClick={() => setChannelSubFilter(tab.id)}
-                      className={`px-3 py-1.5 rounded-lg transition-colors font-medium ${
+                      className={`px-3 py-1.5 rounded-lg transition-colors font-bold shrink-0 ${
                         channelSubFilter === tab.id
-                          ? "bg-red-600 text-white font-bold"
-                          : "text-slate-400 hover:text-white"
+                          ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-md shadow-red-600/20"
+                          : isLight
+                          ? "text-zinc-800 hover:text-red-600 hover:bg-red-50 bg-zinc-100/80"
+                          : "text-slate-400 hover:text-white hover:bg-zinc-900"
                       }`}
                     >
                       {tab.label}
@@ -1540,9 +1704,15 @@ export default function KodiApp() {
                         ch.streamUrl
                       )
                     }
-                    className="group p-4 rounded-2xl border border-red-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-red-500 cursor-pointer transition-all duration-200 flex flex-col justify-between hover:scale-105 shadow-lg hover:shadow-red-600/20"
+                    className={`group p-4 rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col justify-between hover:scale-105 shadow-lg ${
+                      isLight
+                        ? "border-zinc-300 bg-white hover:bg-red-50/40 hover:border-red-500 hover:shadow-red-500/10"
+                        : "border-red-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-red-500 hover:shadow-red-600/20"
+                    }`}
                   >
-                    <div className="aspect-video w-full rounded-xl bg-black/60 border border-zinc-800 flex items-center justify-center p-3 relative overflow-hidden group-hover:border-red-600/40">
+                    <div className={`aspect-video w-full rounded-xl border flex items-center justify-center p-3 relative overflow-hidden ${
+                      isLight ? "bg-zinc-100 border-zinc-200" : "bg-black/60 border-zinc-800 group-hover:border-red-600/40"
+                    }`}>
                       <img
                         src={ch.logo}
                         alt={ch.name}
@@ -1554,20 +1724,26 @@ export default function KodiApp() {
                     </div>
 
                     <div className="mt-3">
-                      <h4 className="font-bold text-sm text-slate-100 truncate group-hover:text-red-400 transition-colors">
+                      <h4 className={`font-bold text-sm truncate transition-colors ${
+                        isLight ? "text-zinc-950 group-hover:text-red-600" : "text-slate-100 group-hover:text-red-400"
+                      }`}>
                         {ch.name}
                       </h4>
-                      <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                      <p className={`text-[11px] truncate mt-0.5 ${
+                        isLight ? "text-zinc-600 font-semibold" : "text-slate-400"
+                      }`}>
                         {ch.epg || "Transmissão Ao Vivo"}
                       </p>
                     </div>
 
-                    <div className="mt-3 pt-2 border-t border-zinc-850 flex items-center justify-between text-[11px]">
-                      <span className="text-red-500 font-mono uppercase font-bold">
+                    <div className={`mt-3 pt-2 border-t flex items-center justify-between text-[11px] ${
+                      isLight ? "border-zinc-200" : "border-zinc-850"
+                    }`}>
+                      <span className="text-red-600 font-mono uppercase font-black">
                         {ch.category}
                       </span>
-                      <span className="text-emerald-400 flex items-center gap-1 font-semibold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                      <span className="text-emerald-700 flex items-center gap-1 font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                         AO VIVO
                       </span>
                     </div>
@@ -1583,6 +1759,7 @@ export default function KodiApp() {
               externalQuery={musicSearchQuery}
               externalTrigger={musicSearchTrigger}
               onQueryChange={setMusicSearchQuery}
+              isLight={isLight}
             />
           ) : activeCategory === "addons" ? (
             /* ============================================================== */
@@ -1591,24 +1768,28 @@ export default function KodiApp() {
             <div className="space-y-6">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                    <Grid className="w-6 h-6 text-red-500" />
+                  <h2 className={`text-2xl font-bold flex items-center gap-3 ${isLight ? "text-zinc-950" : "text-white"}`}>
+                    <Grid className="w-6 h-6 text-red-600" />
                     <span>Navegador de Complementos (Addons)</span>
                   </h2>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className={`text-xs mt-1 ${isLight ? "text-zinc-600 font-semibold" : "text-slate-400"}`}>
                     Repositórios oficiais, addons de streaming e instalador de ZIP.
                   </p>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className="flex bg-zinc-950/90 p-1 rounded-xl border border-zinc-800 text-xs">
+                  <div className={`flex p-1 rounded-xl border text-xs ${
+                    isLight ? "bg-white border-zinc-300 shadow-sm" : "bg-zinc-950/90 border-zinc-800"
+                  }`}>
                     {(["all", "installed", "available"] as const).map((filter) => (
                       <button
                         key={filter}
                         onClick={() => setAddonFilter(filter)}
-                        className={`px-3 py-1.5 rounded-lg transition-colors font-medium capitalize ${
+                        className={`px-3 py-1.5 rounded-lg transition-colors font-bold capitalize ${
                           addonFilter === filter
-                            ? "bg-red-600 text-white font-bold"
+                            ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-md shadow-red-600/30"
+                            : isLight
+                            ? "text-zinc-800 hover:text-red-600 hover:bg-red-50"
                             : "text-slate-400 hover:text-white"
                         }`}
                       >
@@ -1631,10 +1812,16 @@ export default function KodiApp() {
                 {filteredAddons.map((addon) => (
                   <div
                     key={addon.id}
-                    className="group relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950/70 hover:border-red-600/50 p-5 flex flex-col justify-between transition-all duration-300 shadow-xl"
+                    className={`group relative rounded-2xl overflow-hidden border p-5 flex flex-col justify-between transition-all duration-300 shadow-xl ${
+                      isLight
+                        ? "border-zinc-300 bg-white hover:border-red-500 hover:shadow-red-500/10"
+                        : "border-zinc-800 bg-zinc-950/70 hover:border-red-600/50"
+                    }`}
                   >
                     <div className="flex items-start gap-4">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden border border-zinc-700 bg-black shrink-0 shadow-lg group-hover:scale-105 transition-transform">
+                      <div className={`w-16 h-16 rounded-xl overflow-hidden border shrink-0 shadow-lg group-hover:scale-105 transition-transform ${
+                        isLight ? "border-zinc-200 bg-zinc-100" : "border-zinc-700 bg-black"
+                      }`}>
                         <img
                           src={addon.icon}
                           alt={addon.name}
@@ -1643,21 +1830,25 @@ export default function KodiApp() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <h3 className="font-bold text-base text-white truncate group-hover:text-red-400 transition-colors">
+                          <h3 className={`font-bold text-base truncate transition-colors ${
+                            isLight ? "text-zinc-950 group-hover:text-red-600" : "text-white group-hover:text-red-400"
+                          }`}>
                             {addon.name}
                           </h3>
-                          <span className="text-[10px] font-mono text-red-500 bg-red-950/60 border border-red-800/40 px-2 py-0.5 rounded-full">
+                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                            isLight ? "text-red-700 bg-red-100 border border-red-300" : "text-red-500 bg-red-950/60 border border-red-800/40"
+                          }`}>
                             v{addon.version}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-400 mt-0.5">por {addon.author}</p>
-                        <p className="text-xs text-slate-300 line-clamp-2 mt-2 leading-relaxed">
+                        <p className={`text-xs mt-0.5 ${isLight ? "text-zinc-600 font-semibold" : "text-slate-400"}`}>por {addon.author}</p>
+                        <p className={`text-xs line-clamp-2 mt-2 leading-relaxed ${isLight ? "text-zinc-700 font-medium" : "text-slate-300"}`}>
                           {addon.description}
                         </p>
                       </div>
                     </div>
 
-                    <div className="mt-5 pt-3 border-t border-zinc-850 flex items-center justify-between">
+                    <div className={`mt-5 pt-3 border-t flex items-center justify-between ${isLight ? "border-zinc-200" : "border-zinc-850"}`}>
                       {addon.id === "plugin.video.brazucaplay" ? (
                         <button
                           onClick={() => {
@@ -1674,8 +1865,10 @@ export default function KodiApp() {
                           onClick={() => toggleInstallAddon(addon.id)}
                           className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
                             addon.installed
-                              ? "bg-slate-800 hover:bg-red-950/80 hover:text-red-300 text-slate-300 border border-zinc-700 hover:border-red-500/40"
-                              : "bg-red-600 hover:bg-red-600 text-white shadow-md shadow-red-600/30"
+                              ? isLight
+                                ? "bg-zinc-100 hover:bg-red-50 text-zinc-800 hover:text-red-600 border border-zinc-300"
+                                : "bg-slate-800 hover:bg-red-950/80 hover:text-red-300 text-slate-300 border border-zinc-700 hover:border-red-500/40"
+                              : "bg-red-600 hover:bg-red-500 text-white shadow-md shadow-red-600/30"
                           }`}
                         >
                           {addon.installed ? "Desinstalar" : "Instalar Complemento"}
@@ -1688,7 +1881,7 @@ export default function KodiApp() {
             </div>
           ) : (
             /* Fallback Mídia Padrão */
-            <div className="text-center py-20 text-slate-400">
+            <div className={`text-center py-20 ${isLight ? "text-zinc-600" : "text-slate-400"}`}>
               <p>Selecione uma categoria válida no menu lateral do WMPLAY.</p>
             </div>
           )}
@@ -1698,7 +1891,9 @@ export default function KodiApp() {
       {/* ============================================================== */}
       {/* BARRA DE NAVEGAÇÃO INFERIOR PARA CELULARES (MOBILE BOTTOM NAV) */}
       {/* ============================================================== */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 border-t border-zinc-800 backdrop-blur-xl px-2 py-1.5 flex items-center justify-around shadow-2xl safe-area-pb">
+      <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-40 border-t backdrop-blur-xl px-2 py-1.5 flex items-center justify-around shadow-2xl safe-area-pb transition-colors ${
+        isLight ? "bg-white/95 border-zinc-200" : "bg-zinc-950/95 border-zinc-800"
+      }`}>
         {MENU_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = activeCategory === item.id;
@@ -1713,18 +1908,22 @@ export default function KodiApp() {
               }}
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] ${
                 isActive
-                  ? "text-red-500 font-bold scale-105"
+                  ? "text-red-600 font-bold scale-105"
+                  : isLight
+                  ? "text-zinc-700 hover:text-red-600"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
               <div
                 className={`p-1 rounded-lg transition-all ${
-                  isActive ? "bg-red-600/20 text-red-500 shadow-sm shadow-red-600/30" : ""
+                  isActive ? "bg-red-600/20 text-red-600 shadow-sm shadow-red-600/30" : ""
                 }`}
               >
                 <Icon className="w-5 h-5" />
               </div>
-              <span className="text-[10px] mt-0.5 tracking-tight font-medium">
+              <span className={`text-[10px] mt-0.5 tracking-tight font-bold ${
+                isActive ? "text-red-600" : isLight ? "text-zinc-800" : "text-slate-400"
+              }`}>
                 {item.label}
               </span>
             </button>
@@ -1756,20 +1955,24 @@ export default function KodiApp() {
       {/* ============================================================== */}
       {isZipModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in duration-150">
-          <div className="w-full max-w-xl bg-zinc-950 border border-zinc-700 rounded-3xl p-6 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
+          <div className={`w-full max-w-xl border rounded-3xl p-6 shadow-2xl space-y-6 transition-colors ${
+            isLight ? "bg-white border-zinc-300" : "bg-zinc-950 border-zinc-700"
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-4 ${isLight ? "border-zinc-200" : "border-zinc-800"}`}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-red-600/20 border border-red-600/30 flex items-center justify-center text-red-500">
+                <div className="w-10 h-10 rounded-xl bg-red-600/20 border border-red-600/30 flex items-center justify-center text-red-600">
                   <FolderArchive className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-white">Instalar a partir de arquivo ZIP</h3>
-                  <p className="text-xs text-zinc-400">Suporte a pacotes de streaming (.zip) e complementos</p>
+                  <h3 className={`font-black text-lg ${isLight ? "text-zinc-950" : "text-white"}`}>Instalar a partir de arquivo ZIP</h3>
+                  <p className={`text-xs ${isLight ? "text-zinc-600 font-semibold" : "text-zinc-400"}`}>Suporte a pacotes de streaming (.zip) e complementos</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsZipModalOpen(false)}
-                className="p-2 rounded-full hover:bg-zinc-900 text-slate-400 hover:text-white transition-colors"
+                className={`p-2 rounded-full transition-colors ${
+                  isLight ? "hover:bg-zinc-100 text-zinc-600 hover:text-red-600" : "hover:bg-zinc-900 text-slate-400 hover:text-white"
+                }`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1777,7 +1980,11 @@ export default function KodiApp() {
 
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-red-600/30 hover:border-red-500 bg-black/40 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:bg-black/70 text-center"
+              className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all text-center ${
+                isLight
+                  ? "border-red-300 bg-red-50/30 hover:bg-red-50/70 hover:border-red-500"
+                  : "border-red-600/30 hover:border-red-500 bg-black/40 hover:bg-black/70"
+              }`}
             >
               <input
                 ref={fileInputRef}
@@ -1786,12 +1993,12 @@ export default function KodiApp() {
                 className="hidden"
                 onChange={handleZipFileUpload}
               />
-              <div className="w-14 h-14 rounded-2xl bg-red-600/20 text-red-500 flex items-center justify-center">
+              <div className="w-14 h-14 rounded-2xl bg-red-600/20 text-red-600 flex items-center justify-center">
                 <UploadCloud className="w-7 h-7" />
               </div>
               <div>
-                <p className="text-sm font-bold text-white">Clique para selecionar o arquivo .ZIP</p>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className={`text-sm font-bold ${isLight ? "text-zinc-950" : "text-white"}`}>Clique para selecionar o arquivo .ZIP</p>
+                <p className={`text-xs mt-1 ${isLight ? "text-zinc-600 font-semibold" : "text-slate-400"}`}>
                   Exemplo: plugin.video.BrazucaPlay-2.1.4.zip
                 </p>
               </div>
@@ -1821,7 +2028,11 @@ export default function KodiApp() {
             <div className="flex justify-end pt-2">
               <button
                 onClick={() => setIsZipModalOpen(false)}
-                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-zinc-800 text-slate-200 text-xs font-semibold"
+                className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all border ${
+                  isLight
+                    ? "bg-zinc-100 hover:bg-red-50 border-zinc-300 text-zinc-800 hover:text-red-600 shadow-sm"
+                    : "bg-slate-800 hover:bg-zinc-800 border-transparent text-slate-200"
+                }`}
               >
                 Concluir
               </button>
@@ -1851,6 +2062,7 @@ function CatalogBrowseView({
   onJumpPageSubmit,
   setJumpPageInput,
   onItemClick,
+  isLight = false,
 }: {
   title: string;
   badge?: string;
@@ -1868,26 +2080,33 @@ function CatalogBrowseView({
   onJumpPageSubmit: (e: React.FormEvent) => void;
   setJumpPageInput: (val: string) => void;
   onItemClick: (item: CatalogItem) => void;
+  isLight?: boolean;
 }) {
   return (
     <div className="space-y-4 sm:space-y-5 pb-16">
       {/* Cabeçalho da Lista Responsivo */}
       <div className="flex items-start sm:items-center justify-between flex-wrap gap-3">
         <div>
-          <h3 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2 sm:gap-3 flex-wrap">
+          <h3 className={`text-xl sm:text-2xl font-black flex items-center gap-2 sm:gap-3 flex-wrap ${
+            isLight ? "text-zinc-950" : "text-white"
+          }`}>
             <span>{title}</span>
             {badge && (
-              <span className="text-[10px] sm:text-xs font-bold text-amber-300 bg-amber-950/60 border border-amber-500/40 px-2 sm:px-2.5 py-0.5 rounded-full font-mono">
+              <span className={`text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 rounded-full font-mono ${
+                isLight ? "text-amber-800 bg-amber-100 border border-amber-300" : "text-amber-300 bg-amber-950/60 border border-amber-500/40"
+              }`}>
                 {badge}
               </span>
             )}
-            <span className="text-[10px] sm:text-xs font-semibold text-red-400 bg-red-950/60 border border-red-600/30 px-2 sm:px-2.5 py-0.5 rounded-full font-mono">
+            <span className={`text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 rounded-full font-mono ${
+              isLight ? "text-red-700 bg-red-100 border border-red-300" : "text-red-400 bg-red-950/60 border border-red-600/30"
+            }`}>
               {catalogTotalCount.toLocaleString("pt-BR")} títulos
             </span>
           </h3>
-          <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
-            Pág. <span className="font-bold text-white">{catalogPage}</span> de{" "}
-            <span className="font-bold text-white">{catalogTotalPages}</span> · 48 títulos por página
+          <p className={`text-[11px] sm:text-xs mt-1 ${isLight ? "text-zinc-600 font-semibold" : "text-slate-400"}`}>
+            Pág. <span className={`font-bold ${isLight ? "text-zinc-950" : "text-white"}`}>{catalogPage}</span> de{" "}
+            <span className={`font-bold ${isLight ? "text-zinc-950" : "text-white"}`}>{catalogTotalPages}</span> · 48 títulos por página
           </p>
         </div>
 
@@ -1896,18 +2115,26 @@ function CatalogBrowseView({
           <button
             onClick={() => onPageChange(catalogPage - 1)}
             disabled={catalogPage <= 1 || catalogLoading}
-            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-700 hover:border-red-500 disabled:opacity-40 text-xs font-bold text-slate-300 hover:text-white transition-all"
+            className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl border disabled:opacity-40 text-xs font-bold transition-all ${
+              isLight
+                ? "bg-white border-zinc-300 hover:border-red-500 text-zinc-800 hover:text-red-600 hover:bg-red-50 shadow-sm"
+                : "bg-zinc-950 border-zinc-700 hover:border-red-500 text-slate-300 hover:text-white"
+            }`}
           >
             <ChevronLeft className="w-4 h-4" />
             <span className="hidden sm:inline">Anterior</span>
           </button>
-          <span className="text-xs font-mono font-bold text-red-400 px-1 sm:px-2">
+          <span className="text-xs font-mono font-bold text-red-600 px-1 sm:px-2">
             {catalogPage} / {catalogTotalPages}
           </span>
           <button
             onClick={() => onPageChange(catalogPage + 1)}
             disabled={catalogPage >= catalogTotalPages || catalogLoading}
-            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-700 hover:border-red-500 disabled:opacity-40 text-xs font-bold text-slate-300 hover:text-white transition-all"
+            className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl border disabled:opacity-40 text-xs font-bold transition-all ${
+              isLight
+                ? "bg-white border-zinc-300 hover:border-red-500 text-zinc-800 hover:text-red-600 hover:bg-red-50 shadow-sm"
+                : "bg-zinc-950 border-zinc-700 hover:border-red-500 text-slate-300 hover:text-white"
+            }`}
           >
             <span className="hidden sm:inline">Próxima</span>
             <ChevronRight className="w-4 h-4" />
@@ -1915,7 +2142,7 @@ function CatalogBrowseView({
         </div>
       </div>
 
-      {/* Chips de Gênero Responsivos com Swipe */}
+      {/* Chips de Gênero Responsivos com Swipe (Subfiltros de Gênero) */}
       <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none -mx-2 px-2 sm:mx-0 sm:px-0">
         {genresList.map((g) => {
           const isSelected = (g === "Todos" && !catalogGenre) || catalogGenre === g;
@@ -1926,6 +2153,8 @@ function CatalogBrowseView({
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
                 isSelected
                   ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-md shadow-red-600/30"
+                  : isLight
+                  ? "bg-white border border-zinc-300 text-zinc-800 hover:text-red-600 hover:border-red-500 hover:bg-red-50 shadow-sm"
                   : "bg-zinc-950/90 border border-zinc-800 text-slate-400 hover:text-white hover:border-zinc-700"
               }`}
             >
@@ -1939,12 +2168,14 @@ function CatalogBrowseView({
       {catalogLoading ? (
         <div className="p-16 flex flex-col items-center justify-center gap-3 text-red-500">
           <Loader2 className="w-10 h-10 animate-spin text-red-500" />
-          <p className="text-xs sm:text-sm font-bold text-slate-300">Consultando catálogo de 38.600+ títulos...</p>
+          <p className={`text-xs sm:text-sm font-bold ${isLight ? "text-zinc-700" : "text-slate-300"}`}>Consultando catálogo de 38.600+ títulos...</p>
         </div>
       ) : catalogItems.length === 0 ? (
-        <div className="p-12 text-center text-slate-400 bg-zinc-950/50 rounded-2xl border border-zinc-800">
-          <p className="text-sm sm:text-base text-slate-300 font-bold">Nenhum título encontrado.</p>
-          <p className="text-xs text-slate-400 mt-1">Tente remover os filtros ou buscar por outro termo.</p>
+        <div className={`p-12 text-center rounded-2xl border ${
+          isLight ? "bg-white border-zinc-300 shadow-sm" : "bg-zinc-950/50 border-zinc-800"
+        }`}>
+          <p className={`text-sm sm:text-base font-bold ${isLight ? "text-zinc-900" : "text-slate-300"}`}>Nenhum título encontrado.</p>
+          <p className={`text-xs mt-1 ${isLight ? "text-zinc-600" : "text-slate-400"}`}>Tente remover os filtros ou buscar por outro termo.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-4 md:gap-5">
@@ -1952,7 +2183,11 @@ function CatalogBrowseView({
             <div
               key={item.id}
               onClick={() => onItemClick(item)}
-              className="group rounded-xl sm:rounded-2xl overflow-hidden border border-red-600/20 bg-zinc-950/70 hover:border-red-500 cursor-pointer transition-all duration-300 flex flex-col hover:scale-[1.02] shadow-xl hover:shadow-red-600/20"
+              className={`group rounded-xl sm:rounded-2xl overflow-hidden border cursor-pointer transition-all duration-300 flex flex-col hover:scale-[1.02] shadow-xl ${
+                isLight
+                  ? "border-zinc-200 bg-white hover:border-red-500 hover:shadow-red-500/10"
+                  : "border-red-600/20 bg-zinc-950/70 hover:border-red-500 hover:shadow-red-600/20"
+              }`}
             >
               <div className="aspect-[2/3] w-full overflow-hidden relative bg-black">
                 <img
@@ -1979,7 +2214,7 @@ function CatalogBrowseView({
 
                 {/* Overlay de Ação no Hover */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2.5 sm:p-3">
-                  <p className="text-[10px] sm:text-[11px] text-slate-300 line-clamp-3 mb-2 leading-relaxed">
+                  <p className="text-[10px] sm:text-[11px] text-slate-200 line-clamp-3 mb-2 leading-relaxed">
                     {item.synopsis || "Clique para assistir ou ver episódios."}
                   </p>
                   <button className="w-full py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow-lg transition-colors">
@@ -2000,10 +2235,14 @@ function CatalogBrowseView({
 
               <div className="p-2 sm:p-3 flex-1 flex flex-col justify-between">
                 <div>
-                  <h4 className="font-bold text-xs sm:text-sm text-white truncate group-hover:text-red-400 transition-colors">
+                  <h4 className={`font-bold text-xs sm:text-sm truncate transition-colors ${
+                    isLight ? "text-zinc-950 group-hover:text-red-600" : "text-white group-hover:text-red-400"
+                  }`}>
                     {item.title}
                   </h4>
-                  <p className="text-[10px] sm:text-[11px] text-slate-400 truncate mt-0.5">
+                  <p className={`text-[10px] sm:text-[11px] truncate mt-0.5 ${
+                    isLight ? "text-zinc-600 font-semibold" : "text-slate-400"
+                  }`}>
                     {item.genres || item.type}
                   </p>
                 </div>
@@ -2015,19 +2254,29 @@ function CatalogBrowseView({
 
       {/* Controles de Paginação Inferior Completa */}
       {catalogTotalPages > 1 && (
-        <div className="pt-8 border-t border-zinc-850 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+        <div className={`pt-8 border-t flex flex-col sm:flex-row items-center justify-between gap-4 ${
+          isLight ? "border-zinc-300" : "border-zinc-850"
+        }`}>
+          <div className="flex items-center gap-2 flex-wrap justify-center">
             <button
               onClick={() => onPageChange(1)}
               disabled={catalogPage <= 1 || catalogLoading}
-              className="px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-red-500 disabled:opacity-30 text-xs font-bold text-slate-300 hover:text-white"
+              className={`px-3 py-2 rounded-xl border disabled:opacity-30 text-xs font-bold transition-all ${
+                isLight
+                  ? "bg-white border-zinc-300 hover:border-red-500 text-zinc-800 hover:text-red-600 hover:bg-red-50 shadow-sm"
+                  : "bg-zinc-950 border-zinc-800 hover:border-red-500 text-slate-300 hover:text-white"
+              }`}
             >
               Primeira
             </button>
             <button
               onClick={() => onPageChange(catalogPage - 1)}
               disabled={catalogPage <= 1 || catalogLoading}
-              className="flex items-center gap-1 px-4 py-2 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-red-500 disabled:opacity-30 text-xs font-bold text-slate-300 hover:text-white"
+              className={`flex items-center gap-1 px-4 py-2 rounded-xl border disabled:opacity-30 text-xs font-bold transition-all ${
+                isLight
+                  ? "bg-white border-zinc-300 hover:border-red-500 text-zinc-800 hover:text-red-600 hover:bg-red-50 shadow-sm"
+                  : "bg-zinc-950 border-zinc-800 hover:border-red-500 text-slate-300 hover:text-white"
+              }`}
             >
               <ChevronLeft className="w-4 h-4" />
               <span>Anterior</span>
@@ -2050,6 +2299,8 @@ function CatalogBrowseView({
                     className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${
                       catalogPage === pageNum
                         ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-lg shadow-red-600/30"
+                        : isLight
+                        ? "bg-white border border-zinc-300 text-zinc-800 hover:text-red-600 hover:border-red-500 hover:bg-red-50 shadow-sm"
                         : "bg-zinc-950 border border-zinc-800 text-slate-400 hover:text-white hover:border-zinc-700"
                     }`}
                   >
@@ -2061,7 +2312,11 @@ function CatalogBrowseView({
             <button
               onClick={() => onPageChange(catalogPage + 1)}
               disabled={catalogPage >= catalogTotalPages || catalogLoading}
-              className="flex items-center gap-1 px-4 py-2 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-red-500 disabled:opacity-30 text-xs font-bold text-slate-300 hover:text-white"
+              className={`flex items-center gap-1 px-4 py-2 rounded-xl border disabled:opacity-30 text-xs font-bold transition-all ${
+                isLight
+                  ? "bg-white border-zinc-300 hover:border-red-500 text-zinc-800 hover:text-red-600 hover:bg-red-50 shadow-sm"
+                  : "bg-zinc-950 border-zinc-800 hover:border-red-500 text-slate-300 hover:text-white"
+              }`}
             >
               <span>Próxima</span>
               <ChevronRight className="w-4 h-4" />
@@ -2069,7 +2324,11 @@ function CatalogBrowseView({
             <button
               onClick={() => onPageChange(catalogTotalPages)}
               disabled={catalogPage >= catalogTotalPages || catalogLoading}
-              className="px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 hover:border-red-500 disabled:opacity-30 text-xs font-bold text-slate-300 hover:text-white"
+              className={`px-3 py-2 rounded-xl border disabled:opacity-30 text-xs font-bold transition-all ${
+                isLight
+                  ? "bg-white border-zinc-300 hover:border-red-500 text-zinc-800 hover:text-red-600 hover:bg-red-50 shadow-sm"
+                  : "bg-zinc-950 border-zinc-800 hover:border-red-500 text-slate-300 hover:text-white"
+              }`}
             >
               Última ({catalogTotalPages})
             </button>
@@ -2077,7 +2336,7 @@ function CatalogBrowseView({
 
           {/* Pular para Página */}
           <form onSubmit={onJumpPageSubmit} className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">Ir para página:</span>
+            <span className={`text-xs ${isLight ? "text-zinc-700 font-semibold" : "text-slate-400"}`}>Ir para página:</span>
             <input
               type="number"
               min={1}
@@ -2085,11 +2344,15 @@ function CatalogBrowseView({
               value={jumpPageInput}
               onChange={(e) => setJumpPageInput(e.target.value)}
               placeholder={catalogPage.toString()}
-              className="w-16 bg-zinc-950 border border-zinc-700 rounded-xl px-2.5 py-1.5 text-xs text-center text-white focus:outline-none focus:border-red-500"
+              className={`w-16 rounded-xl px-2.5 py-1.5 text-xs text-center font-bold focus:outline-none focus:border-red-500 ${
+                isLight
+                  ? "bg-white border border-zinc-300 text-zinc-950 shadow-sm"
+                  : "bg-zinc-950 border border-zinc-700 text-white"
+              }`}
             />
             <button
               type="submit"
-              className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-600 text-white text-xs font-bold transition-colors"
+              className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-colors shadow-sm"
             >
               Ir
             </button>
@@ -2135,10 +2398,12 @@ function MusicHubView({
   externalQuery = "",
   externalTrigger = 0,
   onQueryChange,
+  isLight = false,
 }: {
   externalQuery?: string;
   externalTrigger?: number;
   onQueryChange?: (val: string) => void;
+  isLight?: boolean;
 }) {
   const [activePlatform, setActivePlatform] = useState<"youtube" | "spotify" | "soundcloud">("youtube");
 
@@ -2499,26 +2764,32 @@ function MusicHubView({
   return (
     <div className="space-y-6 pb-20">
       {/* Cabeçalho da Central de Música Responsivo */}
-      <div className="relative rounded-2xl overflow-hidden border border-red-600/30 bg-zinc-950/90 p-4 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6 shadow-2xl backdrop-blur-md">
+      <div className={`relative rounded-2xl overflow-hidden border p-4 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6 shadow-2xl backdrop-blur-md transition-colors ${
+        isLight ? "bg-white border-zinc-300 shadow-sm" : "border-red-600/30 bg-zinc-950/90"
+      }`}>
         <div className="flex items-center gap-3 sm:gap-5">
           <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-gradient-to-tr from-red-600 to-rose-700 border border-red-500/50 shadow-xl flex items-center justify-center text-white shrink-0">
             <Music className="w-6 h-6 sm:w-8 sm:h-8" />
           </div>
           <div>
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-              <h2 className="text-xl sm:text-2xl font-black text-white">Central de Música WMPLAY</h2>
-              <span className="text-[10px] sm:text-xs font-bold text-red-400 bg-red-950/80 border border-red-600/40 px-2 sm:px-2.5 py-0.5 rounded-full font-mono">
+              <h2 className={`text-xl sm:text-2xl font-black ${isLight ? "text-zinc-950" : "text-white"}`}>Central de Música WMPLAY</h2>
+              <span className={`text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 rounded-full font-mono ${
+                isLight ? "text-red-700 bg-red-100 border border-red-300" : "text-red-400 bg-red-950/80 border border-red-600/40"
+              }`}>
                 UNIVERSAL
               </span>
             </div>
-            <p className="text-[11px] sm:text-xs text-slate-300 mt-1 max-w-xl">
+            <p className={`text-[11px] sm:text-xs mt-1 max-w-xl ${isLight ? "text-zinc-700 font-semibold" : "text-slate-300"}`}>
               Pesquise qualquer artista, música ou playlist no YouTube, Spotify e SoundCloud com reprodução instantânea.
             </p>
           </div>
         </div>
 
         {/* Seletor de Plataforma Musical em Grade para Celular */}
-        <div className="grid grid-cols-3 sm:flex items-center bg-black/60 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-zinc-800 gap-1 w-full sm:w-auto">
+        <div className={`grid grid-cols-3 sm:flex items-center p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border gap-1 w-full sm:w-auto ${
+          isLight ? "bg-zinc-100 border-zinc-300 shadow-sm" : "bg-black/60 border-zinc-800"
+        }`}>
           <button
             onClick={() => {
               setActivePlatform("youtube");
@@ -2527,6 +2798,8 @@ function MusicHubView({
             className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all text-center ${
               activePlatform === "youtube"
                 ? "bg-red-600 text-white shadow-lg shadow-red-600/30"
+                : isLight
+                ? "text-zinc-800 hover:text-red-600 hover:bg-white"
                 : "text-slate-400 hover:text-white hover:bg-zinc-900"
             }`}
           >
@@ -2542,6 +2815,8 @@ function MusicHubView({
             className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all text-center ${
               activePlatform === "spotify"
                 ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/30"
+                : isLight
+                ? "text-zinc-800 hover:text-emerald-700 hover:bg-white"
                 : "text-slate-400 hover:text-white hover:bg-zinc-900"
             }`}
           >
@@ -2557,6 +2832,8 @@ function MusicHubView({
             className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all text-center ${
               activePlatform === "soundcloud"
                 ? "bg-orange-600 text-white shadow-lg shadow-orange-600/30"
+                : isLight
+                ? "text-zinc-800 hover:text-orange-700 hover:bg-white"
                 : "text-slate-400 hover:text-white hover:bg-zinc-900"
             }`}
           >
@@ -2595,19 +2872,25 @@ function MusicHubView({
                   ? "Pesquise por música, artista ou cole link do Spotify..."
                   : "Pesquise faixas, sets de DJ ou cole link do SoundCloud..."
               }
-              className={`w-full bg-zinc-950/95 border rounded-xl pl-11 pr-12 py-3 sm:py-3.5 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none transition-all shadow-inner ${
+              className={`w-full border rounded-xl pl-11 pr-12 py-3 sm:py-3.5 text-xs sm:text-sm font-medium focus:outline-none transition-all ${
+                isLight
+                  ? "bg-white border-zinc-300 text-zinc-950 placeholder:text-zinc-500 shadow-sm"
+                  : "bg-zinc-950/95 border-zinc-800 text-white placeholder-slate-400 shadow-inner"
+              } ${
                 activePlatform === "youtube"
-                  ? "border-zinc-800 focus:border-red-600 focus:ring-1 focus:ring-red-500"
+                  ? "focus:border-red-600 focus:ring-1 focus:ring-red-500"
                   : activePlatform === "spotify"
-                  ? "border-zinc-800 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500"
-                  : "border-zinc-800 focus:border-orange-600 focus:ring-1 focus:ring-orange-500"
+                  ? "focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500"
+                  : "focus:border-orange-600 focus:ring-1 focus:ring-orange-500"
               }`}
             />
             {platformQuery && (
               <button
                 type="button"
                 onClick={handleClearSearch}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                className={`absolute right-4 top-1/2 -translate-y-1/2 ${
+                  isLight ? "text-zinc-500 hover:text-zinc-950" : "text-slate-400 hover:text-white"
+                }`}
               >
                 <X className="w-4 h-4" />
               </button>
