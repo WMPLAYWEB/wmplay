@@ -1312,8 +1312,13 @@ export default function KodiApp() {
                           isLight ? "bg-zinc-100 border-zinc-200" : "bg-black/60 border-zinc-800 group-hover:border-red-600/40"
                         }`}>
                           <img
-                            src={ch.logo}
+                            src={ch.logo || "/brazuca_icon.png"}
                             alt={ch.name}
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = "/brazuca_icon.png";
+                            }}
                             className="max-h-full max-w-full object-contain filter drop-shadow group-hover:scale-110 transition-transform duration-300"
                           />
                           <div className="absolute inset-0 bg-red-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -1812,8 +1817,13 @@ export default function KodiApp() {
                       isLight ? "bg-zinc-100 border-zinc-200" : "bg-black/60 border-zinc-800 group-hover:border-red-600/40"
                     }`}>
                       <img
-                        src={ch.logo}
+                        src={ch.logo || "/brazuca_icon.png"}
                         alt={ch.name}
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = "/brazuca_icon.png";
+                        }}
                         className="max-h-full max-w-full object-contain filter drop-shadow group-hover:scale-110 transition-transform duration-300"
                       />
                       <div className="absolute inset-0 bg-red-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">

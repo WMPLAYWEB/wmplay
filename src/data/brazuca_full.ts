@@ -119,7 +119,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_tvcultura",
     "name": "TV Cultura HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/TV_Cultura_logo_2022.svg/300px-TV_Cultura_logo_2022.svg.png",
+    "logo": "/logos/tvcultura.png",
     "category": "aberta",
     "epg": "Guia EPG · TV Cultura Programação Educativa, Cultura e Infantil Ao Vivo",
     "streamUrl": "https://fpa-gateway.tvcultura.com.br:8181/memfs/606caef0-a290-413d-9f1f-8fcdb3a73831.m3u8"
@@ -127,7 +127,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_redetv",
     "name": "RedeTV! HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/RedeTV%21_logo.svg/300px-RedeTV%21_logo.svg.png",
+    "logo": "/logos/redetv.png",
     "category": "aberta",
     "epg": "Guia EPG · Programação RedeTV! Ao Vivo 24 Horas",
     "streamUrl": "http://170.83.16.50/REDE_TV/index.m3u8"
@@ -135,7 +135,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_sbt_news",
     "name": "SBT News HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/4/42/SBT_News_2025.svg",
+    "logo": "/logos/sbt.png",
     "category": "aberta",
     "epg": "Guia EPG · SBT News Jornalismo e Notícias Oficiais 24 Horas",
     "streamUrl": "https://dai.google.com/linear/hls/event/1XSOdtQ0SH2G8OEmEfGgjQ/master.m3u8"
@@ -143,7 +143,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_sbt",
     "name": "SBT Nacional HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/SBT_logo.svg/300px-SBT_logo.svg.png",
+    "logo": "/logos/sbt.png",
     "category": "aberta",
     "epg": "Guia EPG · Sistema Brasileiro de Televisão Ao Vivo",
     "streamUrl": "https://cdn.jmvstream.com/w/LVW-10801/LVW10801_Xvg4R0u57n/playlist.m3u8"
@@ -151,7 +151,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_uol",
     "name": "Canal UOL HD",
-    "logo": "https://conteudo.imguol.com.br/c/play/logo_canaluol_2024.svg",
+    "logo": "/logos/uol.png",
     "category": "aberta",
     "epg": "Guia EPG · Canal UOL Entretenimento, Entrevistas e Esportes Ao Vivo",
     "streamUrl": "https://video24.mais.uol.com.br/live/6146.m3u8"
@@ -159,7 +159,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_futura",
     "name": "Canal Futura HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Canal_Futura.png/300px-Canal_Futura.png",
+    "logo": "/logos/canalfutura.png",
     "category": "aberta",
     "epg": "Guia EPG · Canal Futura Fundação Roberto Marinho Ao Vivo",
     "streamUrl": "http://170.83.16.50/FUTURA/index.m3u8"
@@ -167,7 +167,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_canal_gov",
     "name": "Canal Gov HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Canal_Gov_logo.png/300px-Canal_Gov_logo.png",
+    "logo": "/logos/canal_gov.png",
     "category": "aberta",
     "epg": "Guia EPG · Canal Gov Rede Nacional de Comunicação Pública",
     "streamUrl": "http://45.177.114.115/TV_BRASIL_2/index.m3u8"
@@ -175,7 +175,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_tv_aparecida",
     "name": "TV Aparecida HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/TV_Aparecida_logo.png/300px-TV_Aparecida_logo.png",
+    "logo": "/logos/tv_aparecida.png",
     "category": "aberta",
     "epg": "Guia EPG · TV Aparecida Ao Vivo",
     "streamUrl": "https://5c483b9d1019c.streamlock.net/8054/8054/playlist.m3u8"
@@ -183,7 +183,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_rede_vida",
     "name": "Rede Vida HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Redevida_logo.png/300px-Redevida_logo.png",
+    "logo": "/logos/rede_vida.png",
     "category": "aberta",
     "epg": "Guia EPG · Rede Vida Programação para a Família",
     "streamUrl": "https://jmp2.uk/plu-5ff768b6a4c8b80008498610.m3u8"
@@ -191,7 +191,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_acriticaplay",
     "name": "A Crítica Play",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/TV_A_Cr%C3%ADtica_logo.png/300px-TV_A_Cr%C3%ADtica_logo.png",
+    "logo": "/logos/acriticaplay.png",
     "category": "aberta",
     "epg": "Guia EPG · TV A Crítica Ao Vivo Amazonas",
     "streamUrl": "https://cdn.jmvstream.com/w/LVW-9715/LVW9715_12B26T62tm/playlist.m3u8"
@@ -199,7 +199,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_amazonsat",
     "name": "Amazon Sat HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Amazon_Sat_logo.png/300px-Amazon_Sat_logo.png",
+    "logo": "/logos/amazonsat.png",
     "category": "aberta",
     "epg": "Guia EPG · Amazon Sat A Voz da Amazônia",
     "streamUrl": "https://amazonsat.brasilstream.com.br/hls/amazonsat/index.m3u8"
@@ -207,7 +207,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_sportv2",
     "name": "SporTV 2 HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/SporTV_2_logo_2021.svg/300px-SporTV_2_logo_2021.svg.png",
+    "logo": "/logos/sportv2.png",
     "category": "esportes",
     "epg": "Guia EPG · SporTV 2 Jogos Ao Vivo, Vôlei, Basquete e Futsal",
     "streamUrl": "http://195.178.110.110/sportv2/index.m3u8"
@@ -215,7 +215,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_sportv3",
     "name": "SporTV 3 HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/SporTV_3_logo_2021.svg/300px-SporTV_3_logo_2021.svg.png",
+    "logo": "/logos/sportv3.png",
     "category": "esportes",
     "epg": "Guia EPG · SporTV 3 Tênis, Automobilismo e Esportes Radicais",
     "streamUrl": "http://170.83.49.66:8083/SPORTV3HD/index.m3u8"
@@ -223,7 +223,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_espn_brasil",
     "name": "ESPN Brasil HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ESPN_wordmark.svg/300px-ESPN_wordmark.svg.png",
+    "logo": "/logos/espn_brasil.png",
     "category": "esportes",
     "epg": "Guia EPG · ESPN Brasil Premier League, La Liga, NBA e NFL Ao Vivo",
     "streamUrl": "http://170.83.16.50/ESPN/index.m3u8"
@@ -231,7 +231,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_espn_extra",
     "name": "ESPN Extra HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ESPN_wordmark.svg/300px-ESPN_wordmark.svg.png",
+    "logo": "/logos/espn_extra.png",
     "category": "esportes",
     "epg": "Guia EPG · ESPN Extra Competições Internacionais e Ligas Secundárias",
     "streamUrl": "http://168.197.104.22/ESPN_EXTRA/index.m3u8"
@@ -239,7 +239,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_espn4",
     "name": "ESPN 4 HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/ESPN_4_logo.svg/300px-ESPN_4_logo.svg.png",
+    "logo": "/logos/espn4.png",
     "category": "esportes",
     "epg": "Guia EPG · ESPN 4 Futebol Internacional e Transmissões Ao Vivo",
     "streamUrl": "http://181.78.197.59:8000/play/a07n/index.m3u8"
@@ -247,7 +247,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_bandsports",
     "name": "BandSports HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/BandSports_logo_2018.svg/300px-BandSports_logo_2018.svg.png",
+    "logo": "/logos/bandsports.png",
     "category": "esportes",
     "epg": "Guia EPG · BandSports O Canal de Todos os Esportes",
     "streamUrl": "http://170.83.16.50/BAND_SPORTS/index.m3u8"
@@ -255,7 +255,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_ge_fast",
     "name": "ge Fast (Globo Esporte)",
-    "logo": "https://i.ibb.co/WGXHDnF/logo-ge-fast.png",
+    "logo": "/logos/ge_fast.png",
     "category": "esportes",
     "epg": "Guia EPG · ge Fast Gols da Rodada, Bastidores e Coberturas do Futebol",
     "streamUrl": "https://amg00716-globo-amg00716c1-tcl-br-9495.playouts.now.amagi.tv/playlist.m3u8"
@@ -263,7 +263,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_fifa_plus",
     "name": "FIFA+ Brasil HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/FIFA%2B_%282025%29.svg/300px-FIFA%2B_%282025%29.svg.png",
+    "logo": "/logos/fifa_plus.png",
     "category": "esportes",
     "epg": "Guia EPG · FIFA+ Jogos Históricos de Copas, Mundiais e Documentários",
     "streamUrl": "https://e3be9ac5.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/TEctYnJfRklGQVBsdXNQb3J0dWd1ZXNlX0hMUw/playlist.m3u8"
@@ -271,7 +271,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_redbull_tv",
     "name": "Red Bull TV",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Red_Bull_Logo.svg/300px-Red_Bull_Logo.svg.png",
+    "logo": "/logos/redbull_tv.png",
     "category": "esportes",
     "epg": "Guia EPG · Red Bull TV Esportes Radicais, F1, Skate, Surf e Festivais",
     "streamUrl": "https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8"
@@ -279,7 +279,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_esportes",
     "name": "Pluto TV Esportes",
-    "logo": "https://images.pluto.tv/channels/61b790b985706b00072cb797/logo.png",
+    "logo": "/logos/pluto_esportes.png",
     "category": "esportes",
     "epg": "Guia EPG · Pluto TV Esportes e Competições Mundiais",
     "streamUrl": "https://jmp2.uk/plu-61b790b985706b00072cb797.m3u8"
@@ -287,7 +287,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_tnt",
     "name": "TNT HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/TNT_Logo_2016.svg/300px-TNT_Logo_2016.svg.png",
+    "logo": "/logos/tnt.png",
     "category": "filmes_series",
     "epg": "Guia EPG · TNT Grandes Sucessos de Hollywood e Premiações Ao Vivo",
     "streamUrl": "http://170.83.16.50/TNT/index.m3u8"
@@ -295,7 +295,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_tnt_series",
     "name": "TNT Series HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/TNT_Series_logo.svg/300px-TNT_Series_logo.svg.png",
+    "logo": "/logos/tnt_series.png",
     "category": "filmes_series",
     "epg": "Guia EPG · TNT Series Maratonas e Grandes Séries Internacionais",
     "streamUrl": "http://170.83.16.50/TNT_SERIES/index.m3u8"
@@ -303,7 +303,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_tnt_novelas",
     "name": "TNT Novelas HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/TNT_Novelas_logo.svg/300px-TNT_Novelas_logo.svg.png",
+    "logo": "/logos/tnt_novelas.png",
     "category": "filmes_series",
     "epg": "Guia EPG · TNT Novelas As Melhores Telenovelas e Dramas Mundiais",
     "streamUrl": "http://170.83.16.50/TNT_NOVELAS/index.m3u8"
@@ -311,7 +311,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_space",
     "name": "Space HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Space_Logo_2020.svg/300px-Space_Logo_2020.svg.png",
+    "logo": "/logos/space.png",
     "category": "filmes_series",
     "epg": "Guia EPG · Space Filmes de Ação, Ficção Científica e Suspense 24h",
     "streamUrl": "http://170.83.16.50/SPACE/index.m3u8"
@@ -319,7 +319,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_sony",
     "name": "Sony Channel HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Sony_Channel_logo_2019.svg/300px-Sony_Channel_logo_2019.svg.png",
+    "logo": "/logos/sony.png",
     "category": "filmes_series",
     "epg": "Guia EPG · Sony Channel Grey's Anatomy, The Good Doctor e Sucessos de Cinema",
     "streamUrl": "http://170.83.16.50/SONY_CHANNEL/index.m3u8"
@@ -327,7 +327,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_axn",
     "name": "AXN HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/AXN_logo_2015.svg/300px-AXN_logo_2015.svg.png",
+    "logo": "/logos/axn.png",
     "category": "filmes_series",
     "epg": "Guia EPG · AXN Séries Policiais, Investigação, CSI e Ação Pura",
     "streamUrl": "http://170.83.16.50/AXN/index.m3u8"
@@ -335,7 +335,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_ae",
     "name": "A&E HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/A%26E_Network_logo.svg/300px-A%26E_Network_logo.svg.png",
+    "logo": "/logos/ae.png",
     "category": "filmes_series",
     "epg": "Guia EPG · A&E Séries e Reality Shows de Investigação e Crimes Reais",
     "streamUrl": "http://170.83.16.50/AeE/index.m3u8"
@@ -343,7 +343,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_amc",
     "name": "AMC Channel HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/AMC_logo_2019.svg/300px-AMC_logo_2019.svg.png",
+    "logo": "/logos/amc.png",
     "category": "filmes_series",
     "epg": "Guia EPG · AMC The Walking Dead, Fear the Walking Dead e Filmes de Sucesso",
     "streamUrl": "http://170.83.49.66:8083/AMCHD/index.m3u8"
@@ -351,7 +351,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_acao",
     "name": "Pluto TV Filmes Ação",
-    "logo": "https://images.pluto.tv/channels/5f120e94a5714d00074576a1/logo.png",
+    "logo": "/logos/pluto_acao.png",
     "category": "filmes_series",
     "epg": "Guia EPG · Pluto TV Filmes de Ação 24 Horas Dublado",
     "streamUrl": "https://jmp2.uk/plu-5f120e94a5714d00074576a1.m3u8"
@@ -359,7 +359,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_cine_sucessos",
     "name": "Pluto TV Cine Sucessos",
-    "logo": "https://images.pluto.tv/channels/5f12111c9e6c2c00078ef3bb/logo.png",
+    "logo": "/logos/pluto_cine_sucessos.png",
     "category": "filmes_series",
     "epg": "Guia EPG · Pluto TV Cine Sucessos Campeões de Bilheteria",
     "streamUrl": "https://jmp2.uk/plu-5f12111c9e6c2c00078ef3bb.m3u8"
@@ -367,7 +367,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_comedia",
     "name": "Pluto TV Cine Comédia",
-    "logo": "https://images.pluto.tv/channels/5f171f988ab9780007fa95ea/logo.png",
+    "logo": "/logos/pluto_comedia.png",
     "category": "filmes_series",
     "epg": "Guia EPG · Pluto TV Cine Comédia As Melhores Risadas do Cinema",
     "streamUrl": "https://jmp2.uk/plu-5f171f988ab9780007fa95ea.m3u8"
@@ -375,7 +375,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_drama",
     "name": "Pluto TV Cine Drama",
-    "logo": "https://images.pluto.tv/channels/5f357e91b18f0b00073583d2/logo.png",
+    "logo": "/logos/pluto_drama.png",
     "category": "filmes_series",
     "epg": "Guia EPG · Pluto TV Cine Drama Grandes Histórias Emocionantes",
     "streamUrl": "https://jmp2.uk/plu-5f357e91b18f0b00073583d2.m3u8"
@@ -383,7 +383,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_terror",
     "name": "Pluto TV Terror",
-    "logo": "https://images.pluto.tv/channels/5f5a545d0dbf7f0007c09408/logo.png",
+    "logo": "/logos/pluto_terror.png",
     "category": "filmes_series",
     "epg": "Guia EPG · Pluto TV Terror Sobrenatural, Suspense e Terror 24 Horas",
     "streamUrl": "https://jmp2.uk/plu-5f5a545d0dbf7f0007c09408.m3u8"
@@ -391,7 +391,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_series",
     "name": "Pluto TV Séries",
-    "logo": "https://images.pluto.tv/channels/63d2ba2f60bc8f0008981a0e/logo.png",
+    "logo": "/logos/pluto_series.png",
     "category": "filmes_series",
     "epg": "Guia EPG · Pluto TV Séries e Maratonas Completas",
     "streamUrl": "https://jmp2.uk/plu-63d2ba2f60bc8f0008981a0e.m3u8"
@@ -399,7 +399,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_novelas",
     "name": "Pluto TV Novelas",
-    "logo": "https://images.pluto.tv/channels/638df93ae2f2a3000737c168/logo.png",
+    "logo": "/logos/pluto_novelas.png",
     "category": "filmes_series",
     "epg": "Guia EPG · Pluto TV Telenovelas Internacionais Dubladas",
     "streamUrl": "https://jmp2.uk/plu-638df93ae2f2a3000737c168.m3u8"
@@ -407,7 +407,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_scifi",
     "name": "Pluto TV Sci-Fi",
-    "logo": "https://images.pluto.tv/channels/6474ab1da51cb80008bfb5f4/logo.png",
+    "logo": "/logos/pluto_scifi.png",
     "category": "filmes_series",
     "epg": "Guia EPG · Pluto TV Ficção Científica, Espaço e Futuro",
     "streamUrl": "https://jmp2.uk/plu-6474ab1da51cb80008bfb5f4.m3u8"
@@ -415,7 +415,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_misterio",
     "name": "Pluto TV Mistério",
-    "logo": "https://images.pluto.tv/channels/6474ab5cdc7a760008745008/logo.png",
+    "logo": "/logos/pluto_misterio.png",
     "category": "filmes_series",
     "epg": "Guia EPG · Pluto TV Suspense, Investigações e Mistérios",
     "streamUrl": "https://jmp2.uk/plu-6474ab5cdc7a760008745008.m3u8"
@@ -423,7 +423,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_cartoon_network",
     "name": "Cartoon Network HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Cartoon_Network_2010_logo.svg/300px-Cartoon_Network_2010_logo.svg.png",
+    "logo": "/logos/cartoon_network.png",
     "category": "infantil",
     "epg": "Guia EPG · Cartoon Network O Melhor em Desenhos Animados 24h",
     "streamUrl": "http://170.83.16.50/CARTOON/index.m3u8"
@@ -431,7 +431,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_cartoonito",
     "name": "Cartoonito HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Cartoonito_2021_logo.svg/300px-Cartoonito_2021_logo.svg.png",
+    "logo": "/logos/cartoonito.png",
     "category": "infantil",
     "epg": "Guia EPG · Cartoonito Conteúdo Especial para a Primeira Infância",
     "streamUrl": "http://170.83.16.50/CARTOONITO/index.m3u8"
@@ -439,7 +439,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_tooncast",
     "name": "Tooncast HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Tooncast_logo.svg/300px-Tooncast_logo.svg.png",
+    "logo": "/logos/tooncast.png",
     "category": "infantil",
     "epg": "Guia EPG · Tooncast Desenhos Clássicos Hanna-Barbera e Looney Tunes",
     "streamUrl": "http://170.83.16.50/TOONCAST/index.m3u8"
@@ -447,7 +447,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_boomerang",
     "name": "Boomerang HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Boomerang_2014_logo.svg/300px-Boomerang_2014_logo.svg.png",
+    "logo": "/logos/boomerang.png",
     "category": "infantil",
     "epg": "Guia EPG · Boomerang Clássicos da Animação",
     "streamUrl": "http://168.197.104.22/BOOMERANG/index.m3u8"
@@ -455,7 +455,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_discovery_kids",
     "name": "Discovery Kids HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Discovery_Kids_logo_2016.svg/300px-Discovery_Kids_logo_2016.svg.png",
+    "logo": "/logos/discovery_kids.png",
     "category": "infantil",
     "epg": "Guia EPG · Discovery Kids Peppa Pig, Doki e Aventuras Educativas",
     "streamUrl": "http://170.83.16.50/DISCOVERY_KIDS/index.m3u8"
@@ -463,7 +463,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_box_kids",
     "name": "Box Kids HD",
-    "logo": "https://images.unsplash.com/photo-1560169897-fc0cdbdfa4d5?w=300&auto=format&fit=crop&q=80",
+    "logo": "/logos/box_kids.png",
     "category": "infantil",
     "epg": "Guia EPG · Box Kids Desenhos Animados 24 Horas",
     "streamUrl": "http://170.83.49.66:8083/BOXKIDSHD/index.m3u8"
@@ -471,7 +471,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_zoomoo_kids",
     "name": "ZooMoo Kids HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/ZooMoo_Kids_logo.png/300px-ZooMoo_Kids_logo.png",
+    "logo": "/logos/zoomoo_kids.png",
     "category": "infantil",
     "epg": "Guia EPG · ZooMoo Kids Natureza, Animais e Educação Infantil",
     "streamUrl": "http://45.162.64.114/ZOOMOO_KIDS/index.m3u8"
@@ -479,7 +479,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_kids",
     "name": "Pluto TV Kids",
-    "logo": "https://images.pluto.tv/channels/6759eeb1bd523200083b4f29/logo.png",
+    "logo": "/logos/pluto_kids.png",
     "category": "infantil",
     "epg": "Guia EPG · Pluto TV Kids Programação Infantil 24h",
     "streamUrl": "https://jmp2.uk/plu-6759eeb1bd523200083b4f29.m3u8"
@@ -487,7 +487,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_desenhos",
     "name": "Pluto TV Desenhos",
-    "logo": "https://images.pluto.tv/channels/6806d62369aec5b19cd628c0/logo.png",
+    "logo": "/logos/pluto_desenhos.png",
     "category": "infantil",
     "epg": "Guia EPG · Pluto TV Desenhos Animados",
     "streamUrl": "https://jmp2.uk/plu-6806d62369aec5b19cd628c0.m3u8"
@@ -495,7 +495,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_anime",
     "name": "Pluto TV Anime",
-    "logo": "https://images.pluto.tv/channels/5f5c216df68f920007888315/logo.png",
+    "logo": "/logos/pluto_anime.png",
     "category": "infantil",
     "epg": "Guia EPG · Pluto TV Anime Clássicos da Animação Japonesa",
     "streamUrl": "https://jmp2.uk/plu-5f5c216df68f920007888315.m3u8"
@@ -503,7 +503,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_cnn_brasil",
     "name": "CNN Brasil HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/CNN_Brasil_logo.svg/300px-CNN_Brasil_logo.svg.png",
+    "logo": "/logos/cnn_brasil.png",
     "category": "noticias_docs",
     "epg": "Guia EPG · CNN Brasil Notícias, Política, Economia e Análises 24 Horas",
     "streamUrl": "http://170.83.16.50/CNN_BRASIL/index.m3u8"
@@ -511,7 +511,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_band_news",
     "name": "BandNews TV HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/BandNews_TV_logo_2022.svg/300px-BandNews_TV_logo_2022.svg.png",
+    "logo": "/logos/band_news.png",
     "category": "noticias_docs",
     "epg": "Guia EPG · BandNews TV Em 20 Minutos Tudo Pode Mudar",
     "streamUrl": "http://170.83.16.50/BAND_NEWS/index.m3u8"
@@ -519,7 +519,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_record_news",
     "name": "Record News HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Record_News_logo_2023.svg/300px-Record_News_logo_2023.svg.png",
+    "logo": "/logos/record_news.png",
     "category": "noticias_docs",
     "epg": "Guia EPG · Record News Informação e Jornalismo Ao Vivo",
     "streamUrl": "http://170.83.16.50/RECORD_NEWS/index.m3u8"
@@ -527,7 +527,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_discovery_channel",
     "name": "Discovery Channel HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Discovery_Channel_2019.svg/300px-Discovery_Channel_2019.svg.png",
+    "logo": "/logos/discovery_channel.png",
     "category": "noticias_docs",
     "epg": "Guia EPG · Discovery Channel Ciência, Sobrevivência e Engenharia",
     "streamUrl": "http://170.83.16.50/DISCOVERY_CHANNEL/index.m3u8"
@@ -535,7 +535,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_discovery_world",
     "name": "Discovery World HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Discovery_World_logo.svg/300px-Discovery_World_logo.svg.png",
+    "logo": "/logos/discovery_world.png",
     "category": "noticias_docs",
     "epg": "Guia EPG · Discovery World Documentários e Culturas do Mundo",
     "streamUrl": "http://170.83.16.50/DISCOVERY_WORLD/index.m3u8"
@@ -543,7 +543,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_discovery_turbo",
     "name": "Discovery Turbo HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Discovery_Turbo_logo.svg/300px-Discovery_Turbo_logo.svg.png",
+    "logo": "/logos/discovery_turbo.png",
     "category": "noticias_docs",
     "epg": "Guia EPG · Discovery Turbo Carros, Motores e Máquinas Poderosas",
     "streamUrl": "http://170.83.16.50/DISCOVERY_TURBO/index.m3u8"
@@ -551,7 +551,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_discovery_science",
     "name": "Discovery Science HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Discovery_Science_logo.svg/300px-Discovery_Science_logo.svg.png",
+    "logo": "/logos/discovery_science.png",
     "category": "noticias_docs",
     "epg": "Guia EPG · Discovery Science O Universo, Tecnologia e Inovações",
     "streamUrl": "http://170.83.16.50/DISCOVERY_SCIENCE/index.m3u8"
@@ -559,7 +559,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_discovery_theater",
     "name": "Discovery Theater HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Discovery_Theater_logo.png/300px-Discovery_Theater_logo.png",
+    "logo": "/logos/discovery_theater.png",
     "category": "noticias_docs",
     "epg": "Guia EPG · Discovery Theater Vida Selvagem e Imagens Espetaculares",
     "streamUrl": "http://170.83.16.50/DISCOVERY_THEATER/index.m3u8"
@@ -567,7 +567,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_animal_planet",
     "name": "Animal Planet HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Animal_Planet_2018.svg/300px-Animal_Planet_2018.svg.png",
+    "logo": "/logos/animal_planet.png",
     "category": "noticias_docs",
     "epg": "Guia EPG · Animal Planet O Reino Animal e Aventuras Selvagens",
     "streamUrl": "http://170.83.16.50/ANIMAL_PLANET/index.m3u8"
@@ -575,7 +575,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_history",
     "name": "History Channel HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/History_Logo.svg/300px-History_Logo.svg.png",
+    "logo": "/logos/history.png",
     "category": "noticias_docs",
     "epg": "Guia EPG · History Trato Feito, Alienígenas do Passado e História",
     "streamUrl": "http://170.83.16.50/HISTORY/index.m3u8"
@@ -583,7 +583,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_arte1",
     "name": "Arte 1 HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Arte_1_logo.png/300px-Arte_1_logo.png",
+    "logo": "/logos/arte1.png",
     "category": "noticias_docs",
     "epg": "Guia EPG · Arte 1 Cinema, Artes Visuais, Dança, Música e Teatro",
     "streamUrl": "http://170.83.16.50/ARTE_1/index.m3u8"
@@ -591,7 +591,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_nasa_tv",
     "name": "NASA TV HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/NASA_logo.svg/300px-NASA_logo.svg.png",
+    "logo": "/logos/nasa_tv.png",
     "category": "noticias_docs",
     "epg": "Guia EPG · NASA TV Transmissões Espaciais Oficiais e Lançamentos",
     "streamUrl": "https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8"
@@ -599,7 +599,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_docs",
     "name": "Pluto TV Documentários",
-    "logo": "https://images.pluto.tv/channels/65f060d84e01740008d7421f/logo.png",
+    "logo": "/logos/pluto_docs.png",
     "category": "noticias_docs",
     "epg": "Guia EPG · Pluto TV Documentários 24 Horas",
     "streamUrl": "https://jmp2.uk/plu-65f060d84e01740008d7421f.m3u8"
@@ -607,7 +607,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_natureza",
     "name": "Pluto TV Natureza",
-    "logo": "https://images.pluto.tv/channels/666c9c60a7efd40008f552f0/logo.png",
+    "logo": "/logos/pluto_natureza.png",
     "category": "noticias_docs",
     "epg": "Guia EPG · Pluto TV Natureza e Meio Ambiente",
     "streamUrl": "https://jmp2.uk/plu-666c9c60a7efd40008f552f0.m3u8"
@@ -615,7 +615,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_adult_swim",
     "name": "Adult Swim HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Adult_Swim_2003_logo.svg/300px-Adult_Swim_2003_logo.svg.png",
+    "logo": "/logos/adult_swim.png",
     "category": "variedades",
     "epg": "Guia EPG · Adult Swim Rick and Morty, Frango Robô e Animações Adultas",
     "streamUrl": "http://168.197.104.22/ADULT_SWIM/index.m3u8"
@@ -623,7 +623,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_play_tv",
     "name": "PlayTV HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/PlayTV_logo.svg/300px-PlayTV_logo.svg.png",
+    "logo": "/logos/playtv.png",
     "category": "variedades",
     "epg": "Guia EPG · PlayTV Games, Animes, Música e Cultura Pop",
     "streamUrl": "http://168.197.104.22/PLAY_TV/index.m3u8"
@@ -631,7 +631,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_chef_tv",
     "name": "Chef TV HD",
-    "logo": "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=300&auto=format&fit=crop&q=80",
+    "logo": "/logos/chef_tv.png",
     "category": "variedades",
     "epg": "Guia EPG · Chef TV Gastronomia, Receitas e Culinária Ao Vivo",
     "streamUrl": "http://168.197.104.22/CHEF_TV/index.m3u8"
@@ -639,7 +639,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_agromais",
     "name": "AgroMais HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/AgroMais_logo.png/300px-AgroMais_logo.png",
+    "logo": "/logos/agromais.png",
     "category": "variedades",
     "epg": "Guia EPG · AgroMais Notícias e Cotações do Agronegócio",
     "streamUrl": "http://168.197.104.22/AGROMAIS/index.m3u8"
@@ -647,7 +647,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_agro_canal",
     "name": "Agro Canal",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Agro_Canal_logo.png/300px-Agro_Canal_logo.png",
+    "logo": "/logos/agro_canal.png",
     "category": "variedades",
     "epg": "Guia EPG · Agro Canal Leilões e Informações do Campo",
     "streamUrl": "http://168.197.104.22/AGRO_CANAL/index.m3u8"
@@ -655,7 +655,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_terraviva",
     "name": "Terraviva HD",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Terraviva_logo.png/300px-Terraviva_logo.png",
+    "logo": "/logos/terraviva.png",
     "category": "variedades",
     "epg": "Guia EPG · Terraviva O Canal do Agronegócio da Band",
     "streamUrl": "http://168.197.104.22/TERRAVIVA/index.m3u8"
@@ -663,7 +663,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_canal_do_boi",
     "name": "Canal do Boi",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Canal_do_Boi_logo.png/300px-Canal_do_Boi_logo.png",
+    "logo": "/logos/canal_do_boi.png",
     "category": "variedades",
     "epg": "Guia EPG · Canal do Boi Pecuária e Transmissões Rurais",
     "streamUrl": "http://170.83.16.50/CANAL_DO_BOI/index.m3u8"
@@ -671,7 +671,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_canal_educacao",
     "name": "Canal Educação",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Canal_Educa%C3%A7%C3%A3o_logo.png/300px-Canal_Educa%C3%A7%C3%A3o_logo.png",
+    "logo": "/logos/canal_educacao.png",
     "category": "variedades",
     "epg": "Guia EPG · Canal Educação Ministério da Educação Ao Vivo",
     "streamUrl": "http://168.197.104.22/CANAL_EDUCACAO/index.m3u8"
@@ -679,7 +679,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_retro",
     "name": "Pluto TV Retrô",
-    "logo": "https://images.pluto.tv/channels/5fa991b1f09e020007e78626/logo.png",
+    "logo": "/logos/pluto_retro.png",
     "category": "variedades",
     "epg": "Guia EPG · Pluto TV Clássicos da Televisão e Séries Retrô",
     "streamUrl": "https://jmp2.uk/plu-5fa991b1f09e020007e78626.m3u8"
@@ -687,7 +687,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_pluto_vida_real",
     "name": "Pluto TV Vida Real",
-    "logo": "https://images.pluto.tv/channels/655e5bc94261ca000810cb17/logo.png",
+    "logo": "/logos/pluto_vida_real.png",
     "category": "variedades",
     "epg": "Guia EPG · Pluto TV Reality Shows e Histórias Reais",
     "streamUrl": "https://jmp2.uk/plu-655e5bc94261ca000810cb17.m3u8"
