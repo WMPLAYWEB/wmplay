@@ -1262,7 +1262,7 @@ export default function KodiApp() {
                       isLight ? "bg-white border-zinc-300 shadow-sm" : "bg-zinc-950/90 border-zinc-800"
                     }`}>
                       {[
-                        { id: "todos", label: "Todos (154)" },
+                        { id: "todos", label: `Todos (${BRAZUCA_CHANNELS.length})` },
                         { id: "aberta", label: "TV Aberta" },
                         { id: "esportes", label: "Esportes" },
                         { id: "filmes_series", label: "Filmes & Séries" },
