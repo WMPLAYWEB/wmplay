@@ -286,6 +286,27 @@ export default function KodiApp() {
     }
   }, [getCurrentCatalogType, fetchCatalogData, isLiteMode]);
 
+  // Auto-debounce catalog search when typing
+  useEffect(() => {
+    if (!catalogSearch.trim()) return;
+    const isSearchingCatalog =
+      activeCategory === "movies" ||
+      activeCategory === "tv" ||
+      (activeAddonView === "brazucaplay" &&
+        activeBrazucaCategory?.type !== "channels" &&
+        activeBrazucaCategory?.type !== "settings");
+
+    if (!isSearchingCatalog) return;
+
+    const timer = setTimeout(() => {
+      const type = getCurrentCatalogType() || "all";
+      setCatalogPage(1);
+      fetchCatalogData(type, 1, catalogSearch, catalogGenre);
+    }, 450);
+
+    return () => clearTimeout(timer);
+  }, [catalogSearch, getCurrentCatalogType, fetchCatalogData, catalogGenre, activeCategory, activeAddonView, activeBrazucaCategory]);
+
   // Load Episodes for a Series/Anime/Novela/Dorama
   const handleOpenSeriesEpisodes = async (item: CatalogItem) => {
     setSelectedSeriesItem(item);
@@ -589,15 +610,21 @@ export default function KodiApp() {
     }
   };
 
+  const isBrazucaRootSearching =
+    activeAddonView === "brazucaplay" &&
+    !activeBrazucaCategory &&
+    Boolean(catalogSearch.trim());
+
   const isBrowsingCatalog =
     activeCategory === "movies" ||
     activeCategory === "tv" ||
+    isBrazucaRootSearching ||
     (activeAddonView === "brazucaplay" &&
       activeBrazucaCategory &&
       activeBrazucaCategory.type !== "channels" &&
       activeBrazucaCategory.type !== "settings");
 
-  const currentCatalogType = getCurrentCatalogType();
+  const currentCatalogType = getCurrentCatalogType() || (isBrazucaRootSearching ? "all" : "");
   const isLight = theme === "offwhite";
 
   const GENRES_LIST = [
@@ -965,6 +992,8 @@ export default function KodiApp() {
                 onClick={() => {
                   if (selectedSeriesItem) {
                     setSelectedSeriesItem(null);
+                  } else if (catalogSearch && !activeBrazucaCategory) {
+                    setCatalogSearch("");
                   } else if (activeBrazucaCategory) {
                     setActiveBrazucaCategory(null);
                   } else {
@@ -984,13 +1013,27 @@ export default function KodiApp() {
 
             {/* Input de Busca Dinâmica */}
             <div className="relative w-full min-w-0">
-              <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 ${
-                isLight ? "text-zinc-600" : "text-slate-400"
-              }`} />
+              <button
+                type="button"
+                onClick={() => {
+                  if (isBrowsingCatalog || (activeAddonView === "brazucaplay" && activeBrazucaCategory?.type !== "channels" && activeBrazucaCategory?.type !== "settings")) {
+                    setCatalogPage(1);
+                    fetchCatalogData(currentCatalogType || "all", 1, catalogSearch, catalogGenre);
+                  } else if (activeCategory === "music") {
+                    setMusicSearchTrigger((prev) => prev + 1);
+                  }
+                }}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 cursor-pointer z-10"
+                title="Pesquisar"
+              >
+                <Search className={`w-4 h-4 ${
+                  isLight ? "text-zinc-600 hover:text-red-600" : "text-slate-400 hover:text-red-500"
+                }`} />
+              </button>
               <input
                 type="text"
                 value={
-                  isBrowsingCatalog
+                  (isBrowsingCatalog || (activeAddonView === "brazucaplay" && activeBrazucaCategory?.type !== "channels" && activeBrazucaCategory?.type !== "settings"))
                     ? catalogSearch
                     : activeCategory === "music"
                     ? musicSearchQuery
@@ -998,7 +1041,7 @@ export default function KodiApp() {
                 }
                 onChange={(e) => {
                   const val = e.target.value;
-                  if (isBrowsingCatalog) {
+                  if (isBrowsingCatalog || (activeAddonView === "brazucaplay" && activeBrazucaCategory?.type !== "channels" && activeBrazucaCategory?.type !== "settings")) {
                     setCatalogSearch(val);
                   } else if (activeCategory === "music") {
                     setMusicSearchQuery(val);
@@ -1008,19 +1051,21 @@ export default function KodiApp() {
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
-                    if (isBrowsingCatalog) {
+                    if (isBrowsingCatalog || (activeAddonView === "brazucaplay" && activeBrazucaCategory?.type !== "channels" && activeBrazucaCategory?.type !== "settings")) {
                       setCatalogPage(1);
-                      fetchCatalogData(currentCatalogType, 1, catalogSearch, catalogGenre);
+                      fetchCatalogData(currentCatalogType || "all", 1, catalogSearch, catalogGenre);
                     } else if (activeCategory === "music") {
                       setMusicSearchTrigger((prev) => prev + 1);
                     }
                   }
                 }}
                 placeholder={
-                  isBrowsingCatalog
-                    ? `Pesquisar 38.600+ títulos (Enter)...`
+                  (isBrowsingCatalog || (activeAddonView === "brazucaplay" && activeBrazucaCategory?.type !== "channels" && activeBrazucaCategory?.type !== "settings"))
+                    ? `Pesquisar 38.600+ filmes e séries...`
                     : activeCategory === "music"
                     ? "Pesquisar YouTube, Spotify, SoundCloud..."
+                    : activeCategory === "live" || activeBrazucaCategory?.type === "channels"
+                    ? "Filtrar por canal..."
                     : "Filtrar por nome ou canal..."
                 }
                 className={`w-full rounded-xl pl-10 pr-9 sm:pr-10 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all ${
@@ -1029,16 +1074,19 @@ export default function KodiApp() {
                     : "bg-zinc-950/90 border border-zinc-700/80 text-white placeholder-slate-400 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-500"
                 }`}
               />
-              {isBrowsingCatalog && catalogSearch ? (
+              {((isBrowsingCatalog || (activeAddonView === "brazucaplay" && activeBrazucaCategory?.type !== "channels" && activeBrazucaCategory?.type !== "settings")) && catalogSearch) ? (
                 <button
                   onClick={() => {
                     setCatalogSearch("");
                     setCatalogPage(1);
-                    fetchCatalogData(currentCatalogType, 1, "", catalogGenre);
+                    if (currentCatalogType) {
+                      fetchCatalogData(currentCatalogType, 1, "", catalogGenre);
+                    }
                   }}
                   className={`absolute right-3 top-1/2 -translate-y-1/2 ${
                     isLight ? "text-zinc-500 hover:text-zinc-950" : "text-slate-400 hover:text-white"
                   }`}
+                  title="Limpar busca"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1179,8 +1227,64 @@ export default function KodiApp() {
                 )}
               </div>
 
-              {/* TELA 1: MENU RAIZ DO BRAZUCA PLAY */}
+              {/* TELA 1: MENU RAIZ DO BRAZUCA PLAY OU BUSCA GLOBAL */}
               {!activeBrazucaCategory ? (
+                catalogSearch.trim() ? (
+                  <CatalogBrowseView
+                    title={`Busca: "${catalogSearch}"`}
+                    badge={`${catalogTotalCount.toLocaleString("pt-BR")} títulos`}
+                    catalogLoading={catalogLoading}
+                    catalogItems={catalogItems}
+                    catalogPage={catalogPage}
+                    catalogTotalPages={catalogTotalPages}
+                    catalogTotalCount={catalogTotalCount}
+                    catalogGenre={catalogGenre}
+                    catalogSearch={catalogSearch}
+                    jumpPageInput={jumpPageInput}
+                    genresList={GENRES_LIST}
+                    isLight={isLight}
+                    isLiteMode={isLiteMode}
+                    onSelectGenre={(g) => {
+                      const newGenre = g === "Todos" ? "" : g;
+                      setCatalogGenre(newGenre);
+                      setCatalogPage(1);
+                      fetchCatalogData("all", 1, catalogSearch, newGenre);
+                    }}
+                    onPageChange={(newPage) => {
+                      if (newPage < 1 || newPage > catalogTotalPages) return;
+                      setCatalogPage(newPage);
+                      fetchCatalogData("all", newPage, catalogSearch, catalogGenre);
+                    }}
+                    onJumpPageSubmit={(e) => {
+                      e.preventDefault();
+                      const p = parseInt(jumpPageInput, 10);
+                      if (!isNaN(p) && p >= 1 && p <= catalogTotalPages) {
+                        setCatalogPage(p);
+                        fetchCatalogData("all", p, catalogSearch, catalogGenre);
+                      }
+                    }}
+                    setJumpPageInput={setJumpPageInput}
+                    onItemClick={(item) => {
+                      if (
+                        item.type === "series" ||
+                        item.type === "animes" ||
+                        item.type === "doramas" ||
+                        item.type === "desenhos" ||
+                        item.type === "novelas"
+                      ) {
+                        handleOpenSeriesEpisodes(item);
+                      } else {
+                        handlePlayMedia(
+                          item.title,
+                          item.synopsis,
+                          item.thumbnail,
+                          item.tmdb_id,
+                          item.link
+                        );
+                      }
+                    }}
+                  />
+                ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pb-12">
                   {BRAZUCA_ROOT_CATEGORIES.map((cat) => (
                     <div
@@ -1244,7 +1348,7 @@ export default function KodiApp() {
                     </div>
                   ))}
                 </div>
-              ) : activeBrazucaCategory.type === "channels" ? (
+              )) : activeBrazucaCategory.type === "channels" ? (
                 /* TELA 2: CANAIS DE TV AO VIVO (154 CANAIS OFICIAIS) */
                 <div className="space-y-4">
                   <div className="flex items-center justify-between flex-wrap gap-4">
