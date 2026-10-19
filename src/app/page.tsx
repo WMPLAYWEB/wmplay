@@ -984,7 +984,7 @@ export default function KodiApp() {
               <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-red-600 to-rose-600 flex items-center justify-center shadow-md shadow-red-600/30">
                 <Tv2 className="w-4 h-4 text-white" />
               </div>
-              <span className={`font-black text-sm tracking-wider ${isLight ? "text-zinc-950" : "text-white"}`}>WM<span className="text-red-600">PLAY</span></span>
+              <span className={`font-black text-sm tracking-wider hidden sm:inline ${isLight ? "text-zinc-950" : "text-white"}`}>WM<span className="text-red-600">PLAY</span></span>
             </div>
 
             {activeAddonView && (
@@ -1000,11 +1000,12 @@ export default function KodiApp() {
                     setActiveAddonView(null);
                   }
                 }}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-colors shrink-0 ${
+                className={`flex items-center gap-1 p-2 sm:px-2.5 sm:py-1.5 rounded-xl border text-xs font-bold transition-colors shrink-0 ${
                   isLight
                     ? "bg-zinc-100 hover:bg-red-50 border-zinc-300 text-red-600 shadow-sm"
                     : "bg-slate-800 hover:bg-zinc-800 border-transparent text-red-500"
                 }`}
+                title="Voltar"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span className="hidden sm:inline">Voltar</span>
@@ -1061,17 +1062,17 @@ export default function KodiApp() {
                 }}
                 placeholder={
                   (isBrowsingCatalog || (activeAddonView === "brazucaplay" && activeBrazucaCategory?.type !== "channels" && activeBrazucaCategory?.type !== "settings"))
-                    ? `Pesquisar 38.600+ filmes e séries...`
+                    ? "Pesquisar filmes, séries..."
                     : activeCategory === "music"
-                    ? "Pesquisar YouTube, Spotify, SoundCloud..."
+                    ? "Pesquisar músicas..."
                     : activeCategory === "live" || activeBrazucaCategory?.type === "channels"
                     ? "Filtrar por canal..."
-                    : "Filtrar por nome ou canal..."
+                    : "Filtrar por nome..."
                 }
-                className={`w-full rounded-xl pl-10 pr-9 sm:pr-10 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all ${
+                className={`w-full rounded-xl pl-9 sm:pl-10 pr-9 sm:pr-10 py-2 sm:py-2.5 text-base sm:text-base font-bold transition-all ${
                   isLight
-                    ? "bg-zinc-50 border border-zinc-300 text-zinc-950 placeholder:text-zinc-500 focus:bg-white focus:border-red-600 focus:ring-1 focus:ring-red-500 shadow-inner"
-                    : "bg-zinc-950/90 border border-zinc-700/80 text-white placeholder-slate-400 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-500"
+                    ? "bg-white border-2 border-zinc-300 text-zinc-950 placeholder:text-zinc-500 focus:border-red-600 focus:ring-2 focus:ring-red-500/20 shadow-sm"
+                    : "bg-zinc-950/90 border border-zinc-700/80 text-white placeholder-slate-400 focus:outline-none focus:border-red-600 focus:ring-2 focus:ring-red-500/20"
                 }`}
               />
               {((isBrowsingCatalog || (activeAddonView === "brazucaplay" && activeBrazucaCategory?.type !== "channels" && activeBrazucaCategory?.type !== "settings")) && catalogSearch) ? (
@@ -1106,11 +1107,11 @@ export default function KodiApp() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Botão: Alternador de Tema Modo Claro / Escuro */}
             <button
               onClick={toggleTheme}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black transition-all shadow-sm cursor-pointer ${
+              className={`flex items-center justify-center p-2 sm:px-3 sm:py-1.5 rounded-xl border text-xs font-black transition-all shadow-sm cursor-pointer ${
                 theme === "offwhite"
                   ? "bg-white border-2 border-red-500 text-red-600 hover:bg-red-50 shadow-red-500/10"
                   : "bg-zinc-900 border-zinc-700 text-slate-200 hover:bg-zinc-800"
@@ -1119,15 +1120,13 @@ export default function KodiApp() {
             >
               {theme === "offwhite" ? (
                 <>
-                  <Sun className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                  <span className="font-black text-red-600 hidden sm:inline">Modo Claro (Ativo)</span>
-                  <span className="font-black text-red-600 sm:hidden">Modo Claro</span>
+                  <Sun className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
+                  <span className="font-black text-red-600 hidden sm:inline ml-1.5">Modo Claro</span>
                 </>
               ) : (
                 <>
-                  <Moon className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400" />
-                  <span className="font-bold text-slate-200 hidden sm:inline">Modo Escuro</span>
-                  <span className="font-bold text-slate-200 sm:hidden">Escuro</span>
+                  <Moon className="w-4 h-4 text-indigo-400 fill-indigo-400 shrink-0" />
+                  <span className="font-bold text-slate-200 hidden sm:inline ml-1.5">Modo Escuro</span>
                 </>
               )}
             </button>
@@ -1135,7 +1134,7 @@ export default function KodiApp() {
             {/* Botão: Modo TV Lite (Otimizado para Smart TVs antigas: LG, Philco, Samsung, etc.) */}
             <button
               onClick={toggleLiteMode}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black transition-all shadow-sm cursor-pointer ${
+              className={`flex items-center justify-center p-2 sm:px-3 sm:py-1.5 rounded-xl border text-xs font-black transition-all shadow-sm cursor-pointer ${
                 isLiteMode
                   ? "bg-amber-500 border-2 border-amber-600 text-black shadow-amber-500/20"
                   : isLight
@@ -1144,9 +1143,8 @@ export default function KodiApp() {
               }`}
               title="Modo Lite para Smart TVs Antigas (LG, Philco, Samsung, etc.): Remove efeitos pesados, acelera a reprodução e reduz consumo de memória."
             >
-              <Zap className={`w-3.5 h-3.5 ${isLiteMode ? "fill-black text-black" : "text-amber-500"}`} />
-              <span className="font-black hidden sm:inline">{isLiteMode ? "TV Lite (Ativo)" : "Modo TV Lite"}</span>
-              <span className="font-black sm:hidden">{isLiteMode ? "Lite On" : "Lite"}</span>
+              <Zap className={`w-4 h-4 shrink-0 ${isLiteMode ? "fill-black text-black" : "text-amber-500"}`} />
+              <span className="font-black hidden sm:inline ml-1.5">{isLiteMode ? "TV Lite (Ativo)" : "Modo TV Lite"}</span>
             </button>
 
             <button
@@ -3099,7 +3097,7 @@ function MusicHubView({
                   ? "Pesquise por música, artista ou cole link do Spotify..."
                   : "Pesquise faixas, sets de DJ ou cole link do SoundCloud..."
               }
-              className={`w-full border rounded-xl pl-11 pr-12 py-3 sm:py-3.5 text-xs sm:text-sm font-medium focus:outline-none transition-all ${
+              className={`w-full border rounded-xl pl-11 pr-12 py-3 sm:py-3.5 text-base sm:text-base font-bold focus:outline-none transition-all ${
                 isLight
                   ? "bg-white border-zinc-300 text-zinc-950 placeholder:text-zinc-500 shadow-sm"
                   : "bg-zinc-950/95 border-zinc-800 text-white placeholder-slate-400 shadow-inner"
