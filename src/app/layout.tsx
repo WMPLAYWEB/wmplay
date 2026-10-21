@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: "WMPLAY - Filmes, Séries & TV ao Vivo",
   description: "WMPLAY - Plataforma completa de streaming e TV ao vivo com mais de 38.000 títulos",
   referrer: "no-referrer",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/brazuca_icon.png",
+    apple: "/brazuca_icon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -28,6 +33,9 @@ export default function RootLayout({
     <html lang="pt-BR" className="h-full">
       <head>
         <meta name="referrer" content="no-referrer" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/brazuca_icon.png" />
       </head>
       <body className="min-h-full antialiased overflow-hidden transition-colors duration-300">
         {children}

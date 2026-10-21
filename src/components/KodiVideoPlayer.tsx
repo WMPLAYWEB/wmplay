@@ -97,6 +97,122 @@ export default function KodiVideoPlayer({
   const lastToggleTimeRef = useRef<number>(0);
   const lastNativePauseTimeRef = useRef<number>(0);
 
+  // Estados e Referências de Volume Persistente
+  const [currentVolume, setCurrentVolume] = useState<number>(1);
+  const [volumeFeedback, setVolumeFeedback] = useState<{ volume: number; muted: boolean } | null>(null);
+  const volumeFeedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Carregar volume e estado mudo salvos no localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const savedVol = localStorage.getItem("wmplay_player_volume");
+      const savedMuted = localStorage.getItem("wmplay_player_muted");
+      if (savedVol !== null) {
+        const val = parseFloat(savedVol);
+        if (!isNaN(val) && val >= 0 && val <= 1) {
+          setCurrentVolume(val);
+        }
+      }
+      if (savedMuted !== null) {
+        setIsMuted(savedMuted === "true");
+      }
+    } catch {}
+  }, []);
+
+  // Exibir indicador visual de volume (estilo Smart TV/Kodi)
+  const showVolumeIndicator = (vol: number, muted: boolean) => {
+    setVolumeFeedback({ volume: vol, muted });
+    if (volumeFeedbackTimeoutRef.current) clearTimeout(volumeFeedbackTimeoutRef.current);
+    volumeFeedbackTimeoutRef.current = setTimeout(() => {
+      setVolumeFeedback(null);
+    }, 1200);
+  };
+
+  // Aplicar configurações de áudio persistidas a qualquer elemento de vídeo
+  const applySavedAudioSettings = (v: HTMLVideoElement) => {
+    try {
+      const savedVol = localStorage.getItem("wmplay_player_volume");
+      const savedMuted = localStorage.getItem("wmplay_player_muted");
+      if (savedVol !== null) {
+        const val = parseFloat(savedVol);
+        if (!isNaN(val) && val >= 0 && val <= 1) {
+          v.volume = val;
+          setCurrentVolume(val);
+        }
+      }
+      if (savedMuted !== null) {
+        const isM = savedMuted === "true";
+        v.muted = isM;
+        setIsMuted(isM);
+      }
+    } catch {}
+  };
+
+  // Ajustar volume suavemente com persistência
+  const handleAdjustVolume = (delta: number) => {
+    if (!videoRef.current) return;
+    let nextVol = Math.round((videoRef.current.volume + delta) * 10) / 10;
+    nextVol = Math.max(0, Math.min(1, nextVol));
+    videoRef.current.volume = nextVol;
+    if (nextVol > 0 && videoRef.current.muted) {
+      videoRef.current.muted = false;
+      setIsMuted(false);
+    }
+    setCurrentVolume(nextVol);
+    try {
+      localStorage.setItem("wmplay_player_volume", String(nextVol));
+      localStorage.setItem("wmplay_player_muted", String(videoRef.current.muted));
+    } catch {}
+    showVolumeIndicator(nextVol, videoRef.current.muted);
+  };
+
+  // Alternar mudo
+  const toggleMute = () => {
+    if (videoRef.current) {
+      const nextMuted = !videoRef.current.muted;
+      videoRef.current.muted = nextMuted;
+      setIsMuted(nextMuted);
+      try {
+        localStorage.setItem("wmplay_player_muted", String(nextMuted));
+      } catch {}
+      showVolumeIndicator(videoRef.current.volume, nextMuted);
+    }
+  };
+
+  // Alternar tela cheia nativa
+  const handleFullscreen = () => {
+    const el = document.getElementById("kodi-player-container");
+    if (el) {
+      if (!document.fullscreenElement) {
+        el.requestFullscreen().catch(console.error);
+      } else {
+        document.exitFullscreen().catch(console.error);
+      }
+    }
+  };
+
+  // Alternar reproduzir / pausar com debounce anti-conflito
+  const togglePlay = () => {
+    const now = Date.now();
+    if (now - lastToggleTimeRef.current < 350) return;
+    lastToggleTimeRef.current = now;
+
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play()
+          .then(() => {
+            setIsPlaying(true);
+            setHasStartedPlaying(true);
+          })
+          .catch(console.error);
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    }
+  };
+
   // Atualizar banner de retorno se resumeTime for fornecido na inicialização do título/servidor
   useEffect(() => {
     if (resumeTime && resumeTime > 15) {
@@ -218,7 +334,44 @@ export default function KodiVideoPlayer({
         }
       }
 
-      // Avançar / Retroceder 10s nas setas do controle ou teclado
+      // Alternar Tela Cheia (Tecla F)
+      if (e.key === "f" || e.key === "F") {
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag !== "input" && tag !== "textarea") {
+          e.preventDefault();
+          handleFullscreen();
+          return;
+        }
+      }
+
+      // Alternar Mudo (Tecla M)
+      if (e.key === "m" || e.key === "M") {
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag !== "input" && tag !== "textarea") {
+          e.preventDefault();
+          toggleMute();
+          return;
+        }
+      }
+
+      // Ajustar Volume nas Setas Cima / Baixo (passo de 10%)
+      if (e.key === "ArrowUp") {
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag !== "input" && tag !== "textarea") {
+          e.preventDefault();
+          handleAdjustVolume(0.1);
+          return;
+        }
+      } else if (e.key === "ArrowDown") {
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag !== "input" && tag !== "textarea") {
+          e.preventDefault();
+          handleAdjustVolume(-0.1);
+          return;
+        }
+      }
+
+      // Avançar / Retroceder 10s nas setas esquerda / direita
       if (e.key === "ArrowLeft") {
         if (videoRef.current && !isMiniPlayer) {
           e.preventDefault();
@@ -293,6 +446,7 @@ export default function KodiVideoPlayer({
         let initialPlayTriggered = false;
         const handleInitialReady = () => {
           setIsLoading(false);
+          applySavedAudioSettings(video);
           if (!initialPlayTriggered) {
             initialPlayTriggered = true;
             video
@@ -361,6 +515,7 @@ export default function KodiVideoPlayer({
 
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           setIsLoading(false);
+          applySavedAudioSettings(video);
           video.play()
             .then(() => {
               setIsPlaying(true);
@@ -429,6 +584,7 @@ export default function KodiVideoPlayer({
         let initialPlayTriggered = false;
         const handleInitialReady = () => {
           setIsLoading(false);
+          applySavedAudioSettings(video);
           if (!initialPlayTriggered) {
             initialPlayTriggered = true;
             video.play()
@@ -497,44 +653,6 @@ export default function KodiVideoPlayer({
       }
     };
   }, [currentServer]);
-
-  const togglePlay = () => {
-    const now = Date.now();
-    if (now - lastToggleTimeRef.current < 350) return;
-    lastToggleTimeRef.current = now;
-
-    if (videoRef.current) {
-      if (videoRef.current.paused) {
-        videoRef.current.play()
-          .then(() => {
-            setIsPlaying(true);
-            setHasStartedPlaying(true);
-          })
-          .catch(console.error);
-      } else {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      }
-    }
-  };
-
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setIsMuted(videoRef.current.muted);
-    }
-  };
-
-  const handleFullscreen = () => {
-    const el = document.getElementById("kodi-player-container");
-    if (el) {
-      if (!document.fullscreenElement) {
-        el.requestFullscreen().catch(console.error);
-      } else {
-        document.exitFullscreen().catch(console.error);
-      }
-    }
-  };
 
   const handleToggleNativePip = async () => {
     if (videoRef.current) {
@@ -937,12 +1055,47 @@ export default function KodiVideoPlayer({
               </div>
             )}
 
+            {/* Feedback Visual de Volume / Mudo */}
+            {volumeFeedback && !isMiniPlayer && (
+              <div className="absolute top-16 sm:top-20 z-30 pointer-events-none flex items-center gap-3 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl bg-black/85 backdrop-blur-md border border-white/20 text-white shadow-2xl animate-in zoom-in-75 duration-150">
+                {volumeFeedback.muted || volumeFeedback.volume === 0 ? (
+                  <VolumeX className="w-5 h-5 sm:w-6 sm:h-6 text-red-400 shrink-0" />
+                ) : (
+                  <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white shrink-0" />
+                )}
+                <div className="flex flex-col min-w-[90px]">
+                  <span className="text-[11px] sm:text-xs font-bold text-zinc-200">
+                    {volumeFeedback.muted ? "Áudio Mudo" : `Volume: ${Math.round(volumeFeedback.volume * 100)}%`}
+                  </span>
+                  <div className="w-full h-1.5 bg-zinc-700/80 rounded-full overflow-hidden mt-1">
+                    <div
+                      className={`h-full transition-all duration-150 ${
+                        volumeFeedback.muted ? "bg-red-500" : "bg-red-600"
+                      }`}
+                      style={{
+                        width: volumeFeedback.muted ? "0%" : `${Math.round(volumeFeedback.volume * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <video
               ref={videoRef}
               controls={!isMiniPlayer}
               playsInline
               poster={poster}
               className="w-full h-full object-contain cursor-pointer"
+              onVolumeChange={(e) => {
+                const v = e.currentTarget;
+                try {
+                  localStorage.setItem("wmplay_player_volume", String(v.volume));
+                  localStorage.setItem("wmplay_player_muted", String(v.muted));
+                } catch {}
+                setCurrentVolume(v.volume);
+                setIsMuted(v.muted);
+              }}
               onClick={(e) => {
                 const now = Date.now();
                 // Se o vídeo foi pausado pelos controles nativos nos últimos 400ms, não desfazer a pausa!

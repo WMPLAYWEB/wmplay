@@ -1,0 +1,19 @@
+{
+  "name": "WMPLAY - Filmes, Séries & TV ao Vivo",
+  "short_name": "WMPLAY",
+  "description": "Plataforma completa de streaming e TV ao vivo com mais de 38.000 títulos",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#dc2626",
+  "orientation": "any",
+  "categories": ["entertainment", "video"],
+  "icons": [
+    {
+      "src": "/brazuca_icon.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
