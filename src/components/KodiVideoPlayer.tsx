@@ -554,7 +554,7 @@ export default function KodiVideoPlayer({
     <div
       className={
         isMiniPlayer
-          ? "fixed bottom-5 right-5 z-50 w-[320px] sm:w-[380px] md:w-[420px] aspect-video rounded-2xl shadow-2xl border-2 border-red-500/80 bg-black overflow-hidden group animate-in slide-in-from-bottom-5 duration-200 shadow-red-950/60"
+          ? "fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-50 w-[calc(100vw-32px)] max-w-[340px] sm:max-w-[380px] md:max-w-[440px] aspect-video rounded-2xl shadow-2xl border-2 border-red-500/80 bg-black overflow-hidden group animate-in slide-in-from-bottom-5 duration-200 shadow-red-950/60"
           : `fixed inset-0 z-50 bg-black flex flex-col items-center justify-center ${
               isLiteMode ? "" : "backdrop-blur-xl animate-in fade-in duration-200"
             }`
@@ -746,32 +746,43 @@ export default function KodiVideoPlayer({
       {/* CABEÇALHO COMPACTO NO MODO MINI PLAYER FLUTUANTE               */}
       {/* ============================================================== */}
       {isMiniPlayer && (
-        <div className="absolute top-0 left-0 right-0 p-2 bg-gradient-to-b from-black/90 via-black/60 to-transparent z-30 flex items-center justify-between gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <div className="flex items-center gap-1.5 min-w-0 pr-1">
+        <div className="absolute top-0 left-0 right-0 p-2 sm:p-2.5 bg-gradient-to-b from-black/95 via-black/80 to-transparent z-40 flex items-center justify-between gap-1.5 shadow-md pointer-events-auto">
+          <div
+            onClick={() => setIsMiniPlayer(false)}
+            className="flex items-center gap-1.5 min-w-0 pr-1 cursor-pointer hover:opacity-90 transition-opacity"
+            title="Clique para Maximizar"
+          >
             <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse shrink-0" />
-            <p className="text-[11px] font-bold text-white truncate drop-shadow">{title}</p>
+            <p className="text-[11px] sm:text-xs font-bold text-white truncate drop-shadow">{title}</p>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Botão de Maximizar Sempre Visível e em Destaque */}
+            <button
+              type="button"
+              onClick={() => setIsMiniPlayer(false)}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white text-[11px] font-black shadow-lg shadow-red-600/40 transition-all cursor-pointer hover:scale-105"
+              title="Maximizar Vídeo (Voltar para Tela Cheia)"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span>Maximizar</span>
+            </button>
+
             {currentServer?.type === "video" && (
               <button
+                type="button"
                 onClick={handleToggleNativePip}
-                className="p-1 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 transition-colors"
+                className="p-1.5 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 transition-colors cursor-pointer"
                 title="Picture-in-Picture Externo"
               >
                 <PictureInPicture2 className="w-3.5 h-3.5" />
               </button>
             )}
+
             <button
-              onClick={() => setIsMiniPlayer(false)}
-              className="p-1 rounded-lg bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 transition-colors"
-              title="Restaurar Tela Cheia"
-            >
-              <Maximize2 className="w-3.5 h-3.5" />
-            </button>
-            <button
+              type="button"
               onClick={onClose}
-              className="p-1 rounded-lg bg-zinc-900/90 hover:bg-red-600 text-zinc-300 hover:text-white border border-zinc-700 transition-colors"
-              title="Fechar"
+              className="p-1.5 rounded-lg bg-zinc-900/90 hover:bg-red-600 text-zinc-300 hover:text-white border border-zinc-700 transition-colors cursor-pointer"
+              title="Fechar Player"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -989,16 +1000,16 @@ export default function KodiVideoPlayer({
               }}
             />
 
-            {/* Controles de Sobreposição no Mini Player ao passar o mouse */}
+            {/* Controles de Sobreposição no Mini Player ao passar o mouse ou tocar */}
             {isMiniPlayer && (
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 pointer-events-none">
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 pointer-events-none z-30">
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     togglePlay();
                   }}
-                  className="pointer-events-auto p-2.5 rounded-full bg-red-600 hover:bg-red-500 text-white shadow-xl transition-transform hover:scale-110"
+                  className="pointer-events-auto p-2.5 rounded-full bg-red-600 hover:bg-red-500 text-white shadow-xl transition-transform hover:scale-110 cursor-pointer"
                   title={isPlaying ? "Pausar" : "Reproduzir"}
                 >
                   {isPlaying ? <Pause className="w-5 h-5 fill-white" /> : <Play className="w-5 h-5 fill-white ml-0.5" />}
@@ -1007,9 +1018,21 @@ export default function KodiVideoPlayer({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
+                    setIsMiniPlayer(false);
+                  }}
+                  className="pointer-events-auto flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900/95 hover:bg-zinc-800 text-white border border-zinc-700 shadow-xl transition-transform hover:scale-105 cursor-pointer text-xs font-black"
+                  title="Maximizar Tela"
+                >
+                  <Maximize2 className="w-4 h-4 text-red-400" />
+                  <span>Maximizar</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
                     toggleMute();
                   }}
-                  className="pointer-events-auto p-2.5 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-white border border-zinc-700 shadow-xl transition-transform hover:scale-110"
+                  className="pointer-events-auto p-2.5 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-white border border-zinc-700 shadow-xl transition-transform hover:scale-110 cursor-pointer"
                   title={isMuted ? "Ativar Áudio" : "Mudo"}
                 >
                   {isMuted ? <VolumeX className="w-5 h-5 text-red-400" /> : <Volume2 className="w-5 h-5" />}
