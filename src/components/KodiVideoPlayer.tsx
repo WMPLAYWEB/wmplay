@@ -94,15 +94,17 @@ export default function KodiVideoPlayer({
   const lastTapRef = useRef<{ time: number; x: number }>({ time: 0, x: 0 });
   const lastProgressReportRef = useRef<number>(0);
   const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastToggleTimeRef = useRef<number>(0);
+  const lastNativePauseTimeRef = useRef<number>(0);
 
-  // Atualizar banner de retorno se resumeTime for fornecido
+  // Atualizar banner de retorno se resumeTime for fornecido na inicialização do título/servidor
   useEffect(() => {
     if (resumeTime && resumeTime > 15) {
       setShowResumeBanner(true);
     } else {
       setShowResumeBanner(false);
     }
-  }, [resumeTime, currentServer]);
+  }, [currentServer]);
 
   // Função para aplicar retomada
   const handleResumePlayback = () => {
@@ -497,6 +499,10 @@ export default function KodiVideoPlayer({
   }, [currentServer]);
 
   const togglePlay = () => {
+    const now = Date.now();
+    if (now - lastToggleTimeRef.current < 350) return;
+    lastToggleTimeRef.current = now;
+
     if (videoRef.current) {
       if (videoRef.current.paused) {
         videoRef.current.play()
@@ -935,16 +941,20 @@ export default function KodiVideoPlayer({
               ref={videoRef}
               controls={!isMiniPlayer}
               playsInline
-              autoPlay
               poster={poster}
               className="w-full h-full object-contain cursor-pointer"
               onClick={(e) => {
-                // Em tela cheia / com controles nativos, ignorar cliques nos últimos 65px (barra de controle nativa)
+                const now = Date.now();
+                // Se o vídeo foi pausado pelos controles nativos nos últimos 400ms, não desfazer a pausa!
+                if (now - lastNativePauseTimeRef.current < 400) {
+                  return;
+                }
+                // Em tela com controles nativos, ignorar cliques nos últimos 95px (barra de controle nativa)
                 // para não anular o clique no botão nativo de Pause/Play e na barra de progresso
                 if (!isMiniPlayer) {
                   const rect = e.currentTarget.getBoundingClientRect();
                   const clickFromBottom = rect.bottom - e.clientY;
-                  if (clickFromBottom <= 65) {
+                  if (clickFromBottom <= 95) {
                     return;
                   }
                 }
@@ -981,6 +991,7 @@ export default function KodiVideoPlayer({
                 setHasStartedPlaying(true);
               }}
               onPause={() => {
+                lastNativePauseTimeRef.current = Date.now();
                 setIsPlaying(false);
               }}
               onWaiting={() => {
@@ -1039,7 +1050,10 @@ export default function KodiVideoPlayer({
             {hasStartedPlaying && !isPlaying && !isLoading && !hasError && !isMiniPlayer && (
               <button
                 type="button"
-                onClick={togglePlay}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  togglePlay();
+                }}
                 className="absolute z-10 w-20 h-20 rounded-full bg-black/60 hover:bg-red-600/90 text-white flex items-center justify-center shadow-2xl backdrop-blur-md border border-white/20 transition-all hover:scale-110 cursor-pointer pointer-events-auto group/btn"
                 title="Continuar Assistindo (Play)"
               >
@@ -1051,7 +1065,10 @@ export default function KodiVideoPlayer({
             {!hasStartedPlaying && !isPlaying && !isLoading && !hasError && !isMiniPlayer && (
               <button
                 type="button"
-                onClick={togglePlay}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  togglePlay();
+                }}
                 className="absolute z-10 flex flex-col items-center justify-center gap-3 p-5 sm:p-7 rounded-2xl bg-black/70 hover:bg-black/90 backdrop-blur-md border border-white/20 transition-all hover:scale-105 cursor-pointer shadow-2xl group/playbtn"
                 title="Clique para Iniciar Reprodução"
               >

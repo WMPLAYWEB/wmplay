@@ -119,6 +119,7 @@ export interface PlayingMediaState {
   seasonNum?: number;
   epNum?: number;
   isTv?: boolean;
+  initialResumeTime?: number;
 }
 
 export interface WatchProgressItem {
@@ -449,6 +450,15 @@ export default function KodiApp() {
       ? `series_${tmdbId || title}_s${seasonNum}e${epNum}`
       : `media_${tmdbId || directUrl || title}`;
 
+    // Capturar tempo de retomada inicial estavelmente sem causar re-renders periódicos
+    const initialResumeTime = (() => {
+      const found = watchHistory.find((w) => w.id === mediaId);
+      if (found && found.currentTime > 15 && found.percentage < 95) {
+        return found.currentTime;
+      }
+      return 0;
+    })();
+
     const isDirectStream =
       !isTv &&
       Boolean(directUrl) &&
@@ -500,6 +510,7 @@ export default function KodiApp() {
         seasonNum,
         epNum,
         isTv,
+        initialResumeTime,
       });
       return;
     }
@@ -523,6 +534,7 @@ export default function KodiApp() {
       seasonNum,
       epNum,
       isTv,
+      initialResumeTime,
     });
 
     const params = new URLSearchParams({
@@ -2527,7 +2539,7 @@ export default function KodiApp() {
           }
           onClose={() => setPlayingMedia(null)}
           isLiteMode={isLiteMode}
-          resumeTime={currentResumeTime}
+          resumeTime={playingMedia.initialResumeTime || 0}
           onProgressUpdate={handleProgressUpdate}
           onNextEpisode={handleNextEpisode}
           hasNextEpisode={hasNextEpisode}
