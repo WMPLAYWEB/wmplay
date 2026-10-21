@@ -382,7 +382,10 @@ export default function KodiApp() {
     if (!isSearchingCatalog) return;
 
     const timer = setTimeout(() => {
-      const type = getCurrentCatalogType() || "all";
+      // Se estiver pesquisando por termo, buscar em 'all' caso esteja em movies ou tv para não limitar filmes/séries
+      const type = (activeCategory === "movies" || activeCategory === "tv" || isBrazucaRootSearching)
+        ? "all"
+        : (getCurrentCatalogType() || "all");
       setCatalogPage(1);
       fetchCatalogData(type, 1, catalogSearch, catalogGenre);
     }, 450);
@@ -837,7 +840,9 @@ export default function KodiApp() {
       activeBrazucaCategory.type !== "channels" &&
       activeBrazucaCategory.type !== "settings");
 
-  const currentCatalogType = getCurrentCatalogType() || (isBrazucaRootSearching ? "all" : "");
+  const currentCatalogType = (catalogSearch.trim() && (activeCategory === "movies" || activeCategory === "tv" || isBrazucaRootSearching))
+    ? "all"
+    : (getCurrentCatalogType() || (isBrazucaRootSearching ? "all" : ""));
   const isLight = theme === "offwhite";
 
   const GENRES_LIST = [
@@ -2139,8 +2144,16 @@ export default function KodiApp() {
               </div>
             ) : (
               <CatalogBrowseView
-                title={activeCategory === "movies" ? "Filmes do Catálogo" : "Séries de TV"}
-                badge={activeCategory === "movies" ? "17.857 Filmes" : "13.075 Séries"}
+                title={
+                  catalogSearch.trim()
+                    ? `Resultados para "${catalogSearch}"`
+                    : (activeCategory === "movies" ? "Filmes do Catálogo" : "Séries de TV")
+                }
+                badge={
+                  catalogSearch.trim()
+                    ? "Busca Global"
+                    : (activeCategory === "movies" ? "17.857 Filmes" : "13.075 Séries")
+                }
                 catalogLoading={catalogLoading}
                 catalogItems={catalogItems}
                 catalogPage={catalogPage}
@@ -2175,7 +2188,13 @@ export default function KodiApp() {
                 }}
                 setJumpPageInput={setJumpPageInput}
                 onItemClick={(item) => {
-                  if (item.type === "series") {
+                  if (
+                    item.type === "series" ||
+                    item.type === "animes" ||
+                    item.type === "doramas" ||
+                    item.type === "novelas" ||
+                    item.type === "desenhos"
+                  ) {
                     handleOpenSeriesEpisodes(item);
                   } else {
                     handlePlayMedia(

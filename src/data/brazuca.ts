@@ -74,6 +74,15 @@ export const BRAZUCA_PLAY_MENU: BrazucaItem[] = [
         poster: "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=500&auto=format&fit=crop&q=80",
         items: [
           {
+            id: "s-empire",
+            title: "Empire - Fama e Poder (Temporadas 1 a 6 Dublado)",
+            type: "stream",
+            genre: "Drama Musical",
+            year: "2015-2020",
+            poster: "https://image.tmdb.org/t/p/w500/8Uz4oB6Sa84AZEFif2ZOg2m6K0k.jpg",
+            streamUrl: "https://c.direitonapratica.com/cdns0003/24/101245.mp4?token=YjZhMTljYg=="
+          },
+          {
             id: "s-cosmos",
             title: "Cosmos & Mistérios - Temp 1",
             type: "stream",

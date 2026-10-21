@@ -146,6 +146,19 @@ export const SAMPLE_MEDIA: MediaItem[] = [
     "videoUrl": "https://cdn.live.br1.jmvstream.com/w/LVW-10801/LVW10801_Xvg4R0u57n/chunklist.m3u8"
   },
   {
+    "id": "bs_empire",
+    "title": "Empire (Fama e Poder) - 6 Temporadas",
+    "category": "tv",
+    "year": 2020,
+    "duration": "102 Episódios",
+    "genre": "Drama Musical / Sucesso Fox",
+    "rating": 8.5,
+    "overview": "Lucious Lyon é um rapper que construiu um império da música com a gravadora Empire Entertainment. Ao ser diagnosticado com uma doença, ele inicia uma disputa entre seus filhos pelo controle da empresa.",
+    "poster": "https://image.tmdb.org/t/p/w500/8Uz4oB6Sa84AZEFif2ZOg2m6K0k.jpg",
+    "backdrop": "https://image.tmdb.org/t/p/w1280/FNeJtRUd5XID186SHzjNNneP3f.jpg",
+    "videoUrl": "https://c.direitonapratica.com/cdns0003/24/101245.mp4?token=YjZhMTljYg=="
+  },
+  {
     "id": "bs1",
     "title": "A Casa do Dragão - Temporada 2",
     "category": "tv",
