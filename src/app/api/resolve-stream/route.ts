@@ -15,7 +15,7 @@ function getDb(): DatabaseSync {
 
 const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXNvbHZlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc5MDk4OTczfQ.WzQBuOqMai96Afleh9g-i7NXo6h-YsjPUbOgxlUqVsU';
 const HOSTS = ['api.geekantenado.online', 'geekantenado.fly.dev'];
-const OVERFLIX_HOST = 'www.overflix.asia';
+const OVERFLIX_HOST = 'www.overflix.win';
 
 export interface StreamServer {
   name: string;
@@ -24,27 +24,48 @@ export interface StreamServer {
   isDubbed?: boolean;
 }
 
-async function fetchOverflix(path: string, referer: string): Promise<any> {
-  const url = `https://${OVERFLIX_HOST}${path}`;
+async function fetchOverflix(pathOrUrl: string, referer: string): Promise<any> {
+  const initialUrl = pathOrUrl.startsWith('http') ? pathOrUrl : `https://${OVERFLIX_HOST}${pathOrUrl}`;
   return new Promise((resolve) => {
-    https.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Referer': referer
-      },
-      timeout: 5000
-    }, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          resolve(JSON.parse(data));
-        } catch {
-          resolve(null);
-        }
-      });
-    }).on('error', () => resolve(null));
+    const doFetch = (targetUrl: string, depth = 0) => {
+      if (depth > 3) return resolve(null);
+      try {
+        const u = new URL(targetUrl);
+        https.get({
+          hostname: u.hostname,
+          path: u.pathname + u.search,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Referer': referer
+          },
+          timeout: 6000
+        }, (res) => {
+          if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+            const nextLoc = res.headers.location.startsWith('http')
+              ? res.headers.location
+              : `https://${u.hostname}${res.headers.location}`;
+            return doFetch(nextLoc, depth + 1);
+          }
+          let data = '';
+          res.on('data', chunk => data += chunk);
+          res.on('end', () => {
+            try {
+              const json = JSON.parse(data);
+              if (json && json.redirect && typeof json.redirect === 'string') {
+                return doFetch(json.redirect, depth + 1);
+              }
+              resolve(json);
+            } catch {
+              resolve(null);
+            }
+          });
+        }).on('error', () => resolve(null));
+      } catch {
+        resolve(null);
+      }
+    };
+    doFetch(initialUrl);
   });
 }
 
@@ -202,10 +223,12 @@ async function callResolver(resolverNum: number, requestStr: string): Promise<st
           try {
             const decoded = Buffer.from(json.result, 'base64').toString('utf8');
             if (decoded && (decoded.startsWith('http') || decoded.startsWith('{') || decoded.startsWith('['))) {
-              return decoded;
+              const cleanUrl = decoded.split('|')[0].trim();
+              return cleanUrl;
             }
           } catch {}
-          return json.result.startsWith('http') ? json.result : null;
+          const cleanRaw = json.result.split('|')[0].trim();
+          return cleanRaw.startsWith('http') ? cleanRaw : null;
         }
       }
     } catch {}
@@ -318,31 +341,34 @@ export async function GET(req: NextRequest) {
     }
 
     // =========================================================================
-    // 3. REPRODUÇÃO DE FILMES: RESOLVER 3 (GeekAntenado Wasabi S3 MP4 Full HD - Sem Anúncios)
+    // 3. REPRODUÇÃO DE FILMES: RESOLVER 2 & 3 (GeekAntenado Brazuca / Wasabi MP4 Full HD - Sem Anúncios)
     // =========================================================================
-    if (link.includes('resolver3_mv=')) {
+    if (link.includes('resolver3_mv=') || link.includes('resolver2_mv=')) {
       try {
-        const match = link.match(/resolver3_mv=([a-zA-Z0-9_\-]+)/);
+        const match = link.match(/resolver[23]_mv=([a-zA-Z0-9_\-]+)/);
         if (match && match[1]) {
           const slug = match[1];
-          let directWasabi = await callResolver(3, `mvshows=${slug}`);
-          if (!directWasabi) {
-            directWasabi = await callResolver(2, `mvshows=${slug}`);
+          let directStream = await callResolver(2, `mvshows=${slug}`);
+          if (!directStream) {
+            directStream = await callResolver(3, `mvshows=${slug}`);
           }
-          if (!directWasabi) {
-            directWasabi = await callResolver(1, `mvshows=${slug}`);
+          if (!directStream) {
+            directStream = await callResolver(1, `mvshows=${slug}`);
           }
-          if (directWasabi && directWasabi.startsWith('http')) {
+          if (directStream && directStream.startsWith('http')) {
+            const finalUrl = directStream.includes('source.apperror404.com')
+              ? await getRedirectLocation(directStream)
+              : directStream;
             servers.push({
-              name: 'Transmissão Direta Full HD Dublado (Wasabi S3 - Sem Anúncios)',
-              url: directWasabi,
+              name: 'Transmissão Direta Full HD Dublado (Sem Anúncios)',
+              url: finalUrl,
               type: 'video',
               isDubbed: true
             });
           }
         }
       } catch (err) {
-        console.error('Erro ao resolver resolver3_mv:', err);
+        console.error('Erro ao resolver resolver_mv:', err);
       }
     }
 
@@ -354,6 +380,31 @@ export async function GET(req: NextRequest) {
         const match = link.match(/movie2=([a-zA-Z0-9_\-]+)/);
         if (match && match[1]) {
           const slug = match[1];
+          const baseSlug = slug.replace(/-dublado-\d+$/, '').replace(/-legendado-\d+$/, '').replace(/-\d+$/, '');
+
+          // Se ainda não encontrou servidor direto, tentar via Resolver 2 / 3 com o baseSlug
+          if (servers.length === 0 && baseSlug) {
+            try {
+              let directStream = await callResolver(2, `mvshows=${baseSlug}`);
+              if (!directStream) {
+                directStream = await callResolver(3, `mvshows=${baseSlug}`);
+              }
+              if (directStream && directStream.startsWith('http')) {
+                const finalUrl = directStream.includes('source.apperror404.com')
+                  ? await getRedirectLocation(directStream)
+                  : directStream;
+                servers.push({
+                  name: 'Transmissão Direta Full HD Dublado (Sem Anúncios)',
+                  url: finalUrl,
+                  type: 'video',
+                  isDubbed: true
+                });
+              }
+            } catch (err) {
+              console.error('Erro ao resolver stream direto do movie2:', err);
+            }
+          }
+
           const videoId = slug.split('-').pop();
           if (videoId && /^\d+$/.test(videoId)) {
             const referer = `https://${OVERFLIX_HOST}/filmes/online/${slug}/`;
