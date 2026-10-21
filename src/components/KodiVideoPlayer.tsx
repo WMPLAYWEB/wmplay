@@ -55,6 +55,7 @@ export default function KodiVideoPlayer({
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [antiPopupMode, setAntiPopupMode] = useState(true);
 
@@ -71,7 +72,7 @@ export default function KodiVideoPlayer({
     };
   }, []);
 
-  // Suporte Nativo a Controles Remotos de Smart TVs (LG NetCast/webOS, Samsung Tizen/Orsay, Philco)
+  // Suporte Nativo a Controles Remotos de Smart TVs (LG NetCast/webOS, Samsung Tizen/Orsay, Philco) e Teclado
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -93,25 +94,34 @@ export default function KodiVideoPlayer({
         return;
       }
 
-      // Play / Pause no controle remoto (179 = MediaPlayPause, 250 = Play, 19 = Pause)
+      // Play / Pause no controle remoto e teclado (Espaço, K, MediaPlayPause)
       if (
         e.key === "MediaPlayPause" ||
         e.keyCode === 179 ||
         e.keyCode === 250 ||
-        e.keyCode === 19
+        e.keyCode === 19 ||
+        e.code === "Space" ||
+        e.key === " " ||
+        e.key === "k" ||
+        e.key === "K"
       ) {
-        e.preventDefault();
-        togglePlay();
-        return;
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag !== "input" && tag !== "textarea") {
+          e.preventDefault();
+          togglePlay();
+          return;
+        }
       }
 
-      // Avançar / Retroceder 10s nas setas do controle
+      // Avançar / Retroceder 10s nas setas do controle ou teclado
       if (e.key === "ArrowLeft") {
         if (videoRef.current && !isMiniPlayer) {
+          e.preventDefault();
           videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10);
         }
       } else if (e.key === "ArrowRight") {
         if (videoRef.current && !isMiniPlayer) {
+          e.preventDefault();
           videoRef.current.currentTime = Math.min(
             videoRef.current.duration || 999999,
             videoRef.current.currentTime + 10
@@ -129,6 +139,8 @@ export default function KodiVideoPlayer({
     setIsLoading(true);
     setHasError(false);
     setErrorMessage("");
+    setIsPlaying(false);
+    setHasStartedPlaying(false);
 
     if (!currentServer) return;
 
@@ -173,15 +185,28 @@ export default function KodiVideoPlayer({
         video.src = streamUrl;
         video.load();
 
-        const handleReady = () => {
+        let initialPlayTriggered = false;
+        const handleInitialReady = () => {
           setIsLoading(false);
-          video
-            .play()
-            .then(() => setIsPlaying(true))
-            .catch(() => {
-              setIsPlaying(false);
-              setIsLoading(false);
-            });
+          if (!initialPlayTriggered) {
+            initialPlayTriggered = true;
+            video
+              .play()
+              .then(() => {
+                setIsPlaying(true);
+                setHasStartedPlaying(true);
+              })
+              .catch(() => {
+                setIsPlaying(false);
+                setIsLoading(false);
+              });
+          }
+        };
+
+        const handlePlaying = () => {
+          setIsLoading(false);
+          setIsPlaying(true);
+          setHasStartedPlaying(true);
         };
 
         const handleError = () => {
@@ -194,9 +219,9 @@ export default function KodiVideoPlayer({
           setErrorMessage("Erro ao decodificar sinal no player nativo da TV.");
         };
 
-        video.addEventListener("loadedmetadata", handleReady);
-        video.addEventListener("canplay", handleReady);
-        video.addEventListener("playing", handleReady);
+        video.addEventListener("loadedmetadata", handleInitialReady);
+        video.addEventListener("canplay", handleInitialReady);
+        video.addEventListener("playing", handlePlaying);
         video.addEventListener("error", handleError);
 
         const fallbackTimer = setTimeout(() => {
@@ -205,9 +230,9 @@ export default function KodiVideoPlayer({
 
         return () => {
           clearTimeout(fallbackTimer);
-          video.removeEventListener("loadedmetadata", handleReady);
-          video.removeEventListener("canplay", handleReady);
-          video.removeEventListener("playing", handleReady);
+          video.removeEventListener("loadedmetadata", handleInitialReady);
+          video.removeEventListener("canplay", handleInitialReady);
+          video.removeEventListener("playing", handlePlaying);
           video.removeEventListener("error", handleError);
         };
       } else if (isHls && Hls.isSupported()) {
@@ -232,7 +257,10 @@ export default function KodiVideoPlayer({
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           setIsLoading(false);
           video.play()
-            .then(() => setIsPlaying(true))
+            .then(() => {
+              setIsPlaying(true);
+              setHasStartedPlaying(true);
+            })
             .catch(() => {
               setIsPlaying(false);
               setIsLoading(false);
@@ -293,14 +321,27 @@ export default function KodiVideoPlayer({
         video.src = streamUrl;
         video.load();
 
-        const handleReady = () => {
+        let initialPlayTriggered = false;
+        const handleInitialReady = () => {
           setIsLoading(false);
-          video.play()
-            .then(() => setIsPlaying(true))
-            .catch(() => {
-              setIsPlaying(false);
-              setIsLoading(false);
-            });
+          if (!initialPlayTriggered) {
+            initialPlayTriggered = true;
+            video.play()
+              .then(() => {
+                setIsPlaying(true);
+                setHasStartedPlaying(true);
+              })
+              .catch(() => {
+                setIsPlaying(false);
+                setIsLoading(false);
+              });
+          }
+        };
+
+        const handlePlaying = () => {
+          setIsLoading(false);
+          setIsPlaying(true);
+          setHasStartedPlaying(true);
         };
 
         const handleError = () => {
@@ -318,12 +359,9 @@ export default function KodiVideoPlayer({
           setErrorMessage("Erro ao carregar o arquivo de vídeo. Tente outro servidor.");
         };
 
-        video.addEventListener("loadedmetadata", handleReady);
-        video.addEventListener("loadeddata", handleReady);
-        video.addEventListener("canplay", handleReady);
-        video.addEventListener("play", handleReady);
-        video.addEventListener("playing", handleReady);
-        video.addEventListener("timeupdate", handleReady);
+        video.addEventListener("loadedmetadata", handleInitialReady);
+        video.addEventListener("canplay", handleInitialReady);
+        video.addEventListener("playing", handlePlaying);
         video.addEventListener("error", handleError);
 
         // Timer de segurança: libera os controles após 1.5s para garantir que o player nunca trave
@@ -333,12 +371,9 @@ export default function KodiVideoPlayer({
 
         return () => {
           clearTimeout(fallbackTimer);
-          video.removeEventListener("loadedmetadata", handleReady);
-          video.removeEventListener("loadeddata", handleReady);
-          video.removeEventListener("canplay", handleReady);
-          video.removeEventListener("play", handleReady);
-          video.removeEventListener("playing", handleReady);
-          video.removeEventListener("timeupdate", handleReady);
+          video.removeEventListener("loadedmetadata", handleInitialReady);
+          video.removeEventListener("canplay", handleInitialReady);
+          video.removeEventListener("playing", handlePlaying);
           video.removeEventListener("error", handleError);
         };
       }
@@ -361,8 +396,12 @@ export default function KodiVideoPlayer({
   const togglePlay = () => {
     if (videoRef.current) {
       if (videoRef.current.paused) {
-        videoRef.current.play();
-        setIsPlaying(true);
+        videoRef.current.play()
+          .then(() => {
+            setIsPlaying(true);
+            setHasStartedPlaying(true);
+          })
+          .catch(console.error);
       } else {
         videoRef.current.pause();
         setIsPlaying(false);
@@ -691,9 +730,36 @@ export default function KodiVideoPlayer({
               autoPlay
               poster={poster}
               className="w-full h-full object-contain cursor-pointer"
-              onClick={togglePlay}
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
+              onClick={(e) => {
+                // Em tela cheia / com controles nativos, ignorar cliques nos últimos 65px (barra de controle nativa)
+                // para não anular o clique no botão nativo de Pause/Play e na barra de progresso
+                if (!isMiniPlayer) {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const clickFromBottom = rect.bottom - e.clientY;
+                  if (clickFromBottom <= 65) {
+                    return;
+                  }
+                }
+                togglePlay();
+              }}
+              onPlay={() => {
+                setIsPlaying(true);
+                setIsLoading(false);
+                setHasStartedPlaying(true);
+              }}
+              onPause={() => {
+                setIsPlaying(false);
+              }}
+              onWaiting={() => {
+                if (videoRef.current && !videoRef.current.paused) {
+                  setIsLoading(true);
+                }
+              }}
+              onPlaying={() => {
+                setIsPlaying(true);
+                setIsLoading(false);
+                setHasStartedPlaying(true);
+              }}
             />
 
             {/* Controles de Sobreposição no Mini Player ao passar o mouse */}
@@ -724,8 +790,20 @@ export default function KodiVideoPlayer({
               </div>
             )}
 
-            {/* Botão Central de Início de Reprodução quando pausado/aguardando clique */}
-            {!isPlaying && !isLoading && !hasError && !isMiniPlayer && (
+            {/* Botão Central de Retomar Reprodução quando o usuário pausou */}
+            {hasStartedPlaying && !isPlaying && !isLoading && !hasError && !isMiniPlayer && (
+              <button
+                type="button"
+                onClick={togglePlay}
+                className="absolute z-10 w-20 h-20 rounded-full bg-black/60 hover:bg-red-600/90 text-white flex items-center justify-center shadow-2xl backdrop-blur-md border border-white/20 transition-all hover:scale-110 cursor-pointer pointer-events-auto group/btn"
+                title="Continuar Assistindo (Play)"
+              >
+                <Play className="w-10 h-10 fill-white text-white ml-1 group-hover/btn:scale-110 transition-transform" />
+              </button>
+            )}
+
+            {/* Botão Central de Início de Reprodução quando o autoplay foi bloqueado pelo navegador antes de iniciar */}
+            {!hasStartedPlaying && !isPlaying && !isLoading && !hasError && !isMiniPlayer && (
               <button
                 type="button"
                 onClick={togglePlay}
