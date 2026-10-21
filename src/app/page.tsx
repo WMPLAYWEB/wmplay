@@ -49,7 +49,8 @@ import {
   Menu,
   Sun,
   Moon,
-  Zap
+  Zap,
+  History
 } from "lucide-react";
 import { SAMPLE_MEDIA, MediaItem } from "@/data/media";
 import { INITIAL_ADDONS, Addon } from "@/data/addons";
@@ -112,6 +113,28 @@ export interface PlayingMediaState {
   poster?: string;
   servers: { name: string; url: string; type: "video" | "embed" }[];
   activeServerIndex: number;
+  mediaId?: string;
+  tmdbId?: string;
+  directUrl?: string;
+  seasonNum?: number;
+  epNum?: number;
+  isTv?: boolean;
+}
+
+export interface WatchProgressItem {
+  id: string;
+  title: string;
+  info?: string;
+  poster?: string;
+  currentTime: number;
+  duration: number;
+  percentage: number;
+  updatedAt: number;
+  directUrl?: string;
+  tmdbId?: string;
+  seasonNum?: number;
+  epNum?: number;
+  isTv?: boolean;
 }
 
 export default function KodiApp() {
@@ -123,6 +146,65 @@ export default function KodiApp() {
   const [musicSearchTrigger, setMusicSearchTrigger] = useState(0);
   const [currentTime, setCurrentTime] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Histórico de Reprodução & Favoritos
+  const [watchHistory, setWatchHistory] = useState<WatchProgressItem[]>([]);
+  const [favoriteChannels, setFavoriteChannels] = useState<string[]>([]);
+  const [favoriteCatalogItems, setFavoriteCatalogItems] = useState<CatalogItem[]>([]);
+
+  useEffect(() => {
+    try {
+      const savedHistory = localStorage.getItem("wmplay_watch_progress");
+      if (savedHistory) setWatchHistory(JSON.parse(savedHistory));
+      const savedFavCh = localStorage.getItem("wmplay_fav_channels");
+      if (savedFavCh) setFavoriteChannels(JSON.parse(savedFavCh));
+      const savedFavCat = localStorage.getItem("wmplay_fav_catalog_items");
+      if (savedFavCat) setFavoriteCatalogItems(JSON.parse(savedFavCat));
+    } catch {}
+  }, []);
+
+  const toggleFavoriteChannel = (channelId: string) => {
+    setFavoriteChannels((prev) => {
+      const isFav = prev.includes(channelId);
+      const next = isFav ? prev.filter((id) => id !== channelId) : [...prev, channelId];
+      try {
+        localStorage.setItem("wmplay_fav_channels", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const toggleFavoriteCatalog = (item: CatalogItem) => {
+    setFavoriteCatalogItems((prev) => {
+      const exists = prev.some((x) => x.id === item.id);
+      let next: CatalogItem[];
+      if (exists) {
+        next = prev.filter((x) => x.id !== item.id);
+      } else {
+        next = [item, ...prev];
+      }
+      try {
+        localStorage.setItem("wmplay_fav_catalog_items", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const clearWatchHistory = () => {
+    setWatchHistory([]);
+    try {
+      localStorage.removeItem("wmplay_watch_progress");
+    } catch {}
+  };
+
+  const formatTimeMinutes = (sec?: number) => {
+    if (!sec || isNaN(sec)) return "0 min";
+    const mins = Math.floor(sec / 60);
+    if (mins < 60) return `${mins} min`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${h}h ${m}m`;
+  };
 
   // Theme State (Default Off-White com detalhes vermelhos para teste)
   const [theme, setTheme] = useState<"offwhite" | "dark">("offwhite");
@@ -363,6 +445,10 @@ export default function KodiApp() {
     const servers: { name: string; url: string; type: "video" | "embed" }[] = [];
 
     const isTv = Boolean(seasonNum && epNum);
+    const mediaId = isTv
+      ? `series_${tmdbId || title}_s${seasonNum}e${epNum}`
+      : `media_${tmdbId || directUrl || title}`;
+
     const isDirectStream =
       !isTv &&
       Boolean(directUrl) &&
@@ -408,6 +494,12 @@ export default function KodiApp() {
         poster,
         servers,
         activeServerIndex: 0,
+        mediaId,
+        tmdbId,
+        directUrl,
+        seasonNum,
+        epNum,
+        isTv,
       });
       return;
     }
@@ -425,6 +517,12 @@ export default function KodiApp() {
         },
       ],
       activeServerIndex: 0,
+      mediaId,
+      tmdbId,
+      directUrl,
+      seasonNum,
+      epNum,
+      isTv,
     });
 
     const params = new URLSearchParams({
@@ -484,6 +582,105 @@ export default function KodiApp() {
       });
   };
 
+  // Retomada e Próximo Episódio
+  const handleResumeItem = (item: WatchProgressItem) => {
+    if (item.isTv && item.seasonNum && item.epNum) {
+      handlePlayMedia(
+        item.title,
+        item.info || "",
+        item.poster || "",
+        item.tmdbId,
+        item.directUrl,
+        item.seasonNum,
+        item.epNum
+      );
+    } else {
+      handlePlayMedia(
+        item.title,
+        item.info || "",
+        item.poster || "",
+        item.tmdbId,
+        item.directUrl
+      );
+    }
+  };
+
+  const currentResumeTime = React.useMemo(() => {
+    if (!playingMedia?.mediaId) return 0;
+    const found = watchHistory.find((w) => w.id === playingMedia.mediaId);
+    if (found && found.currentTime > 15 && found.percentage < 95) {
+      return found.currentTime;
+    }
+    return 0;
+  }, [playingMedia?.mediaId, watchHistory]);
+
+  const currentSeason = React.useMemo(() => {
+    if (!playingMedia?.isTv || !playingMedia.seasonNum) return null;
+    return seriesSeasons.find((s) => s.seasonNumber === playingMedia.seasonNum) || null;
+  }, [playingMedia?.isTv, playingMedia?.seasonNum, seriesSeasons]);
+
+  const nextEpisodeObj = React.useMemo(() => {
+    if (!currentSeason || !playingMedia?.epNum) return null;
+    return currentSeason.episodes.find((ep) => ep.number === playingMedia.epNum! + 1) || null;
+  }, [currentSeason, playingMedia?.epNum]);
+
+  const hasNextEpisode = Boolean(nextEpisodeObj && selectedSeriesItem);
+
+  const handleNextEpisode = useCallback(() => {
+    if (!nextEpisodeObj || !selectedSeriesItem || !playingMedia?.seasonNum) return;
+    handlePlayMedia(
+      `${selectedSeriesItem.title} - T${playingMedia.seasonNum}E${nextEpisodeObj.number}: ${nextEpisodeObj.title}`,
+      selectedSeriesItem.synopsis,
+      selectedSeriesItem.thumbnail,
+      selectedSeriesItem.tmdb_id,
+      nextEpisodeObj.link || selectedSeriesItem.link || nextEpisodeObj.streamUrl,
+      playingMedia.seasonNum,
+      nextEpisodeObj.number
+    );
+  }, [nextEpisodeObj, selectedSeriesItem, playingMedia?.seasonNum]);
+
+  const handleProgressUpdate = useCallback(
+    (currentTime: number, duration: number) => {
+      if (!playingMedia?.mediaId || duration <= 0) return;
+      const percentage = Math.round((currentTime / duration) * 100);
+
+      setWatchHistory((prev) => {
+        const existingIdx = prev.findIndex((w) => w.id === playingMedia.mediaId);
+        const updated: WatchProgressItem = {
+          id: playingMedia.mediaId!,
+          title: playingMedia.title,
+          info: playingMedia.info,
+          poster: playingMedia.poster,
+          currentTime,
+          duration,
+          percentage,
+          updatedAt: Date.now(),
+          directUrl: playingMedia.directUrl,
+          tmdbId: playingMedia.tmdbId,
+          seasonNum: playingMedia.seasonNum,
+          epNum: playingMedia.epNum,
+          isTv: playingMedia.isTv,
+        };
+
+        let nextList: WatchProgressItem[];
+        if (existingIdx >= 0) {
+          nextList = [...prev];
+          nextList[existingIdx] = updated;
+        } else {
+          nextList = [updated, ...prev];
+        }
+
+        nextList.sort((a, b) => b.updatedAt - a.updatedAt);
+        const trimmed = nextList.slice(0, 30);
+        try {
+          localStorage.setItem("wmplay_watch_progress", JSON.stringify(trimmed));
+        } catch {}
+        return trimmed;
+      });
+    },
+    [playingMedia]
+  );
+
   // Filtragem dos Add-ons
   const filteredAddons = addons.filter((addon) => {
     const matchesSearch =
@@ -497,10 +694,14 @@ export default function KodiApp() {
     return true;
   });
 
-  // Canais filtrados dentro do Brazuca Play
+  // Canais filtrados dentro do Brazuca Play e TV Ao Vivo
   const filteredBrazucaChannels = BRAZUCA_CHANNELS.filter((ch) => {
     const matchesFilter =
-      channelSubFilter === "todos" || ch.category === channelSubFilter;
+      channelSubFilter === "todos"
+        ? true
+        : channelSubFilter === "favoritos"
+        ? favoriteChannels.includes(ch.id)
+        : ch.category === channelSubFilter;
     if (!matchesFilter) return false;
     if (searchQuery.trim() === "") return true;
     return (
@@ -1242,6 +1443,8 @@ export default function KodiApp() {
                     genresList={GENRES_LIST}
                     isLight={isLight}
                     isLiteMode={isLiteMode}
+                    favoriteCatalogItems={favoriteCatalogItems}
+                    onToggleFavoriteCatalog={toggleFavoriteCatalog}
                     onSelectGenre={(g) => {
                       const newGenre = g === "Todos" ? "" : g;
                       setCatalogGenre(newGenre);
@@ -1283,8 +1486,89 @@ export default function KodiApp() {
                     }}
                   />
                 ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pb-12">
-                  {BRAZUCA_ROOT_CATEGORIES.map((cat) => (
+                <div className="space-y-8 pb-12">
+                  {/* SEÇÃO CONTINUAR ASSISTINDO (Histórico com Progresso Salvo) */}
+                  {watchHistory.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <History className="w-5 h-5 text-red-600" />
+                          <h3 className={`text-base sm:text-lg font-black ${isLight ? "text-zinc-950" : "text-white"}`}>
+                            Continuar Assistindo
+                          </h3>
+                          <span className={`text-xs px-2.5 py-0.5 rounded-full font-mono font-bold ${
+                            isLight ? "bg-red-100 text-red-700 border border-red-200" : "bg-red-950/80 text-red-400 border border-red-600/30"
+                          }`}>
+                            {watchHistory.length}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={clearWatchHistory}
+                          className="text-xs font-bold text-zinc-500 hover:text-red-500 transition-colors cursor-pointer"
+                        >
+                          Limpar Histórico
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-3 sm:gap-4 overflow-x-auto pb-3 pt-1 scrollbar-none -mx-2 px-2 sm:mx-0 sm:px-0">
+                        {watchHistory.map((item) => (
+                          <div
+                            key={item.id}
+                            onClick={() => handleResumeItem(item)}
+                            className={`group relative shrink-0 w-48 sm:w-56 rounded-xl sm:rounded-2xl overflow-hidden border cursor-pointer transition-all duration-300 hover:scale-[1.03] shadow-xl ${
+                              isLight
+                                ? "border-zinc-300 bg-white hover:border-red-500 hover:shadow-red-500/10"
+                                : "border-red-600/25 bg-zinc-950/80 hover:border-red-500 hover:shadow-red-600/20"
+                            }`}
+                          >
+                            <div className="aspect-video w-full overflow-hidden relative bg-black">
+                              <img
+                                src={item.poster || "/brazuca_icon.png"}
+                                alt={item.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+                                onError={(e) => {
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.src = "/brazuca_icon.png";
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                                  <Play className="w-5 h-5 fill-white text-white ml-0.5" />
+                                </div>
+                              </div>
+                              <span className="absolute bottom-1.5 right-1.5 text-[10px] font-mono font-bold text-white bg-black/80 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                                {formatTimeMinutes(item.currentTime)} / {formatTimeMinutes(item.duration)}
+                              </span>
+                            </div>
+
+                            {/* Barra de Progresso Vermelha */}
+                            <div className="w-full bg-zinc-800 h-1.5 overflow-hidden">
+                              <div
+                                className="bg-red-600 h-full transition-all duration-300 shadow-sm shadow-red-500"
+                                style={{ width: `${Math.min(100, Math.max(5, item.percentage))}%` }}
+                              />
+                            </div>
+
+                            <div className="p-2.5 sm:p-3">
+                              <h4 className={`font-black text-xs sm:text-sm truncate ${
+                                isLight ? "text-zinc-950 group-hover:text-red-600" : "text-white group-hover:text-red-400"
+                              }`}>
+                                {item.title}
+                              </h4>
+                              <p className="text-[10px] sm:text-[11px] text-zinc-500 truncate mt-0.5">
+                                {item.info || (item.percentage >= 95 ? "Concluído" : `${item.percentage}% assistido`)}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* GRID DAS 9 CATEGORIAS OFICIAIS */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    {BRAZUCA_ROOT_CATEGORIES.map((cat) => (
                     <div
                       key={cat.id}
                       onClick={() => {
@@ -1345,6 +1629,7 @@ export default function KodiApp() {
                       </div>
                     </div>
                   ))}
+                  </div>
                 </div>
               )) : activeBrazucaCategory.type === "channels" ? (
                 /* TELA 2: CANAIS DE TV AO VIVO (154 CANAIS OFICIAIS) */
@@ -1365,6 +1650,7 @@ export default function KodiApp() {
                     }`}>
                       {[
                         { id: "todos", label: `Todos (${BRAZUCA_CHANNELS.length})` },
+                        { id: "favoritos", label: `⭐ Favoritos (${favoriteChannels.length})` },
                         { id: "aberta", label: "TV Aberta" },
                         { id: "esportes", label: "Esportes" },
                         { id: "filmes_series", label: "Filmes & Séries" },
@@ -1391,70 +1677,107 @@ export default function KodiApp() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-12">
-                    {filteredBrazucaChannels.map((ch) => (
-                      <div
-                        key={ch.id}
-                        onClick={() =>
-                          handlePlayMedia(
-                            ch.name,
-                            ch.epg || "Transmissão Ao Vivo",
-                            ch.logo,
-                            undefined,
-                            ch.streamUrl
-                          )
-                        }
-                        className={`group p-4 rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col justify-between hover:scale-105 shadow-lg ${
-                          isLight
-                            ? "border-zinc-300 bg-white hover:bg-red-50/40 hover:border-red-500 hover:shadow-red-500/10"
-                            : "border-red-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-red-500 hover:shadow-red-600/20"
-                        }`}
-                      >
-                        <div className={`aspect-video w-full rounded-xl border flex items-center justify-center p-3 relative overflow-hidden ${
-                          isLight ? "bg-zinc-100 border-zinc-200" : "bg-black/60 border-zinc-800 group-hover:border-red-600/40"
-                        }`}>
-                          <img
-                            src={ch.logo || "/brazuca_icon.png"}
-                            alt={ch.name}
-                            referrerPolicy="no-referrer"
-                            onError={(e) => {
-                              e.currentTarget.onerror = null;
-                              e.currentTarget.src = "/brazuca_icon.png";
-                            }}
-                            className="max-h-full max-w-full object-contain filter drop-shadow group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-red-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Play className="w-8 h-8 fill-red-500 text-red-500 filter drop-shadow" />
+                  {filteredBrazucaChannels.length === 0 ? (
+                    <div className={`p-12 text-center rounded-2xl border ${
+                      isLight ? "bg-white border-zinc-300 shadow-sm" : "bg-zinc-950/50 border-zinc-800"
+                    }`}>
+                      <p className={`text-base font-bold ${isLight ? "text-zinc-900" : "text-white"}`}>
+                        {channelSubFilter === "favoritos"
+                          ? "Nenhum canal favoritado ainda."
+                          : "Nenhum canal encontrado."}
+                      </p>
+                      <p className={`text-xs mt-1 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>
+                        {channelSubFilter === "favoritos"
+                          ? "Clique na estrela (⭐) de qualquer canal para salvá-lo nos seus favoritos."
+                          : "Tente selecionar outra categoria ou buscar por outro canal."}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-12">
+                      {filteredBrazucaChannels.map((ch) => {
+                        const isFav = favoriteChannels.includes(ch.id);
+                        return (
+                          <div
+                            key={ch.id}
+                            onClick={() =>
+                              handlePlayMedia(
+                                ch.name,
+                                ch.epg || "Transmissão Ao Vivo",
+                                ch.logo,
+                                undefined,
+                                ch.streamUrl
+                              )
+                            }
+                            className={`group p-4 rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col justify-between hover:scale-105 shadow-lg relative ${
+                              isLight
+                                ? "border-zinc-300 bg-white hover:bg-red-50/40 hover:border-red-500 hover:shadow-red-500/10"
+                                : "border-red-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-red-500 hover:shadow-red-600/20"
+                            }`}
+                          >
+                            <div className={`aspect-video w-full rounded-xl border flex items-center justify-center p-3 relative overflow-hidden ${
+                              isLight ? "bg-zinc-100 border-zinc-200" : "bg-black/60 border-zinc-800 group-hover:border-red-600/40"
+                            }`}>
+                              {/* Botão de Favoritar Canal */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFavoriteChannel(ch.id);
+                                }}
+                                className={`absolute top-2 right-2 z-20 p-1.5 rounded-full backdrop-blur-md transition-all cursor-pointer shadow-md ${
+                                  isFav
+                                    ? "bg-amber-500 text-white shadow-amber-500/50 scale-105"
+                                    : "bg-black/60 hover:bg-black/90 text-zinc-400 hover:text-amber-400"
+                                }`}
+                                title={isFav ? "Remover dos Favoritos" : "Favoritar Canal"}
+                              >
+                                <Star className={`w-3.5 h-3.5 ${isFav ? "fill-white text-white" : ""}`} />
+                              </button>
+
+                              <img
+                                src={ch.logo || "/brazuca_icon.png"}
+                                alt={ch.name}
+                                referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.src = "/brazuca_icon.png";
+                                }}
+                                className="max-h-full max-w-full object-contain filter drop-shadow group-hover:scale-110 transition-transform duration-300"
+                              />
+                              <div className="absolute inset-0 bg-red-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <Play className="w-8 h-8 fill-red-500 text-red-500 filter drop-shadow" />
+                              </div>
+                            </div>
+
+                            <div className="mt-3">
+                              <h4 className={`font-bold text-sm truncate transition-colors ${
+                                isLight ? "text-zinc-950 group-hover:text-red-600" : "text-slate-100 group-hover:text-red-400"
+                              }`}>
+                                {ch.name}
+                              </h4>
+                              <p className={`text-[11px] truncate mt-0.5 ${
+                                isLight ? "text-zinc-600 font-semibold" : "text-slate-400"
+                              }`}>
+                                {ch.epg || "Transmissão Ao Vivo"}
+                              </p>
+                            </div>
+
+                            <div className={`mt-3 pt-2 border-t flex items-center justify-between text-[11px] ${
+                              isLight ? "border-zinc-200" : "border-zinc-850"
+                            }`}>
+                              <span className="text-red-600 font-mono uppercase font-black">
+                                {ch.category}
+                              </span>
+                              <span className="text-emerald-700 flex items-center gap-1 font-bold">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                                AO VIVO
+                              </span>
+                            </div>
                           </div>
-                        </div>
-
-                        <div className="mt-3">
-                          <h4 className={`font-bold text-sm truncate transition-colors ${
-                            isLight ? "text-zinc-950 group-hover:text-red-600" : "text-slate-100 group-hover:text-red-400"
-                          }`}>
-                            {ch.name}
-                          </h4>
-                          <p className={`text-[11px] truncate mt-0.5 ${
-                            isLight ? "text-zinc-600 font-semibold" : "text-slate-400"
-                          }`}>
-                            {ch.epg || "Transmissão Ao Vivo"}
-                          </p>
-                        </div>
-
-                        <div className={`mt-3 pt-2 border-t flex items-center justify-between text-[11px] ${
-                          isLight ? "border-zinc-200" : "border-zinc-850"
-                        }`}>
-                          <span className="text-red-600 font-mono uppercase font-black">
-                            {ch.category}
-                          </span>
-                          <span className="text-emerald-700 flex items-center gap-1 font-bold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                            AO VIVO
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               ) : selectedSeriesItem ? (
                 /* TELA 3: EPISÓDIOS DA SÉRIE / ANIME / NOVELA SELECIONADA */
@@ -1615,6 +1938,8 @@ export default function KodiApp() {
                   genresList={GENRES_LIST}
                   isLight={isLight}
                   isLiteMode={isLiteMode}
+                  favoriteCatalogItems={favoriteCatalogItems}
+                  onToggleFavoriteCatalog={toggleFavoriteCatalog}
                   onSelectGenre={(g) => {
                     const newGenre = g === "Todos" ? "" : g;
                     setCatalogGenre(newGenre);
@@ -1815,6 +2140,8 @@ export default function KodiApp() {
                 genresList={GENRES_LIST}
                 isLight={isLight}
                 isLiteMode={isLiteMode}
+                favoriteCatalogItems={favoriteCatalogItems}
+                onToggleFavoriteCatalog={toggleFavoriteCatalog}
                 onSelectGenre={(g) => {
                   const newGenre = g === "Todos" ? "" : g;
                   setCatalogGenre(newGenre);
@@ -1871,7 +2198,8 @@ export default function KodiApp() {
                   isLight ? "bg-white border-zinc-300 shadow-sm" : "bg-zinc-950/90 border-zinc-800"
                 }`}>
                   {[
-                    { id: "todos", label: "Todos (154)" },
+                    { id: "todos", label: `Todos (${BRAZUCA_CHANNELS.length})` },
+                    { id: "favoritos", label: `⭐ Favoritos (${favoriteChannels.length})` },
                     { id: "aberta", label: "TV Aberta" },
                     { id: "esportes", label: "Esportes" },
                     { id: "filmes_series", label: "Filmes & Séries" },
@@ -1882,84 +2210,123 @@ export default function KodiApp() {
                     <button
                       key={tab.id}
                       onClick={() => setChannelSubFilter(tab.id)}
-                      className={`px-3 py-1.5 rounded-lg transition-colors font-bold shrink-0 ${
+                      className={`px-3 py-1.5 rounded-lg transition-colors font-bold shrink-0 cursor-pointer ${
                         channelSubFilter === tab.id
                           ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-md shadow-red-600/20"
                           : isLight
-                          ? "text-zinc-800 hover:text-red-600 hover:bg-red-50 bg-zinc-100/80"
-                          : "text-slate-400 hover:text-white hover:bg-zinc-900"
+                          ? "text-zinc-950 hover:text-red-600 hover:bg-red-50 bg-zinc-100/80 border border-zinc-200"
+                          : "text-slate-300 hover:text-white hover:bg-zinc-900"
                       }`}
                     >
-                      {tab.label}
+                      <span className={channelSubFilter === tab.id ? "text-white font-black" : isLight ? "text-zinc-950 font-black hover:text-red-600" : "text-slate-300 font-bold"}>
+                        {tab.label}
+                      </span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-12">
-                {filteredBrazucaChannels.map((ch) => (
-                  <div
-                    key={ch.id}
-                    onClick={() =>
-                      handlePlayMedia(
-                        ch.name,
-                        ch.epg || "Transmissão Ao Vivo",
-                        ch.logo,
-                        undefined,
-                        ch.streamUrl
-                      )
-                    }
-                    className={`group p-4 rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col justify-between hover:scale-105 shadow-lg ${
-                      isLight
-                        ? "border-zinc-300 bg-white hover:bg-red-50/40 hover:border-red-500 hover:shadow-red-500/10"
-                        : "border-red-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-red-500 hover:shadow-red-600/20"
-                    }`}
-                  >
-                    <div className={`aspect-video w-full rounded-xl border flex items-center justify-center p-3 relative overflow-hidden ${
-                      isLight ? "bg-zinc-100 border-zinc-200" : "bg-black/60 border-zinc-800 group-hover:border-red-600/40"
-                    }`}>
-                      <img
-                        src={ch.logo || "/brazuca_icon.png"}
-                        alt={ch.name}
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.src = "/brazuca_icon.png";
-                        }}
-                        className="max-h-full max-w-full object-contain filter drop-shadow group-hover:scale-110 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-red-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Play className="w-8 h-8 fill-red-500 text-red-500 filter drop-shadow" />
+              {filteredBrazucaChannels.length === 0 ? (
+                <div className={`p-12 text-center rounded-2xl border ${
+                  isLight ? "bg-white border-zinc-300 shadow-sm" : "bg-zinc-950/50 border-zinc-800"
+                }`}>
+                  <p className={`text-base font-bold ${isLight ? "text-zinc-900" : "text-white"}`}>
+                    {channelSubFilter === "favoritos"
+                      ? "Nenhum canal favoritado ainda."
+                      : "Nenhum canal encontrado."}
+                  </p>
+                  <p className={`text-xs mt-1 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>
+                    {channelSubFilter === "favoritos"
+                      ? "Clique na estrela (⭐) de qualquer canal para salvá-lo nos seus favoritos."
+                      : "Tente selecionar outra categoria ou buscar por outro canal."}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-12">
+                  {filteredBrazucaChannels.map((ch) => {
+                    const isFav = favoriteChannels.includes(ch.id);
+                    return (
+                      <div
+                        key={ch.id}
+                        onClick={() =>
+                          handlePlayMedia(
+                            ch.name,
+                            ch.epg || "Transmissão Ao Vivo",
+                            ch.logo,
+                            undefined,
+                            ch.streamUrl
+                          )
+                        }
+                        className={`group p-4 rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col justify-between hover:scale-105 shadow-lg relative ${
+                          isLight
+                            ? "border-zinc-300 bg-white hover:bg-red-50/40 hover:border-red-500 hover:shadow-red-500/10"
+                            : "border-red-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-red-500 hover:shadow-red-600/20"
+                        }`}
+                      >
+                        <div className={`aspect-video w-full rounded-xl border flex items-center justify-center p-3 relative overflow-hidden ${
+                          isLight ? "bg-zinc-100 border-zinc-200" : "bg-black/60 border-zinc-800 group-hover:border-red-600/40"
+                        }`}>
+                          {/* Botão de Favoritar Canal */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleFavoriteChannel(ch.id);
+                            }}
+                            className={`absolute top-2 right-2 z-20 p-1.5 rounded-full backdrop-blur-md transition-all cursor-pointer shadow-md ${
+                              isFav
+                                ? "bg-amber-500 text-white shadow-amber-500/50 scale-105"
+                                : "bg-black/60 hover:bg-black/90 text-zinc-400 hover:text-amber-400"
+                            }`}
+                            title={isFav ? "Remover dos Favoritos" : "Favoritar Canal"}
+                          >
+                            <Star className={`w-3.5 h-3.5 ${isFav ? "fill-white text-white" : ""}`} />
+                          </button>
+
+                          <img
+                            src={ch.logo || "/brazuca_icon.png"}
+                            alt={ch.name}
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = "/brazuca_icon.png";
+                            }}
+                            className="max-h-full max-w-full object-contain filter drop-shadow group-hover:scale-110 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-red-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Play className="w-8 h-8 fill-red-500 text-red-500 filter drop-shadow" />
+                          </div>
+                        </div>
+
+                        <div className="mt-3">
+                          <h4 className={`font-bold text-sm truncate transition-colors ${
+                            isLight ? "text-zinc-950 group-hover:text-red-600" : "text-slate-100 group-hover:text-red-400"
+                          }`}>
+                            {ch.name}
+                          </h4>
+                          <p className={`text-[11px] truncate mt-0.5 ${
+                            isLight ? "text-zinc-600 font-semibold" : "text-slate-400"
+                          }`}>
+                            {ch.epg || "Transmissão Ao Vivo"}
+                          </p>
+                        </div>
+
+                        <div className={`mt-3 pt-2 border-t flex items-center justify-between text-[11px] ${
+                          isLight ? "border-zinc-200" : "border-zinc-850"
+                        }`}>
+                          <span className="text-red-600 font-mono uppercase font-black">
+                            {ch.category}
+                          </span>
+                          <span className="text-emerald-700 flex items-center gap-1 font-bold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                            AO VIVO
+                          </span>
+                        </div>
                       </div>
-                    </div>
-
-                    <div className="mt-3">
-                      <h4 className={`font-bold text-sm truncate transition-colors ${
-                        isLight ? "text-zinc-950 group-hover:text-red-600" : "text-slate-100 group-hover:text-red-400"
-                      }`}>
-                        {ch.name}
-                      </h4>
-                      <p className={`text-[11px] truncate mt-0.5 ${
-                        isLight ? "text-zinc-600 font-semibold" : "text-slate-400"
-                      }`}>
-                        {ch.epg || "Transmissão Ao Vivo"}
-                      </p>
-                    </div>
-
-                    <div className={`mt-3 pt-2 border-t flex items-center justify-between text-[11px] ${
-                      isLight ? "border-zinc-200" : "border-zinc-850"
-                    }`}>
-                      <span className="text-red-600 font-mono uppercase font-black">
-                        {ch.category}
-                      </span>
-                      <span className="text-emerald-700 flex items-center gap-1 font-bold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                        AO VIVO
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ) : activeCategory === "music" ? (
             /* ============================================================== */
@@ -2160,6 +2527,10 @@ export default function KodiApp() {
           }
           onClose={() => setPlayingMedia(null)}
           isLiteMode={isLiteMode}
+          resumeTime={currentResumeTime}
+          onProgressUpdate={handleProgressUpdate}
+          onNextEpisode={handleNextEpisode}
+          hasNextEpisode={hasNextEpisode}
         />
       )}
 
@@ -2277,6 +2648,8 @@ function CatalogBrowseView({
   onItemClick,
   isLight = false,
   isLiteMode = false,
+  favoriteCatalogItems = [],
+  onToggleFavoriteCatalog,
 }: {
   title: string;
   badge?: string;
@@ -2296,7 +2669,19 @@ function CatalogBrowseView({
   onItemClick: (item: CatalogItem) => void;
   isLight?: boolean;
   isLiteMode?: boolean;
+  favoriteCatalogItems?: CatalogItem[];
+  onToggleFavoriteCatalog?: (item: CatalogItem) => void;
 }) {
+  const isFavoritesTab = catalogGenre === "favoritos";
+  const displayedItems = isFavoritesTab
+    ? favoriteCatalogItems.filter((it) =>
+        catalogSearch.trim() === ""
+          ? true
+          : it.title.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+            (it.synopsis && it.synopsis.toLowerCase().includes(catalogSearch.toLowerCase()))
+      )
+    : catalogItems;
+
   return (
     <div className="space-y-4 sm:space-y-5 pb-16">
       {/* Cabeçalho da Lista Responsivo */}
@@ -2305,8 +2690,8 @@ function CatalogBrowseView({
           <h3 className={`text-xl sm:text-2xl font-black flex items-center gap-2 sm:gap-3 flex-wrap ${
             isLight ? "text-zinc-950" : "text-white"
           }`}>
-            <span>{title}</span>
-            {badge && (
+            <span>{isFavoritesTab ? "⭐ Minha Lista de Favoritos" : title}</span>
+            {badge && !isFavoritesTab && (
               <span className={`text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 rounded-full font-mono ${
                 isLight ? "text-amber-800 bg-amber-100 border border-amber-300" : "text-amber-300 bg-amber-950/60 border border-amber-500/40"
               }`}>
@@ -2316,7 +2701,9 @@ function CatalogBrowseView({
             <span className={`text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 rounded-full font-mono ${
               isLight ? "text-red-700 bg-red-100 border border-red-300" : "text-red-400 bg-red-950/60 border border-red-600/30"
             }`}>
-              {catalogTotalCount.toLocaleString("pt-BR")} títulos
+              {isFavoritesTab
+                ? `${displayedItems.length} salvos`
+                : `${catalogTotalCount.toLocaleString("pt-BR")} títulos`}
             </span>
             {isLiteMode && (
               <span className="text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 rounded-full font-mono text-amber-900 bg-amber-400 border border-amber-500 flex items-center gap-1">
@@ -2326,47 +2713,70 @@ function CatalogBrowseView({
             )}
           </h3>
           <p className={`text-[11px] sm:text-xs mt-1 ${isLight ? "text-zinc-600 font-semibold" : "text-slate-400"}`}>
-            Pág. <span className={`font-bold ${isLight ? "text-zinc-950" : "text-white"}`}>{catalogPage}</span> de{" "}
-            <span className={`font-bold ${isLight ? "text-zinc-950" : "text-white"}`}>{catalogTotalPages}</span> · {isLiteMode ? "24 títulos por pág. (Modo TV Lite)" : "48 títulos por página"}
+            {isFavoritesTab ? (
+              <span>Seus filmes e séries favoritos salvos para assistir quando quiser.</span>
+            ) : (
+              <>
+                Pág. <span className={`font-bold ${isLight ? "text-zinc-950" : "text-white"}`}>{catalogPage}</span> de{" "}
+                <span className={`font-bold ${isLight ? "text-zinc-950" : "text-white"}`}>{catalogTotalPages}</span> · {isLiteMode ? "24 títulos por pág. (Modo TV Lite)" : "48 títulos por página"}
+              </>
+            )}
           </p>
         </div>
 
-        {/* Paginação Compacta Superior */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <button
-            onClick={() => onPageChange(catalogPage - 1)}
-            disabled={catalogPage <= 1 || catalogLoading}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border disabled:opacity-40 text-xs font-black transition-all cursor-pointer ${
-              isLight
-                ? "bg-white border-2 border-zinc-300 hover:border-red-500 text-zinc-950 hover:text-red-600 hover:bg-red-50 shadow-sm"
-                : "bg-zinc-950 border-zinc-700 hover:border-red-500 text-slate-200 hover:text-white"
-            }`}
-          >
-            <ChevronLeft className="w-4 h-4 text-red-600 shrink-0" />
-            <span className={isLight ? "text-zinc-950 font-black" : "text-slate-200 font-bold"}>Anterior</span>
-          </button>
-          <span className="text-xs font-mono font-black text-red-600 px-1 sm:px-2">
-            {catalogPage} / {catalogTotalPages}
-          </span>
-          <button
-            onClick={() => onPageChange(catalogPage + 1)}
-            disabled={catalogPage >= catalogTotalPages || catalogLoading}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border disabled:opacity-40 text-xs font-black transition-all cursor-pointer ${
-              isLight
-                ? "bg-white border-2 border-zinc-300 hover:border-red-500 text-zinc-950 hover:text-red-600 hover:bg-red-50 shadow-sm"
-                : "bg-zinc-950 border-zinc-700 hover:border-red-500 text-slate-200 hover:text-white"
-            }`}
-          >
-            <span className={isLight ? "text-zinc-950 font-black" : "text-slate-200 font-bold"}>Próxima</span>
-            <ChevronRight className="w-4 h-4 text-red-600 shrink-0" />
-          </button>
-        </div>
+        {/* Paginação Compacta Superior (oculta na aba favoritos) */}
+        {!isFavoritesTab && (
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              onClick={() => onPageChange(catalogPage - 1)}
+              disabled={catalogPage <= 1 || catalogLoading}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border disabled:opacity-40 text-xs font-black transition-all cursor-pointer ${
+                isLight
+                  ? "bg-white border-2 border-zinc-300 hover:border-red-500 text-zinc-950 hover:text-red-600 hover:bg-red-50 shadow-sm"
+                  : "bg-zinc-950 border-zinc-700 hover:border-red-500 text-slate-200 hover:text-white"
+              }`}
+            >
+              <ChevronLeft className="w-4 h-4 text-red-600 shrink-0" />
+              <span className={isLight ? "text-zinc-950 font-black" : "text-slate-200 font-bold"}>Anterior</span>
+            </button>
+            <span className="text-xs font-mono font-black text-red-600 px-1 sm:px-2">
+              {catalogPage} / {catalogTotalPages}
+            </span>
+            <button
+              onClick={() => onPageChange(catalogPage + 1)}
+              disabled={catalogPage >= catalogTotalPages || catalogLoading}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border disabled:opacity-40 text-xs font-black transition-all cursor-pointer ${
+                isLight
+                  ? "bg-white border-2 border-zinc-300 hover:border-red-500 text-zinc-950 hover:text-red-600 hover:bg-red-50 shadow-sm"
+                  : "bg-zinc-950 border-zinc-700 hover:border-red-500 text-slate-200 hover:text-white"
+              }`}
+            >
+              <span className={isLight ? "text-zinc-950 font-black" : "text-slate-200 font-bold"}>Próxima</span>
+              <ChevronRight className="w-4 h-4 text-red-600 shrink-0" />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Chips de Gênero Responsivos com Swipe (Subfiltros de Gênero) */}
+      {/* Chips de Gênero Responsivos com Swipe (Subfiltros de Gênero + Minha Lista) */}
       <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none -mx-2 px-2 sm:mx-0 sm:px-0">
+        {/* Chip ⭐ Minha Lista */}
+        <button
+          onClick={() => onSelectGenre("favoritos")}
+          className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+            isFavoritesTab
+              ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/30"
+              : isLight
+              ? "bg-white border-2 border-zinc-300 text-zinc-950 hover:text-amber-600 hover:border-amber-500 hover:bg-amber-50 shadow-sm"
+              : "bg-zinc-950/90 border border-zinc-800 text-amber-300 hover:text-white hover:border-zinc-700"
+          }`}
+        >
+          <Star className={`w-3.5 h-3.5 ${isFavoritesTab ? "fill-white text-white" : "fill-amber-400 text-amber-400"}`} />
+          <span>Minha Lista ({favoriteCatalogItems.length})</span>
+        </button>
+
         {genresList.map((g) => {
-          const isSelected = (g === "Todos" && !catalogGenre) || catalogGenre === g;
+          const isSelected = !isFavoritesTab && ((g === "Todos" && !catalogGenre) || catalogGenre === g);
           return (
             <button
               key={g}
@@ -2388,95 +2798,124 @@ function CatalogBrowseView({
       </div>
 
       {/* Grade de Vídeos (2 colunas em celulares, escalonando em telas maiores) */}
-      {catalogLoading ? (
+      {catalogLoading && !isFavoritesTab ? (
         <div className="p-16 flex flex-col items-center justify-center gap-3 text-red-500">
           <Loader2 className="w-10 h-10 animate-spin text-red-500" />
           <p className={`text-xs sm:text-sm font-bold ${isLight ? "text-zinc-700" : "text-slate-300"}`}>Consultando catálogo de 38.600+ títulos...</p>
         </div>
-      ) : catalogItems.length === 0 ? (
+      ) : displayedItems.length === 0 ? (
         <div className={`p-12 text-center rounded-2xl border ${
           isLight ? "bg-white border-zinc-300 shadow-sm" : "bg-zinc-950/50 border-zinc-800"
         }`}>
-          <p className={`text-sm sm:text-base font-bold ${isLight ? "text-zinc-900" : "text-slate-300"}`}>Nenhum título encontrado.</p>
-          <p className={`text-xs mt-1 ${isLight ? "text-zinc-600" : "text-slate-400"}`}>Tente remover os filtros ou buscar por outro termo.</p>
+          <p className={`text-sm sm:text-base font-bold ${isLight ? "text-zinc-900" : "text-slate-300"}`}>
+            {isFavoritesTab ? "Sua lista de favoritos está vazia." : "Nenhum título encontrado."}
+          </p>
+          <p className={`text-xs mt-1 ${isLight ? "text-zinc-600" : "text-slate-400"}`}>
+            {isFavoritesTab
+              ? "Clique na estrela (⭐) de qualquer filme ou série para adicionar à sua lista."
+              : "Tente remover os filtros ou buscar por outro termo."}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-4 md:gap-5">
-          {catalogItems.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => onItemClick(item)}
-              className={`group rounded-xl sm:rounded-2xl overflow-hidden border cursor-pointer transition-all duration-300 flex flex-col hover:scale-[1.02] shadow-xl ${
-                isLight
-                  ? "border-zinc-200 bg-white hover:border-red-500 hover:shadow-red-500/10"
-                  : "border-red-600/20 bg-zinc-950/70 hover:border-red-500 hover:shadow-red-600/20"
-              }`}
-            >
-              <div className="aspect-[2/3] w-full overflow-hidden relative bg-black">
-                <img
-                  src={item.thumbnail || "/brazuca_icon.png"}
-                  alt={item.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                />
+          {displayedItems.map((item) => {
+            const isFav = favoriteCatalogItems.some((x) => x.id === item.id);
+            return (
+              <div
+                key={item.id}
+                onClick={() => onItemClick(item)}
+                className={`group rounded-xl sm:rounded-2xl overflow-hidden border cursor-pointer transition-all duration-300 flex flex-col hover:scale-[1.02] shadow-xl ${
+                  isLight
+                    ? "border-zinc-200 bg-white hover:border-red-500 hover:shadow-red-500/10"
+                    : "border-red-600/20 bg-zinc-950/70 hover:border-red-500 hover:shadow-red-600/20"
+                }`}
+              >
+                <div className="aspect-[2/3] w-full overflow-hidden relative bg-black">
+                  <img
+                    src={item.thumbnail || "/brazuca_icon.png"}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
 
-                {/* Badges superiores (Ano / Avaliação) */}
-                <div className="absolute top-1.5 left-1.5 right-1.5 sm:top-2 sm:left-2 sm:right-2 flex items-center justify-between pointer-events-none">
-                  {item.rating ? (
-                    <span className="text-[9px] sm:text-[10px] font-bold text-amber-300 bg-black/85 backdrop-blur-md px-1.5 py-0.5 rounded-full flex items-center gap-0.5 border border-amber-500/30">
-                      <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                      {item.rating}
-                    </span>
-                  ) : <span />}
-                  {item.year && (
-                    <span className="text-[9px] sm:text-[10px] font-bold text-slate-200 bg-black/85 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-zinc-700">
-                      {item.year.slice(0, 4)}
-                    </span>
-                  )}
-                </div>
+                  {/* Badges superiores (Ano / Avaliação / Favorito) */}
+                  <div className="absolute top-1.5 left-1.5 right-1.5 sm:top-2 sm:left-2 sm:right-2 flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      {item.rating ? (
+                        <span className="text-[9px] sm:text-[10px] font-bold text-amber-300 bg-black/85 backdrop-blur-md px-1.5 py-0.5 rounded-full flex items-center gap-0.5 border border-amber-500/30">
+                          <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                          {item.rating}
+                        </span>
+                      ) : null}
+                      {item.year && (
+                        <span className="text-[9px] sm:text-[10px] font-bold text-slate-200 bg-black/85 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-zinc-700">
+                          {item.year.slice(0, 4)}
+                        </span>
+                      )}
+                    </div>
 
-                {/* Overlay de Ação no Hover */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2.5 sm:p-3">
-                  <p className="text-[10px] sm:text-[11px] text-slate-200 line-clamp-3 mb-2 leading-relaxed">
-                    {item.synopsis || "Clique para assistir ou ver episódios."}
-                  </p>
-                  <button className="w-full py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow-lg transition-colors">
-                    {item.type === "series" || item.type === "animes" || item.type === "doramas" || item.type === "desenhos" || item.type === "novelas" ? (
-                      <>
-                        <Folder className="w-3.5 h-3.5" />
-                        <span>Episódios</span>
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-3.5 h-3.5 fill-current" />
-                        <span>Assistir</span>
-                      </>
+                    {onToggleFavoriteCatalog && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleFavoriteCatalog(item);
+                        }}
+                        className={`p-1.5 rounded-full backdrop-blur-md transition-all cursor-pointer pointer-events-auto shadow-md ${
+                          isFav
+                            ? "bg-amber-500 text-white shadow-amber-500/50 scale-105"
+                            : "bg-black/60 hover:bg-black/90 text-zinc-300 hover:text-amber-400"
+                        }`}
+                        title={isFav ? "Remover dos Favoritos" : "Salvar na Minha Lista"}
+                      >
+                        <Star className={`w-3.5 h-3.5 ${isFav ? "fill-white text-white" : ""}`} />
+                      </button>
                     )}
-                  </button>
-                </div>
-              </div>
+                  </div>
 
-              <div className="p-2 sm:p-3 flex-1 flex flex-col justify-between">
-                <div>
-                  <h4 className={`font-bold text-xs sm:text-sm truncate transition-colors ${
-                    isLight ? "text-zinc-950 group-hover:text-red-600" : "text-white group-hover:text-red-400"
-                  }`}>
-                    {item.title}
-                  </h4>
-                  <p className={`text-[10px] sm:text-[11px] truncate mt-0.5 ${
-                    isLight ? "text-zinc-600 font-semibold" : "text-slate-400"
-                  }`}>
-                    {item.genres || item.type}
-                  </p>
+                  {/* Overlay de Ação no Hover */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2.5 sm:p-3">
+                    <p className="text-[10px] sm:text-[11px] text-slate-200 line-clamp-3 mb-2 leading-relaxed">
+                      {item.synopsis || "Clique para assistir ou ver episódios."}
+                    </p>
+                    <button className="w-full py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow-lg transition-colors">
+                      {item.type === "series" || item.type === "animes" || item.type === "doramas" || item.type === "desenhos" || item.type === "novelas" ? (
+                        <>
+                          <Folder className="w-3.5 h-3.5" />
+                          <span>Episódios</span>
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-3.5 h-3.5 fill-current" />
+                          <span>Assistir</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-2 sm:p-3 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h4 className={`font-bold text-xs sm:text-sm truncate transition-colors ${
+                      isLight ? "text-zinc-950 group-hover:text-red-600" : "text-white group-hover:text-red-400"
+                    }`}>
+                      {item.title}
+                    </h4>
+                    <p className={`text-[10px] sm:text-[11px] truncate mt-0.5 ${
+                      isLight ? "text-zinc-600 font-semibold" : "text-slate-400"
+                    }`}>
+                      {item.genres || item.type}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* Controles de Paginação Inferior Completa */}
-      {catalogTotalPages > 1 && (
+      {!isFavoritesTab && catalogTotalPages > 1 && (
         <div className={`pt-8 border-t flex flex-col sm:flex-row items-center justify-between gap-4 ${
           isLight ? "border-zinc-300" : "border-zinc-850"
         }`}>

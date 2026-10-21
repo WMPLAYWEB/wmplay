@@ -16,13 +16,30 @@ import {
   AlertCircle,
   Loader2,
   Tv2,
-  Zap
+  Zap,
+  Gauge,
+  FastForward,
+  Rewind,
+  SkipForward,
+  Clock,
+  History
 } from "lucide-react";
 
 export interface ServerOption {
   name: string;
   url: string;
   type: "video" | "embed";
+}
+
+function formatSeconds(sec: number): string {
+  if (isNaN(sec) || sec < 0) return "00:00";
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  if (h > 0) {
+    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  }
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
 interface KodiVideoPlayerProps {
@@ -34,6 +51,10 @@ interface KodiVideoPlayerProps {
   onSelectServer: (index: number) => void;
   onClose: () => void;
   isLiteMode?: boolean;
+  resumeTime?: number;
+  onProgressUpdate?: (currentTime: number, duration: number) => void;
+  onNextEpisode?: () => void;
+  hasNextEpisode?: boolean;
 }
 
 export default function KodiVideoPlayer({
@@ -45,6 +66,10 @@ export default function KodiVideoPlayer({
   onSelectServer,
   onClose,
   isLiteMode = false,
+  resumeTime = 0,
+  onProgressUpdate,
+  onNextEpisode,
+  hasNextEpisode = false,
 }: KodiVideoPlayerProps) {
   const currentServer = servers[activeServerIndex] || servers[0];
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -58,6 +83,84 @@ export default function KodiVideoPlayer({
   const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [antiPopupMode, setAntiPopupMode] = useState(true);
+
+  // Novos Recursos Avançados do Player
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [showResumeBanner, setShowResumeBanner] = useState<boolean>(Boolean(resumeTime && resumeTime > 15));
+  const [tapFeedback, setTapFeedback] = useState<{ side: "left" | "right" } | null>(null);
+  const [showNextPrompt, setShowNextPrompt] = useState<boolean>(false);
+  const [countdownNext, setCountdownNext] = useState<number>(15);
+
+  const lastTapRef = useRef<{ time: number; x: number }>({ time: 0, x: 0 });
+  const lastProgressReportRef = useRef<number>(0);
+  const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Atualizar banner de retorno se resumeTime for fornecido
+  useEffect(() => {
+    if (resumeTime && resumeTime > 15) {
+      setShowResumeBanner(true);
+    } else {
+      setShowResumeBanner(false);
+    }
+  }, [resumeTime, currentServer]);
+
+  // Função para aplicar retomada
+  const handleResumePlayback = () => {
+    setShowResumeBanner(false);
+    if (videoRef.current && resumeTime) {
+      videoRef.current.currentTime = resumeTime;
+      videoRef.current.play().catch(() => {});
+    }
+  };
+
+  // Alternar velocidade de reprodução (1.0x -> 1.25x -> 1.5x -> 2.0x -> 1.0x)
+  const handleCycleSpeed = () => {
+    const speeds = [1, 1.25, 1.5, 2];
+    const nextSpeed = speeds[(speeds.indexOf(playbackSpeed) + 1) % speeds.length];
+    setPlaybackSpeed(nextSpeed);
+    if (videoRef.current) {
+      videoRef.current.playbackRate = nextSpeed;
+    }
+  };
+
+  // Pular 10s para frente ou para trás
+  const handleSeekDelta = (delta: number) => {
+    if (!videoRef.current) return;
+    const current = videoRef.current.currentTime;
+    const duration = videoRef.current.duration || 999999;
+    const newTime = Math.max(0, Math.min(duration, current + delta));
+    videoRef.current.currentTime = newTime;
+
+    // Feedback visual
+    setTapFeedback({ side: delta < 0 ? "left" : "right" });
+    if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
+    tapTimeoutRef.current = setTimeout(() => {
+      setTapFeedback(null);
+    }, 700);
+  };
+
+  // Detector de toque duplo na tela (YouTube-style para celulares e tablets)
+  const handleVideoTouch = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const now = Date.now();
+    const timeDiff = now - lastTapRef.current.time;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const touchX = touch.clientX - rect.left;
+    const isLeftSide = touchX < rect.width / 2;
+
+    if (timeDiff > 40 && timeDiff < 320) {
+      // Toque duplo detectado!
+      if (isLeftSide) {
+        handleSeekDelta(-10);
+      } else {
+        handleSeekDelta(10);
+      }
+      lastTapRef.current = { time: 0, x: 0 };
+    } else {
+      lastTapRef.current = { time: now, x: touchX };
+    }
+  };
 
   // Bloqueador de Anúncios Ativo (Intercepta pop-ups e abas abertas por scripts terceiros)
   useEffect(() => {
@@ -530,6 +633,30 @@ export default function KodiVideoPlayer({
                 </div>
               )}
 
+              {/* Botão de Velocidade de Reprodução */}
+              {currentServer?.type === "video" && (
+                <button
+                  onClick={handleCycleSpeed}
+                  className="flex items-center gap-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-all border border-zinc-800 text-xs font-black shadow-md cursor-pointer"
+                  title="Alterar Velocidade de Reprodução (1x, 1.25x, 1.5x, 2x)"
+                >
+                  <Gauge className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+                  <span>{playbackSpeed}x</span>
+                </button>
+              )}
+
+              {/* Botão Próximo Episódio (quando disponível em séries) */}
+              {hasNextEpisode && onNextEpisode && (
+                <button
+                  onClick={onNextEpisode}
+                  className="flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white transition-all text-xs font-black shadow-md shadow-red-600/30 cursor-pointer"
+                  title="Assistir Próximo Episódio"
+                >
+                  <SkipForward className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Próximo</span>
+                </button>
+              )}
+
               {/* Botão Mini Player Flutuante */}
               <button
                 onClick={() => setIsMiniPlayer(true)}
@@ -722,7 +849,82 @@ export default function KodiVideoPlayer({
 
         {/* Player: Stream de Vídeo Direto ou Iframe Embed */}
         {currentServer?.type === "video" ? (
-          <div className="w-full h-full relative group flex items-center justify-center">
+          <div
+            className="w-full h-full relative group flex items-center justify-center"
+            onTouchStart={handleVideoTouch}
+          >
+            {/* Banner de Retomada de Reprodução */}
+            {showResumeBanner && !isMiniPlayer && (
+              <div className="absolute top-4 sm:top-6 z-30 flex items-center gap-2.5 sm:gap-3 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl bg-black/90 backdrop-blur-md border border-red-500/60 shadow-2xl animate-in slide-in-from-top-4 duration-300">
+                <History className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 shrink-0" />
+                <div className="text-left">
+                  <p className="text-xs sm:text-sm font-bold text-white">
+                    Continuar assistindo de <span className="text-red-400 font-mono">{formatSeconds(resumeTime)}</span>?
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 ml-2">
+                  <button
+                    type="button"
+                    onClick={handleResumePlayback}
+                    className="px-3 py-1 sm:py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow-md cursor-pointer transition-all"
+                  >
+                    Retomar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowResumeBanner(false)}
+                    className="px-2.5 py-1 sm:py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold cursor-pointer transition-all"
+                  >
+                    Do Início
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Feedback Visual de Toque Duplo (-10s / +10s) */}
+            {tapFeedback && (
+              <div
+                className={`absolute z-30 pointer-events-none flex flex-col items-center justify-center p-4 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-white shadow-2xl animate-in zoom-in-75 duration-150 ${
+                  tapFeedback.side === "left" ? "left-10 sm:left-24" : "right-10 sm:right-24"
+                }`}
+              >
+                {tapFeedback.side === "left" ? (
+                  <>
+                    <Rewind className="w-8 h-8 text-amber-400 fill-amber-400 animate-pulse" />
+                    <span className="text-xs font-black mt-1 text-amber-300">-10s</span>
+                  </>
+                ) : (
+                  <>
+                    <FastForward className="w-8 h-8 text-amber-400 fill-amber-400 animate-pulse" />
+                    <span className="text-xs font-black mt-1 text-amber-300">+10s</span>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Prompt de Próximo Episódio */}
+            {showNextPrompt && hasNextEpisode && onNextEpisode && !isMiniPlayer && (
+              <div className="absolute bottom-20 right-4 sm:right-6 z-30 flex items-center gap-3 p-3 sm:p-4 rounded-2xl bg-zinc-950/95 backdrop-blur-md border border-red-500/50 shadow-2xl animate-in slide-in-from-right-4 duration-300">
+                <div className="w-9 h-9 rounded-xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
+                  <SkipForward className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Próximo Episódio em {countdownNext}s</p>
+                  <p className="text-[10px] text-zinc-400">A reprodução começará automaticamente</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNextPrompt(false);
+                    onNextEpisode();
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black shadow-lg shadow-red-600/30 transition-all cursor-pointer whitespace-nowrap"
+                >
+                  Assistir Agora
+                </button>
+              </div>
+            )}
+
             <video
               ref={videoRef}
               controls={!isMiniPlayer}
@@ -741,6 +943,31 @@ export default function KodiVideoPlayer({
                   }
                 }
                 togglePlay();
+              }}
+              onTimeUpdate={(e) => {
+                const v = e.currentTarget;
+                const ct = v.currentTime;
+                const dur = v.duration;
+                if (dur > 0 && Math.abs(ct - lastProgressReportRef.current) >= 3) {
+                  lastProgressReportRef.current = ct;
+                  if (onProgressUpdate) {
+                    onProgressUpdate(ct, dur);
+                  }
+                }
+                if (hasNextEpisode && dur > 60 && dur - ct <= 25 && dur - ct > 1) {
+                  setShowNextPrompt(true);
+                  setCountdownNext(Math.max(0, Math.ceil(dur - ct)));
+                } else if (showNextPrompt && dur - ct > 25) {
+                  setShowNextPrompt(false);
+                }
+              }}
+              onEnded={() => {
+                if (videoRef.current && onProgressUpdate) {
+                  onProgressUpdate(videoRef.current.duration, videoRef.current.duration);
+                }
+                if (hasNextEpisode && onNextEpisode) {
+                  onNextEpisode();
+                }
               }}
               onPlay={() => {
                 setIsPlaying(true);
