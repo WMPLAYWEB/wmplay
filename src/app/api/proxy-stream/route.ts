@@ -18,6 +18,7 @@ export async function OPTIONS() {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const targetUrl = searchParams.get('url');
+  const customReferer = searchParams.get('referer');
 
   if (!targetUrl || !targetUrl.startsWith('http')) {
     return new NextResponse('URL de stream inválida', { status: 400 });
@@ -27,19 +28,27 @@ export async function GET(req: NextRequest) {
     const parsed = new URL(targetUrl);
     const mod = parsed.protocol === 'https:' ? https : http;
 
+    const referer = customReferer || (targetUrl.includes('mxcontent.net') ? 'https://mxdrop.click/' : parsed.origin + '/');
+    const rangeHeader = req.headers.get('range');
+
+    const reqHeaders: Record<string, string> = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Referer': referer,
+      'Origin': new URL(referer).origin
+    };
+    if (rangeHeader) {
+      reqHeaders['Range'] = rangeHeader;
+    }
+
     return await new Promise<NextResponse>((resolve) => {
       const request = mod.get(targetUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Referer': parsed.origin + '/',
-          'Origin': parsed.origin
-        },
+        headers: reqHeaders,
         timeout: 10000
       }, (res) => {
         // Tratar Redirecionamentos 301, 302, 307, 308
         if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
           const redirectUrl = new URL(res.headers.location, targetUrl).toString();
-          return resolve(NextResponse.redirect(new URL(`/api/proxy-stream?url=${encodeURIComponent(redirectUrl)}`, req.url)));
+          return resolve(NextResponse.redirect(new URL(`/api/proxy-stream?url=${encodeURIComponent(redirectUrl)}&referer=${encodeURIComponent(referer)}`, req.url)));
         }
 
         const contentType = res.headers['content-type'] || 'application/vnd.apple.mpegurl';
@@ -111,14 +120,23 @@ export async function GET(req: NextRequest) {
             }
           });
 
+          const respHeaders: Record<string, string> = {
+            'Content-Type': contentType.includes('video') || targetUrl.includes('.ts') ? (contentType || 'video/mp4') : contentType,
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Accept-Ranges': 'bytes',
+            'Cache-Control': 'public, max-age=3600',
+          };
+          if (res.headers['content-range']) {
+            respHeaders['Content-Range'] = res.headers['content-range'] as string;
+          }
+          if (res.headers['content-length']) {
+            respHeaders['Content-Length'] = res.headers['content-length'] as string;
+          }
+
           resolve(new NextResponse(stream as any, {
-            status: 200,
-            headers: {
-              'Content-Type': contentType.includes('video') || targetUrl.includes('.ts') ? 'video/mp2t' : contentType,
-              'Access-Control-Allow-Origin': '*',
-              'Access-Control-Allow-Methods': 'GET, OPTIONS',
-              'Cache-Control': 'public, max-age=3600',
-            }
+            status: res.statusCode || 200,
+            headers: respHeaders
           }));
         }
       });

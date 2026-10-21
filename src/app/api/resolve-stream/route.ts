@@ -131,17 +131,72 @@ async function getRedirectLocation(videoUrl: string): Promise<string> {
   });
 }
 
+// Extrai o link direto de vídeo MP4 do MixDrop (Padrão Kodi ResolveURL - Sem Anúncios)
+async function resolveMixdrop(mediaId: string): Promise<string | null> {
+  const domains = ['https://mxdrop.click', 'https://mxdrop.to'];
+  for (const domain of domains) {
+    try {
+      const pageData = await new Promise<string>((resolve) => {
+        https.get(`${domain}/e/${mediaId}`, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://www.overflix.win/'
+          },
+          timeout: 6000
+        }, (res) => {
+          if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+            https.get(res.headers.location, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Referer': 'https://www.overflix.win/'
+              },
+              timeout: 6000
+            }, (res2) => {
+              let d = '';
+              res2.on('data', c => d += c);
+              res2.on('end', () => resolve(d));
+            }).on('error', () => resolve(''));
+            return;
+          }
+          let d = '';
+          res.on('data', c => d += c);
+          res.on('end', () => resolve(d));
+        }).on('error', () => resolve(''));
+      });
+
+      if (!pageData) continue;
+      const match = pageData.match(/eval\(function\(p,a,c,k,e,d\)[\s\S]+?\.split\('\|'\),\d+,\{\}\)\)/);
+      if (match) {
+        const unpacked = vm.runInNewContext(match[0].replace(/^eval/, ''), {});
+        if (unpacked && typeof unpacked === 'string') {
+          const wurlMatch = unpacked.match(/MDCore\.wurl\s*=\s*['"]([^'"]+)['"]/);
+          if (wurlMatch && wurlMatch[1]) {
+            let finalUrl = wurlMatch[1];
+            if (finalUrl.startsWith('//')) finalUrl = 'https:' + finalUrl;
+            return finalUrl;
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Erro ao resolver Mixdrop:', e);
+    }
+  }
+  return null;
+}
+
 async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-BR'): Promise<StreamServer[]> {
   const servers: StreamServer[] = [];
   if (!playerData) return servers;
 
   const dub = parseServersString(playerData.servers_dub);
 
-  // 1. Extração Direta de Vídeo MP4 (Como no Kodi - 0 Anúncios / Reprodução Direta)
+  // 1. Extração Direta de Vídeo MP4 via StreamTape (Padrão Kodi - 0 Anúncios / Reprodução Direta)
+  let tapeValid = false;
   if (dub.streamtape) {
     try {
       const directTape = await resolveStreamTape(dub.streamtape);
       if (directTape) {
+        tapeValid = true;
         const finalMp4 = await getRedirectLocation(directTape);
         servers.push({
           name: `Transmissão Direta Full HD Dublado (Sem Anúncios)`,
@@ -155,8 +210,27 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
     }
   }
 
-  // 2. Servidores Alternativos de Backup
-  if (dub.streamtape) {
+  // 1.5 Extração Direta de Vídeo MP4 via MixDrop (Padrão Kodi - 0 Anúncios / Reprodução Direta)
+  if (dub.mixdrop) {
+    try {
+      const directMix = await resolveMixdrop(dub.mixdrop);
+      if (directMix) {
+        const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
+        servers.push({
+          name: servers.length === 0 ? `Transmissão Direta Full HD Dublado (Sem Anúncios)` : `Servidor 2 Full HD Direto (Sem Anúncios)`,
+          url: proxiedUrl,
+          type: 'video',
+          isDubbed: true
+        });
+      }
+    } catch (err) {
+      console.error('Erro ao resolver Mixdrop direto:', err);
+    }
+  }
+
+  // 2. Servidores Alternativos de Backup (Embeds)
+  // Só incluir StreamTape se não for 404 (evita erro de arquivo excluído)
+  if (dub.streamtape && tapeValid) {
     servers.push({
       name: `1. ${labelPrefix} (StreamTape Reserva)`,
       url: `https://streamtape.com/e/${dub.streamtape}`,
@@ -167,7 +241,7 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
   if (dub.mixdrop) {
     servers.push({
       name: `2. ${labelPrefix} (MixDrop Reserva)`,
-      url: `https://mxdrop.top/e/${dub.mixdrop}`,
+      url: `https://mxdrop.click/e/${dub.mixdrop}`,
       type: 'embed',
       isDubbed: true
     });
