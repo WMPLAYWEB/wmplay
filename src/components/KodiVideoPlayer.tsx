@@ -578,12 +578,7 @@ export default function KodiVideoPlayer({
                     ⚡ Modo TV Lite (Acelerado)
                   </span>
                 )}
-                {currentServer?.type === "video" ? (
-                  <span className="text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full font-mono flex items-center gap-1.5 text-emerald-300 bg-emerald-950/80 border border-emerald-500/50">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    🛡️ Transmissão Direta (100% Sem Anúncios · Padrão Kodi)
-                  </span>
-                ) : (
+                {currentServer?.type !== "video" && (
                   <button
                     onClick={() => setAntiPopupMode((prev) => !prev)}
                     className={`text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full font-mono flex items-center gap-1.5 transition-all cursor-pointer ${
