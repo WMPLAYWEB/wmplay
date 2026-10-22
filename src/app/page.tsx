@@ -406,21 +406,39 @@ export default function KodiApp() {
     return "";
   }, [activeAddonView, activeBrazucaCategory, activeCategory]);
 
+  // Refs para manter valores atualizados sem causar re-render em cascata
+  const catalogPlatformRef = useRef(catalogPlatform);
+  catalogPlatformRef.current = catalogPlatform;
+  const catalogGenreRef = useRef(catalogGenre);
+  catalogGenreRef.current = catalogGenre;
+  const catalogSearchRef = useRef(catalogSearch);
+  catalogSearchRef.current = catalogSearch;
+
   // Fetch Catalog Items from API
-  const fetchCatalogData = useCallback(async (type: string, page: number, search: string, genre: string, customLimit?: number, platform?: string) => {
+  const fetchCatalogData = useCallback(async (
+    type: string,
+    page: number,
+    search?: string,
+    genre?: string,
+    customLimit?: number,
+    platform?: string
+  ) => {
     if (!type) return;
     setCatalogLoading(true);
     try {
       const pageLimit = customLimit ? customLimit.toString() : (isLiteMode ? "24" : "48");
+      const effectiveSearch = search !== undefined ? search : catalogSearchRef.current;
+      const effectiveGenre = genre !== undefined ? genre : catalogGenreRef.current;
+      const effectivePlatform = platform !== undefined ? platform : catalogPlatformRef.current;
+
       const params = new URLSearchParams({
         type,
         page: page.toString(),
         limit: pageLimit,
       });
-      if (search) params.set("search", search);
-      if (genre && genre !== "Todos" && genre !== "favoritos") params.set("genre", genre);
-      const plat = platform !== undefined ? platform : catalogPlatform;
-      if (plat) params.set("platform", plat);
+      if (effectiveSearch) params.set("search", effectiveSearch);
+      if (effectiveGenre && effectiveGenre !== "Todos" && effectiveGenre !== "favoritos") params.set("genre", effectiveGenre);
+      if (effectivePlatform) params.set("platform", effectivePlatform);
 
       const res = await fetch(`/api/catalog?${params.toString()}`);
       const data = await res.json();
@@ -435,9 +453,9 @@ export default function KodiApp() {
     } finally {
       setCatalogLoading(false);
     }
-  }, [isLiteMode, catalogPlatform]);
+  }, [isLiteMode]);
 
-  // Trigger catalog fetch when category / view changes
+  // Trigger catalog fetch APENAS quando a categoria ou menu principal mudar
   useEffect(() => {
     const type = getCurrentCatalogType();
     if (type) {
@@ -449,7 +467,8 @@ export default function KodiApp() {
       setTvFocusIndex(null);
       fetchCatalogData(type, 1, "", "", undefined, "");
     }
-  }, [getCurrentCatalogType, fetchCatalogData, isLiteMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCategory, activeAddonView, activeBrazucaCategory]);
 
   // Auto-debounce catalog search when typing
   useEffect(() => {
@@ -1806,9 +1825,10 @@ export default function KodiApp() {
                     catalogPlatform={catalogPlatform}
                     platformsList={PLATFORMS_LIST}
                     onSelectPlatform={(p) => {
-                      setCatalogPlatform(p);
+                      const nextPlat = (catalogPlatform === p && p !== "") ? "" : p;
+                      setCatalogPlatform(nextPlat);
                       setCatalogPage(1);
-                      fetchCatalogData("all", 1, catalogSearch, catalogGenre, undefined, p);
+                      fetchCatalogData("all", 1, catalogSearch, catalogGenre, undefined, nextPlat);
                     }}
                     tvFocusIndex={tvFocusIndex}
                     isTvModeActive={isTvModeActive}
@@ -2335,9 +2355,10 @@ export default function KodiApp() {
                   catalogPlatform={catalogPlatform}
                   platformsList={PLATFORMS_LIST}
                   onSelectPlatform={(p) => {
-                    setCatalogPlatform(p);
+                    const nextPlat = (catalogPlatform === p && p !== "") ? "" : p;
+                    setCatalogPlatform(nextPlat);
                     setCatalogPage(1);
-                    fetchCatalogData(currentCatalogType, 1, catalogSearch, catalogGenre, undefined, p);
+                    fetchCatalogData(currentCatalogType, 1, catalogSearch, catalogGenre, undefined, nextPlat);
                   }}
                   tvFocusIndex={tvFocusIndex}
                   isTvModeActive={isTvModeActive}
@@ -2578,9 +2599,10 @@ export default function KodiApp() {
                 catalogPlatform={catalogPlatform}
                 platformsList={PLATFORMS_LIST}
                 onSelectPlatform={(p) => {
-                  setCatalogPlatform(p);
+                  const nextPlat = (catalogPlatform === p && p !== "") ? "" : p;
+                  setCatalogPlatform(nextPlat);
                   setCatalogPage(1);
-                  fetchCatalogData(currentCatalogType, 1, catalogSearch, catalogGenre, undefined, p);
+                  fetchCatalogData(currentCatalogType, 1, catalogSearch, catalogGenre, undefined, nextPlat);
                 }}
                 tvFocusIndex={tvFocusIndex}
                 isTvModeActive={isTvModeActive}
@@ -3182,6 +3204,12 @@ function CatalogBrowseView({
                 ? `${displayedItems.length} salvos`
                 : `${catalogTotalCount.toLocaleString("pt-BR")} títulos`}
             </span>
+            {catalogPlatform && (
+              <span className="text-[10px] sm:text-xs font-black px-2.5 py-0.5 rounded-full bg-red-600 text-white flex items-center gap-1 shadow-md shadow-red-600/30">
+                <Tv2 className="w-3 h-3" />
+                {platformsList?.find((p) => p.id === catalogPlatform)?.name || catalogPlatform}
+              </span>
+            )}
             {isLiteMode && (
               <span className="text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 rounded-full font-mono text-amber-900 bg-amber-400 border border-amber-500 flex items-center gap-1">
                 <Zap className="w-3 h-3 fill-black text-black" />
@@ -3271,7 +3299,7 @@ function CatalogBrowseView({
                 onClick={() => onSelectPlatform && onSelectPlatform(p.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
                   isSelected
-                    ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-md shadow-red-600/30 scale-105"
+                    ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-md shadow-red-600/30 scale-105 ring-2 ring-red-400"
                     : isLight
                     ? "bg-white border-2 border-zinc-300 text-zinc-950 hover:text-red-600 hover:border-red-500 hover:bg-red-50 shadow-sm"
                     : "bg-zinc-950/90 border border-zinc-800 text-slate-300 hover:text-white hover:border-zinc-700"
