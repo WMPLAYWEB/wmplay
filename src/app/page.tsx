@@ -61,6 +61,7 @@ import {
   BrazucaChannel
 } from "@/data/brazuca_full";
 import KodiVideoPlayer from "@/components/KodiVideoPlayer";
+import WmplayLogo from "@/components/WmplayLogo";
 
 type CategoryType = "movies" | "tv" | "music" | "live" | "addons";
 
@@ -1198,18 +1199,8 @@ export default function KodiApp() {
       }`}>
         <div>
           {/* Logo / Header */}
-          <div className={`p-6 border-b flex items-center justify-between ${isLight ? "border-zinc-200" : "border-zinc-800/60"}`}>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-red-600 to-rose-600 flex items-center justify-center shadow-lg shadow-red-600/30">
-                <Tv2 className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className={`text-xl font-black tracking-wider ${isLight ? "text-zinc-950" : "text-white"}`}>WM<span className="text-red-600">PLAY</span></h1>
-                <p className="text-[10px] text-red-600 font-black tracking-widest uppercase">
-                  Streaming & TV ao Vivo
-                </p>
-              </div>
-            </div>
+          <div className={`p-5 border-b flex items-center justify-between ${isLight ? "border-zinc-200" : "border-zinc-800/60"}`}>
+            <WmplayLogo size="md" isLight={isLight} showSubtitle={true} />
           </div>
 
           {/* Menu de Navegação Kodi */}
@@ -1336,17 +1327,7 @@ export default function KodiApp() {
             <div>
               {/* Header do Drawer */}
               <div className={`pb-4 border-b flex items-center justify-between ${isLight ? "border-zinc-200" : "border-zinc-800/80"}`}>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-red-600 to-rose-600 flex items-center justify-center shadow-lg shadow-red-600/30">
-                    <Tv2 className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h1 className={`text-xl font-black tracking-wider ${isLight ? "text-zinc-950" : "text-white"}`}>WM<span className="text-red-600">PLAY</span></h1>
-                    <p className="text-[10px] text-red-600 font-black tracking-widest uppercase">
-                      Streaming & TV
-                    </p>
-                  </div>
-                </div>
+                <WmplayLogo size="sm" isLight={isLight} showSubtitle={true} />
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`p-2 rounded-xl border ${
@@ -1498,11 +1479,8 @@ export default function KodiApp() {
             </button>
 
             {/* Logo Mobile */}
-            <div className="md:hidden flex items-center gap-1.5 shrink-0">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-red-600 to-rose-600 flex items-center justify-center shadow-md shadow-red-600/30">
-                <Tv2 className="w-4 h-4 text-white" />
-              </div>
-              <span className={`font-black text-sm tracking-wider hidden sm:inline ${isLight ? "text-zinc-950" : "text-white"}`}>WM<span className="text-red-600">PLAY</span></span>
+            <div className="md:hidden shrink-0">
+              <WmplayLogo size="sm" isLight={isLight} showSubtitle={false} />
             </div>
 
             {activeAddonView && (
@@ -1767,14 +1745,14 @@ export default function KodiApp() {
                 <div className="flex items-center gap-5">
                   <div className="w-20 h-20 rounded-2xl overflow-hidden border border-red-500/50 shadow-xl bg-black flex items-center justify-center shrink-0">
                     <img
-                      src="/brazuca_icon.png"
-                      alt="Brazuca Play"
+                      src="/wmplay_icon.png"
+                      alt="WMPLAY"
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div>
                     <div className="flex items-center gap-3">
-                      <h2 className={`text-2xl font-black ${isLight ? "text-zinc-950" : "text-white"}`}>Brazuca Play</h2>
+                      <h2 className={`text-2xl font-black ${isLight ? "text-zinc-950" : "text-white"}`}>WM<span className="text-red-600">PLAY</span></h2>
                       <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full font-mono ${
                         isLight ? "text-amber-800 bg-amber-100 border border-amber-300" : "text-amber-300 bg-amber-950/80 border border-amber-500/50"
                       }`}>
@@ -1922,12 +1900,12 @@ export default function KodiApp() {
                           >
                             <div className="aspect-video w-full overflow-hidden relative bg-black">
                               <img
-                                src={item.poster || "/brazuca_icon.png"}
+                                src={item.poster || "/wmplay_icon.png"}
                                 alt={item.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
                                 onError={(e) => {
                                   e.currentTarget.onerror = null;
-                                  e.currentTarget.src = "/brazuca_icon.png";
+                                  e.currentTarget.src = "/wmplay_icon.png";
                                 }}
                               />
                               <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
@@ -2134,12 +2112,12 @@ export default function KodiApp() {
                               </button>
 
                               <img
-                                src={ch.logo || "/brazuca_icon.png"}
+                                src={ch.logo || "/wmplay_icon.png"}
                                 alt={ch.name}
                                 referrerPolicy="no-referrer"
                                 onError={(e) => {
                                   e.currentTarget.onerror = null;
-                                  e.currentTarget.src = "/brazuca_icon.png";
+                                  e.currentTarget.src = "/wmplay_icon.png";
                                 }}
                                 className="max-h-full max-w-full object-contain filter drop-shadow group-hover:scale-110 transition-transform duration-300"
                               />
@@ -2186,7 +2164,7 @@ export default function KodiApp() {
                   }`}>
                     <div className="relative w-44 h-64 rounded-xl overflow-hidden shadow-2xl border border-red-500/30 shrink-0 bg-black">
                       <img
-                        src={selectedSeriesItem.thumbnail || "/brazuca_icon.png"}
+                        src={selectedSeriesItem.thumbnail || "/wmplay_icon.png"}
                         alt={selectedSeriesItem.title}
                         className="w-full h-full object-cover"
                       />
@@ -2426,7 +2404,7 @@ export default function KodiApp() {
                 }`}>
                   <div className="relative w-44 h-64 rounded-xl overflow-hidden shadow-2xl border border-red-500/30 shrink-0 bg-black">
                     <img
-                      src={selectedSeriesItem.thumbnail || "/brazuca_icon.png"}
+                      src={selectedSeriesItem.thumbnail || "/wmplay_icon.png"}
                       alt={selectedSeriesItem.title}
                       className="w-full h-full object-cover"
                     />
@@ -2766,12 +2744,12 @@ export default function KodiApp() {
                           </button>
 
                           <img
-                            src={ch.logo || "/brazuca_icon.png"}
+                            src={ch.logo || "/wmplay_icon.png"}
                             alt={ch.name}
                             referrerPolicy="no-referrer"
                             onError={(e) => {
                               e.currentTarget.onerror = null;
-                              e.currentTarget.src = "/brazuca_icon.png";
+                              e.currentTarget.src = "/wmplay_icon.png";
                             }}
                             className="max-h-full max-w-full object-contain filter drop-shadow group-hover:scale-110 transition-transform duration-300"
                           />
@@ -3397,7 +3375,7 @@ function CatalogBrowseView({
               >
                 <div className="aspect-[2/3] w-full overflow-hidden relative bg-black">
                   <img
-                    src={item.thumbnail || "/brazuca_icon.png"}
+                    src={item.thumbnail || "/wmplay_icon.png"}
                     alt={item.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"

@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   referrer: "no-referrer",
   manifest: "/manifest.json",
   icons: {
-    icon: "/brazuca_icon.png",
-    apple: "/brazuca_icon.png",
+    icon: "/wmplay_icon.png",
+    apple: "/wmplay_icon.png",
   },
   appleWebApp: {
     capable: true,
@@ -35,7 +35,8 @@ export default function RootLayout({
         <meta name="referrer" content="no-referrer" />
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/brazuca_icon.png" />
+        <link rel="apple-touch-icon" href="/wmplay_icon.png" />
+        <link rel="icon" type="image/svg+xml" href="/wmplay_icon.svg" />
       </head>
       <body className="min-h-full antialiased overflow-hidden transition-colors duration-300">
         {children}

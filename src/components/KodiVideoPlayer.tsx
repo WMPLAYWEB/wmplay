@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
+import WmplayLogo from "@/components/WmplayLogo";
 import {
   X,
   Play,
@@ -868,10 +869,12 @@ export default function KodiVideoPlayer({
           <div className="flex items-center justify-between gap-2">
             <div className="flex-1 min-w-0 pr-2">
               <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                <p className="text-[10px] sm:text-xs text-red-500 uppercase tracking-widest font-black flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
-                  WMPLAY · Reprodução
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <WmplayLogo size="sm" iconOnly={true} className="scale-75 origin-left" />
+                  <p className="text-[10px] sm:text-xs text-red-500 uppercase tracking-widest font-black flex items-center gap-1.5">
+                    WMPLAY · Reprodução
+                  </p>
+                </div>
                 {isLiteMode && (
                   <span className="text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full font-mono flex items-center gap-1.5 text-amber-300 bg-amber-950/80 border border-amber-500/50">
                     <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />

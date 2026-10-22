@@ -10,10 +10,15 @@
   "categories": ["entertainment", "video"],
   "icons": [
     {
-      "src": "/brazuca_icon.png",
+      "src": "/wmplay_icon.png",
       "sizes": "192x192 512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/wmplay_icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
   ]
 }
