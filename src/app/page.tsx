@@ -315,8 +315,13 @@ export default function KodiApp() {
   const [catalogTotalPages, setCatalogTotalPages] = useState<number>(1);
   const [catalogTotalCount, setCatalogTotalCount] = useState<number>(0);
   const [catalogGenre, setCatalogGenre] = useState<string>("");
+  const [catalogPlatform, setCatalogPlatform] = useState<string>("");
   const [catalogSearch, setCatalogSearch] = useState<string>("");
   const [jumpPageInput, setJumpPageInput] = useState<string>("");
+
+  // Smart TV D-Pad Remote Navigation State
+  const [tvFocusIndex, setTvFocusIndex] = useState<number | null>(null);
+  const [isTvModeActive, setIsTvModeActive] = useState<boolean>(false);
 
   // Histórico de Buscas Recentes
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -367,7 +372,7 @@ export default function KodiApp() {
   }, [activeAddonView, activeBrazucaCategory, activeCategory]);
 
   // Fetch Catalog Items from API
-  const fetchCatalogData = useCallback(async (type: string, page: number, search: string, genre: string, customLimit?: number) => {
+  const fetchCatalogData = useCallback(async (type: string, page: number, search: string, genre: string, customLimit?: number, platform?: string) => {
     if (!type) return;
     setCatalogLoading(true);
     try {
@@ -378,7 +383,9 @@ export default function KodiApp() {
         limit: pageLimit,
       });
       if (search) params.set("search", search);
-      if (genre) params.set("genre", genre);
+      if (genre && genre !== "Todos" && genre !== "favoritos") params.set("genre", genre);
+      const plat = platform !== undefined ? platform : catalogPlatform;
+      if (plat) params.set("platform", plat);
 
       const res = await fetch(`/api/catalog?${params.toString()}`);
       const data = await res.json();
@@ -393,7 +400,7 @@ export default function KodiApp() {
     } finally {
       setCatalogLoading(false);
     }
-  }, [isLiteMode]);
+  }, [isLiteMode, catalogPlatform]);
 
   // Trigger catalog fetch when category / view changes
   useEffect(() => {
@@ -401,9 +408,11 @@ export default function KodiApp() {
     if (type) {
       setCatalogPage(1);
       setCatalogGenre("");
+      setCatalogPlatform("");
       setCatalogSearch("");
       setJumpPageInput("");
-      fetchCatalogData(type, 1, "", "");
+      setTvFocusIndex(null);
+      fetchCatalogData(type, 1, "", "", undefined, "");
     }
   }, [getCurrentCatalogType, fetchCatalogData, isLiteMode]);
 
@@ -691,7 +700,38 @@ export default function KodiApp() {
       playingMedia.seasonNum,
       nextEpisodeObj.number
     );
-  }, [nextEpisodeObj, selectedSeriesItem, playingMedia?.seasonNum]);
+  }, [nextEpisodeObj, selectedSeriesItem, playingMedia?.seasonNum, handlePlayMedia]);
+
+  const handleSelectEpisodeInPlayer = useCallback(
+    (seasonNum: number, epNum: number, episodeTitle: string, episodeLink?: string) => {
+      if (selectedSeriesItem) {
+        const linkToUse = episodeLink || selectedSeriesItem.link;
+        const fullTitle = `${selectedSeriesItem.title} - T${seasonNum}E${epNum}: ${episodeTitle}`;
+        handlePlayMedia(
+          fullTitle,
+          selectedSeriesItem.synopsis,
+          selectedSeriesItem.thumbnail,
+          selectedSeriesItem.tmdb_id,
+          linkToUse,
+          seasonNum,
+          epNum
+        );
+      } else if (playingMedia) {
+        const baseTitle = playingMedia.title.split(" - T")[0];
+        const fullTitle = `${baseTitle} - T${seasonNum}E${epNum}: ${episodeTitle}`;
+        handlePlayMedia(
+          fullTitle,
+          playingMedia.info || "",
+          playingMedia.poster || "",
+          playingMedia.tmdbId,
+          episodeLink || playingMedia.directUrl,
+          seasonNum,
+          epNum
+        );
+      }
+    },
+    [selectedSeriesItem, playingMedia, handlePlayMedia]
+  );
 
   const handleProgressUpdate = useCallback(
     (currentTime: number, duration: number) => {
@@ -883,6 +923,169 @@ export default function KodiApp() {
     ? "all"
     : (getCurrentCatalogType() || (isBrazucaRootSearching ? "all" : ""));
   const isLight = theme === "offwhite";
+
+  const PLATFORMS_LIST = [
+    { id: "", name: "Todas Plataformas", badge: "" },
+    { id: "netflix", name: "Netflix", badge: "N" },
+    { id: "max", name: "HBO Max", badge: "MAX" },
+    { id: "disney", name: "Disney+", badge: "D+" },
+    { id: "prime", name: "Prime Video", badge: "PRIME" },
+    { id: "apple", name: "Apple TV+", badge: "APPLE" },
+    { id: "globo", name: "Globoplay", badge: "GLOBO" },
+  ];
+
+  // Suporte à Navegação D-Pad / Controle Remoto de Smart TV e Teclado
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleTvDpad = (e: KeyboardEvent) => {
+      // Se o player de vídeo estiver aberto, o player já cuida do controle remoto
+      if (playingMedia) return;
+
+      // Se o usuário estiver digitando em um input de busca ou campo de texto, não interceptar setas
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA")) {
+        return;
+      }
+
+      const key = e.key;
+      const keyCode = e.keyCode;
+
+      // Teclas de controle remoto (Samsung Tizen/Orsay, LG webOS, Android TV, Fire TV, Teclado)
+      const isLeft = key === "ArrowLeft" || keyCode === 37;
+      const isUp = key === "ArrowUp" || keyCode === 38;
+      const isRight = key === "ArrowRight" || keyCode === 39;
+      const isDown = key === "ArrowDown" || keyCode === 40;
+      const isEnter = key === "Enter" || keyCode === 13;
+      const isBack =
+        key === "Escape" ||
+        key === "Backspace" ||
+        keyCode === 27 ||
+        keyCode === 8 ||
+        keyCode === 461 ||
+        keyCode === 10009;
+
+      if (isBack) {
+        if (selectedSeriesItem) {
+          e.preventDefault();
+          setSelectedSeriesItem(null);
+          setTvFocusIndex(null);
+          return;
+        }
+        if (tvFocusIndex !== null) {
+          setTvFocusIndex(null);
+          return;
+        }
+      }
+
+      if (!isLeft && !isRight && !isUp && !isDown && !isEnter) return;
+
+      // Navegação dentro do Modal de Episódios de Série
+      if (selectedSeriesItem) {
+        const episodes = seriesSeasons.find((s) => s.seasonNumber === activeSeasonTab)?.episodes || [];
+        if (episodes.length === 0) return;
+        e.preventDefault();
+        setIsTvModeActive(true);
+
+        if (isEnter) {
+          if (tvFocusIndex !== null && episodes[tvFocusIndex]) {
+            const ep = episodes[tvFocusIndex];
+            handlePlayMedia(
+              `${selectedSeriesItem.title} - T${activeSeasonTab}E${ep.number}: ${ep.title}`,
+              selectedSeriesItem.synopsis,
+              selectedSeriesItem.thumbnail,
+              selectedSeriesItem.tmdb_id,
+              ep.link || selectedSeriesItem.link,
+              activeSeasonTab,
+              ep.number
+            );
+          }
+          return;
+        }
+
+        const cols = window.innerWidth >= 1280 ? 4 : window.innerWidth >= 1024 ? 3 : window.innerWidth >= 768 ? 2 : 1;
+        setTvFocusIndex((prev) => {
+          let next = prev === null ? 0 : prev;
+          if (isRight) next = Math.min(episodes.length - 1, next + 1);
+          if (isLeft) next = Math.max(0, next - 1);
+          if (isDown) next = Math.min(episodes.length - 1, next + cols);
+          if (isUp) next = Math.max(0, next - cols);
+          return next;
+        });
+        return;
+      }
+
+      // Navegação no Catálogo Principal
+      const isFavs = catalogGenre === "favoritos";
+      const items = isFavs ? favoriteCatalogItems : catalogItems;
+      if (!items || items.length === 0) return;
+
+      e.preventDefault();
+      setIsTvModeActive(true);
+
+      if (isEnter) {
+        if (tvFocusIndex !== null && items[tvFocusIndex]) {
+          const item = items[tvFocusIndex];
+          if (
+            item.type === "series" ||
+            item.type === "animes" ||
+            item.type === "doramas" ||
+            item.type === "desenhos" ||
+            item.type === "novelas"
+          ) {
+            handleOpenSeriesEpisodes(item);
+          } else {
+            handlePlayMedia(
+              item.title,
+              item.synopsis,
+              item.thumbnail,
+              item.tmdb_id,
+              item.link
+            );
+          }
+        }
+        return;
+      }
+
+      const width = window.innerWidth;
+      const cols = width >= 1280 ? 6 : width >= 1024 ? 5 : width >= 768 ? 4 : width >= 640 ? 3 : 2;
+
+      setTvFocusIndex((prev) => {
+        let next = prev === null ? 0 : prev;
+        if (isRight) next = Math.min(items.length - 1, next + 1);
+        if (isLeft) next = Math.max(0, next - 1);
+        if (isDown) next = Math.min(items.length - 1, next + cols);
+        if (isUp) next = Math.max(0, next - cols);
+        return next;
+      });
+    };
+
+    window.addEventListener("keydown", handleTvDpad);
+    return () => window.removeEventListener("keydown", handleTvDpad);
+  }, [
+    playingMedia,
+    selectedSeriesItem,
+    seriesSeasons,
+    activeSeasonTab,
+    catalogItems,
+    favoriteCatalogItems,
+    catalogGenre,
+    tvFocusIndex,
+    handlePlayMedia,
+    handleOpenSeriesEpisodes
+  ]);
+
+  // Auto-scroll do card focado pelo controle remoto da Smart TV
+  useEffect(() => {
+    if (tvFocusIndex !== null) {
+      const el =
+        document.getElementById(`catalog-card-${tvFocusIndex}`) ||
+        document.getElementById(`episode-card-${tvFocusIndex}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    }
+  }, [tvFocusIndex]);
 
   const GENRES_LIST = [
     "Todos",
@@ -1561,6 +1764,19 @@ export default function KodiApp() {
                     catalogTotalPages={catalogTotalPages}
                     catalogTotalCount={catalogTotalCount}
                     catalogGenre={catalogGenre}
+                    catalogPlatform={catalogPlatform}
+                    platformsList={PLATFORMS_LIST}
+                    onSelectPlatform={(p) => {
+                      setCatalogPlatform(p);
+                      setCatalogPage(1);
+                      fetchCatalogData("all", 1, catalogSearch, catalogGenre, undefined, p);
+                    }}
+                    tvFocusIndex={tvFocusIndex}
+                    isTvModeActive={isTvModeActive}
+                    onToggleTvMode={() => {
+                      setIsTvModeActive((prev) => !prev);
+                      setTvFocusIndex((prev) => (prev === null ? 0 : null));
+                    }}
                     catalogSearch={catalogSearch}
                     jumpPageInput={jumpPageInput}
                     genresList={GENRES_LIST}
@@ -1572,19 +1788,19 @@ export default function KodiApp() {
                       const newGenre = g === "Todos" ? "" : g;
                       setCatalogGenre(newGenre);
                       setCatalogPage(1);
-                      fetchCatalogData("all", 1, catalogSearch, newGenre);
+                      fetchCatalogData("all", 1, catalogSearch, newGenre, undefined, catalogPlatform);
                     }}
                     onPageChange={(newPage) => {
                       if (newPage < 1 || newPage > catalogTotalPages) return;
                       setCatalogPage(newPage);
-                      fetchCatalogData("all", newPage, catalogSearch, catalogGenre);
+                      fetchCatalogData("all", newPage, catalogSearch, catalogGenre, undefined, catalogPlatform);
                     }}
                     onJumpPageSubmit={(e) => {
                       e.preventDefault();
                       const p = parseInt(jumpPageInput, 10);
                       if (!isNaN(p) && p >= 1 && p <= catalogTotalPages) {
                         setCatalogPage(p);
-                        fetchCatalogData("all", p, catalogSearch, catalogGenre);
+                        fetchCatalogData("all", p, catalogSearch, catalogGenre, undefined, catalogPlatform);
                       }
                     }}
                     setJumpPageInput={setJumpPageInput}
@@ -2010,26 +2226,31 @@ export default function KodiApp() {
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {(
                           seriesSeasons.find((s) => s.seasonNumber === activeSeasonTab)?.episodes || []
-                        ).map((ep) => (
-                          <div
-                            key={ep.number}
-                            onClick={() =>
-                              handlePlayMedia(
-                                `${selectedSeriesItem.title} - T${activeSeasonTab}E${ep.number}: ${ep.title}`,
-                                selectedSeriesItem.synopsis,
-                                selectedSeriesItem.thumbnail,
-                                selectedSeriesItem.tmdb_id,
-                                ep.link || selectedSeriesItem.link || ep.streamUrl,
-                                activeSeasonTab,
-                                ep.number
-                              )
-                            }
-                            className={`group p-4 rounded-xl border cursor-pointer transition-all duration-200 flex items-center justify-between hover:scale-[1.01] shadow-md ${
-                              isLight
-                                ? "border-zinc-300 bg-white hover:bg-red-50/50 hover:border-red-500"
-                                : "border-red-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-red-500"
-                            }`}
-                          >
+                        ).map((ep, epIdx) => {
+                          const isEpTvFocused = tvFocusIndex === epIdx;
+                          return (
+                            <div
+                              id={`episode-card-${epIdx}`}
+                              key={ep.number}
+                              onClick={() =>
+                                handlePlayMedia(
+                                  `${selectedSeriesItem.title} - T${activeSeasonTab}E${ep.number}: ${ep.title}`,
+                                  selectedSeriesItem.synopsis,
+                                  selectedSeriesItem.thumbnail,
+                                  selectedSeriesItem.tmdb_id,
+                                  ep.link || selectedSeriesItem.link || ep.streamUrl,
+                                  activeSeasonTab,
+                                  ep.number
+                                )
+                              }
+                              className={`group p-4 rounded-xl border cursor-pointer transition-all duration-200 flex items-center justify-between shadow-md ${
+                                isEpTvFocused
+                                  ? "ring-4 ring-red-500 scale-[1.03] shadow-2xl z-20 shadow-red-600/70 border-red-500 bg-red-950/50"
+                                  : isLight
+                                  ? "border-zinc-300 bg-white hover:bg-red-50/50 hover:border-red-500 hover:scale-[1.01]"
+                                  : "border-red-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-red-500 hover:scale-[1.01]"
+                              }`}
+                            >
                             <div className="flex items-center gap-3 min-w-0">
                               <div className={`w-10 h-10 rounded-lg border flex items-center justify-center font-mono font-bold text-sm shrink-0 transition-colors ${
                                 isLight
@@ -2055,8 +2276,9 @@ export default function KodiApp() {
                               <Play className="w-4 h-4 fill-current ml-0.5" />
                             </div>
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })}
+                    </div>
                     </div>
                   )}
                 </div>
@@ -2071,6 +2293,19 @@ export default function KodiApp() {
                   catalogTotalPages={catalogTotalPages}
                   catalogTotalCount={catalogTotalCount}
                   catalogGenre={catalogGenre}
+                  catalogPlatform={catalogPlatform}
+                  platformsList={PLATFORMS_LIST}
+                  onSelectPlatform={(p) => {
+                    setCatalogPlatform(p);
+                    setCatalogPage(1);
+                    fetchCatalogData(currentCatalogType, 1, catalogSearch, catalogGenre, undefined, p);
+                  }}
+                  tvFocusIndex={tvFocusIndex}
+                  isTvModeActive={isTvModeActive}
+                  onToggleTvMode={() => {
+                    setIsTvModeActive((prev) => !prev);
+                    setTvFocusIndex((prev) => (prev === null ? 0 : null));
+                  }}
                   catalogSearch={catalogSearch}
                   jumpPageInput={jumpPageInput}
                   genresList={GENRES_LIST}
@@ -2082,19 +2317,19 @@ export default function KodiApp() {
                     const newGenre = g === "Todos" ? "" : g;
                     setCatalogGenre(newGenre);
                     setCatalogPage(1);
-                    fetchCatalogData(currentCatalogType, 1, catalogSearch, newGenre);
+                    fetchCatalogData(currentCatalogType, 1, catalogSearch, newGenre, undefined, catalogPlatform);
                   }}
                   onPageChange={(newPage) => {
                     if (newPage < 1 || newPage > catalogTotalPages) return;
                     setCatalogPage(newPage);
-                    fetchCatalogData(currentCatalogType, newPage, catalogSearch, catalogGenre);
+                    fetchCatalogData(currentCatalogType, newPage, catalogSearch, catalogGenre, undefined, catalogPlatform);
                   }}
                   onJumpPageSubmit={(e) => {
                     e.preventDefault();
                     const p = parseInt(jumpPageInput, 10);
                     if (!isNaN(p) && p >= 1 && p <= catalogTotalPages) {
                       setCatalogPage(p);
-                      fetchCatalogData(currentCatalogType, p, catalogSearch, catalogGenre);
+                      fetchCatalogData(currentCatalogType, p, catalogSearch, catalogGenre, undefined, catalogPlatform);
                     }
                   }}
                   setJumpPageInput={setJumpPageInput}
@@ -2227,26 +2462,31 @@ export default function KodiApp() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {(
                         seriesSeasons.find((s) => s.seasonNumber === activeSeasonTab)?.episodes || []
-                      ).map((ep) => (
-                        <div
-                          key={ep.number}
-                          onClick={() =>
-                            handlePlayMedia(
-                              `${selectedSeriesItem.title} - T${activeSeasonTab}E${ep.number}: ${ep.title}`,
-                              selectedSeriesItem.synopsis,
-                              selectedSeriesItem.thumbnail,
-                              selectedSeriesItem.tmdb_id,
-                              ep.link || selectedSeriesItem.link || ep.streamUrl,
-                              activeSeasonTab,
-                              ep.number
-                            )
-                          }
-                          className={`group p-4 rounded-xl border cursor-pointer transition-all duration-200 flex items-center justify-between hover:scale-[1.01] shadow-md ${
-                            isLight
-                              ? "border-zinc-300 bg-white hover:bg-red-50/50 hover:border-red-500"
-                              : "border-red-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-red-500"
-                          }`}
-                        >
+                      ).map((ep, epIdx) => {
+                        const isEpTvFocused = tvFocusIndex === epIdx;
+                        return (
+                          <div
+                            id={`episode-card-${epIdx}`}
+                            key={ep.number}
+                            onClick={() =>
+                              handlePlayMedia(
+                                `${selectedSeriesItem.title} - T${activeSeasonTab}E${ep.number}: ${ep.title}`,
+                                selectedSeriesItem.synopsis,
+                                selectedSeriesItem.thumbnail,
+                                selectedSeriesItem.tmdb_id,
+                                ep.link || selectedSeriesItem.link || ep.streamUrl,
+                                activeSeasonTab,
+                                ep.number
+                              )
+                            }
+                            className={`group p-4 rounded-xl border cursor-pointer transition-all duration-200 flex items-center justify-between shadow-md ${
+                              isEpTvFocused
+                                ? "ring-4 ring-red-500 scale-[1.03] shadow-2xl z-20 shadow-red-600/70 border-red-500 bg-red-950/50"
+                                : isLight
+                                ? "border-zinc-300 bg-white hover:bg-red-50/50 hover:border-red-500 hover:scale-[1.01]"
+                                : "border-red-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-red-500 hover:scale-[1.01]"
+                            }`}
+                          >
                           <div className="flex items-center gap-3 min-w-0">
                             <div className={`w-10 h-10 rounded-lg border flex items-center justify-center font-mono font-bold text-sm shrink-0 transition-colors ${
                               isLight
@@ -2272,8 +2512,9 @@ export default function KodiApp() {
                             <Play className="w-4 h-4 fill-current ml-0.5" />
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })}
+                  </div>
                   </div>
                 )}
               </div>
@@ -2295,6 +2536,19 @@ export default function KodiApp() {
                 catalogTotalPages={catalogTotalPages}
                 catalogTotalCount={catalogTotalCount}
                 catalogGenre={catalogGenre}
+                catalogPlatform={catalogPlatform}
+                platformsList={PLATFORMS_LIST}
+                onSelectPlatform={(p) => {
+                  setCatalogPlatform(p);
+                  setCatalogPage(1);
+                  fetchCatalogData(currentCatalogType, 1, catalogSearch, catalogGenre, undefined, p);
+                }}
+                tvFocusIndex={tvFocusIndex}
+                isTvModeActive={isTvModeActive}
+                onToggleTvMode={() => {
+                  setIsTvModeActive((prev) => !prev);
+                  setTvFocusIndex((prev) => (prev === null ? 0 : null));
+                }}
                 catalogSearch={catalogSearch}
                 jumpPageInput={jumpPageInput}
                 genresList={GENRES_LIST}
@@ -2306,19 +2560,19 @@ export default function KodiApp() {
                   const newGenre = g === "Todos" ? "" : g;
                   setCatalogGenre(newGenre);
                   setCatalogPage(1);
-                  fetchCatalogData(currentCatalogType, 1, catalogSearch, newGenre);
+                  fetchCatalogData(currentCatalogType, 1, catalogSearch, newGenre, undefined, catalogPlatform);
                 }}
                 onPageChange={(newPage) => {
                   if (newPage < 1 || newPage > catalogTotalPages) return;
                   setCatalogPage(newPage);
-                  fetchCatalogData(currentCatalogType, newPage, catalogSearch, catalogGenre);
+                  fetchCatalogData(currentCatalogType, newPage, catalogSearch, catalogGenre, undefined, catalogPlatform);
                 }}
                 onJumpPageSubmit={(e) => {
                   e.preventDefault();
                   const p = parseInt(jumpPageInput, 10);
                   if (!isNaN(p) && p >= 1 && p <= catalogTotalPages) {
                     setCatalogPage(p);
-                    fetchCatalogData(currentCatalogType, p, catalogSearch, catalogGenre);
+                    fetchCatalogData(currentCatalogType, p, catalogSearch, catalogGenre, undefined, catalogPlatform);
                   }
                 }}
                 setJumpPageInput={setJumpPageInput}
@@ -2698,6 +2952,11 @@ export default function KodiApp() {
           onProgressUpdate={handleProgressUpdate}
           onNextEpisode={handleNextEpisode}
           hasNextEpisode={hasNextEpisode}
+          isTv={playingMedia.isTv}
+          seriesSeasons={seriesSeasons}
+          currentSeason={playingMedia.seasonNum}
+          currentEpisode={playingMedia.epNum}
+          onSelectEpisode={handleSelectEpisodeInPlayer}
         />
       )}
 
@@ -2805,6 +3064,12 @@ function CatalogBrowseView({
   catalogTotalPages,
   catalogTotalCount,
   catalogGenre,
+  catalogPlatform = "",
+  platformsList = [],
+  onSelectPlatform,
+  tvFocusIndex = null,
+  isTvModeActive = false,
+  onToggleTvMode,
   catalogSearch,
   jumpPageInput,
   genresList,
@@ -2826,6 +3091,12 @@ function CatalogBrowseView({
   catalogTotalPages: number;
   catalogTotalCount: number;
   catalogGenre: string;
+  catalogPlatform?: string;
+  platformsList?: { id: string; name: string; badge?: string }[];
+  onSelectPlatform?: (platform: string) => void;
+  tvFocusIndex?: number | null;
+  isTvModeActive?: boolean;
+  onToggleTvMode?: () => void;
   catalogSearch: string;
   jumpPageInput: string;
   genresList: string[];
@@ -2891,39 +3162,95 @@ function CatalogBrowseView({
           </p>
         </div>
 
-        {/* Paginação Compacta Superior (oculta na aba favoritos) */}
-        {!isFavoritesTab && (
-          <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {onToggleTvMode && (
             <button
-              onClick={() => onPageChange(catalogPage - 1)}
-              disabled={catalogPage <= 1 || catalogLoading}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border disabled:opacity-40 text-xs font-black transition-all cursor-pointer ${
-                isLight
+              onClick={onToggleTvMode}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black transition-all cursor-pointer ${
+                isTvModeActive && tvFocusIndex !== null
+                  ? "bg-red-600 border-red-500 text-white shadow-md shadow-red-600/40"
+                  : isLight
                   ? "bg-white border-2 border-zinc-300 hover:border-red-500 text-zinc-950 hover:text-red-600 hover:bg-red-50 shadow-sm"
                   : "bg-zinc-950 border-zinc-700 hover:border-red-500 text-slate-200 hover:text-white"
               }`}
+              title="Navegue no catálogo usando as setas do controle da Smart TV ou teclado (Enter para assistir)"
             >
-              <ChevronLeft className="w-4 h-4 text-red-600 shrink-0" />
-              <span className={isLight ? "text-zinc-950 font-black" : "text-slate-200 font-bold"}>Anterior</span>
+              <Tv className="w-3.5 h-3.5 text-red-500" />
+              <span>{isTvModeActive && tvFocusIndex !== null ? "🎮 Controle TV Ativo" : "🎮 Modo Smart TV"}</span>
             </button>
-            <span className="text-xs font-mono font-black text-red-600 px-1 sm:px-2">
-              {catalogPage} / {catalogTotalPages}
-            </span>
-            <button
-              onClick={() => onPageChange(catalogPage + 1)}
-              disabled={catalogPage >= catalogTotalPages || catalogLoading}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border disabled:opacity-40 text-xs font-black transition-all cursor-pointer ${
-                isLight
-                  ? "bg-white border-2 border-zinc-300 hover:border-red-500 text-zinc-950 hover:text-red-600 hover:bg-red-50 shadow-sm"
-                  : "bg-zinc-950 border-zinc-700 hover:border-red-500 text-slate-200 hover:text-white"
-              }`}
-            >
-              <span className={isLight ? "text-zinc-950 font-black" : "text-slate-200 font-bold"}>Próxima</span>
-              <ChevronRight className="w-4 h-4 text-red-600 shrink-0" />
-            </button>
-          </div>
-        )}
+          )}
+
+          {/* Paginação Compacta Superior (oculta na aba favoritos) */}
+          {!isFavoritesTab && (
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                onClick={() => onPageChange(catalogPage - 1)}
+                disabled={catalogPage <= 1 || catalogLoading}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border disabled:opacity-40 text-xs font-black transition-all cursor-pointer ${
+                  isLight
+                    ? "bg-white border-2 border-zinc-300 hover:border-red-500 text-zinc-950 hover:text-red-600 hover:bg-red-50 shadow-sm"
+                    : "bg-zinc-950 border-zinc-700 hover:border-red-500 text-slate-200 hover:text-white"
+                }`}
+              >
+                <ChevronLeft className="w-4 h-4 text-red-600 shrink-0" />
+                <span className={isLight ? "text-zinc-950 font-black" : "text-slate-200 font-bold"}>Anterior</span>
+              </button>
+              <span className="text-xs font-mono font-black text-red-600 px-1 sm:px-2">
+                {catalogPage} / {catalogTotalPages}
+              </span>
+              <button
+                onClick={() => onPageChange(catalogPage + 1)}
+                disabled={catalogPage >= catalogTotalPages || catalogLoading}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border disabled:opacity-40 text-xs font-black transition-all cursor-pointer ${
+                  isLight
+                    ? "bg-white border-2 border-zinc-300 hover:border-red-500 text-zinc-950 hover:text-red-600 hover:bg-red-50 shadow-sm"
+                    : "bg-zinc-950 border-zinc-700 hover:border-red-500 text-slate-200 hover:text-white"
+                }`}
+              >
+                <span className={isLight ? "text-zinc-950 font-black" : "text-slate-200 font-bold"}>Próxima</span>
+                <ChevronRight className="w-4 h-4 text-red-600 shrink-0" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Linha 1: Filtro por Plataforma Original (Netflix, HBO Max, Disney+, Prime Video, Apple TV+, Globoplay) */}
+      {!isFavoritesTab && platformsList && platformsList.length > 0 && (
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none -mx-2 px-2 sm:mx-0 sm:px-0">
+          <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-1.5 shrink-0 flex items-center gap-1 ${
+            isLight ? "text-zinc-500" : "text-zinc-500"
+          }`}>
+            <Tv2 className="w-3.5 h-3.5 text-red-500" />
+            <span>Plataformas:</span>
+          </span>
+          {platformsList.map((p) => {
+            const isSelected = (!catalogPlatform && p.id === "") || catalogPlatform === p.id;
+            return (
+              <button
+                key={p.id}
+                onClick={() => onSelectPlatform && onSelectPlatform(p.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                  isSelected
+                    ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-md shadow-red-600/30 scale-105"
+                    : isLight
+                    ? "bg-white border-2 border-zinc-300 text-zinc-950 hover:text-red-600 hover:border-red-500 hover:bg-red-50 shadow-sm"
+                    : "bg-zinc-950/90 border border-zinc-800 text-slate-300 hover:text-white hover:border-zinc-700"
+                }`}
+              >
+                {p.badge && (
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-black font-mono ${
+                    isSelected ? "bg-black/40 text-white" : "bg-red-950/80 text-red-400 border border-red-600/30"
+                  }`}>
+                    {p.badge}
+                  </span>
+                )}
+                <span>{p.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Chips de Gênero Responsivos com Swipe (Subfiltros de Gênero + Minha Lista) */}
       <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none -mx-2 px-2 sm:mx-0 sm:px-0">
@@ -2985,16 +3312,20 @@ function CatalogBrowseView({
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-4 md:gap-5">
-          {displayedItems.map((item) => {
+          {displayedItems.map((item, index) => {
             const isFav = favoriteCatalogItems.some((x) => x.id === item.id);
+            const isTvFocused = tvFocusIndex === index;
             return (
               <div
+                id={`catalog-card-${index}`}
                 key={item.id}
                 onClick={() => onItemClick(item)}
-                className={`group rounded-xl sm:rounded-2xl overflow-hidden border cursor-pointer transition-all duration-300 flex flex-col hover:scale-[1.02] shadow-xl ${
-                  isLight
-                    ? "border-zinc-200 bg-white hover:border-red-500 hover:shadow-red-500/10"
-                    : "border-red-600/20 bg-zinc-950/70 hover:border-red-500 hover:shadow-red-600/20"
+                className={`group rounded-xl sm:rounded-2xl overflow-hidden border cursor-pointer transition-all duration-300 flex flex-col shadow-xl ${
+                  isTvFocused
+                    ? "ring-4 ring-red-500 scale-[1.05] shadow-2xl z-20 shadow-red-600/70 brightness-110 -translate-y-1 bg-red-950/40 border-red-500"
+                    : isLight
+                    ? "border-zinc-200 bg-white hover:scale-[1.02] hover:border-red-500 hover:shadow-red-500/10"
+                    : "border-red-600/20 bg-zinc-950/70 hover:scale-[1.02] hover:border-red-500 hover:shadow-red-600/20"
                 }`}
               >
                 <div className="aspect-[2/3] w-full overflow-hidden relative bg-black">
@@ -3040,6 +3371,13 @@ function CatalogBrowseView({
                       </button>
                     )}
                   </div>
+
+                  {/* Indicador de Foco do Controle Remoto Smart TV */}
+                  {isTvFocused && (
+                    <div className="absolute bottom-2 left-2 right-2 z-30 bg-red-600 text-white text-[10px] sm:text-xs font-black py-1 px-2 rounded-lg text-center shadow-lg animate-pulse flex items-center justify-center gap-1">
+                      <span>Pressione ENTER</span>
+                    </div>
+                  )}
 
                   {/* Overlay de Ação no Hover */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2.5 sm:p-3 pointer-events-none">

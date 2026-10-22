@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '48', 10)));
     const search = searchParams.get('search')?.trim() || '';
     const genre = searchParams.get('genre')?.trim() || '';
+    const platform = searchParams.get('platform')?.trim() || '';
 
     const db = getDb();
     const offset = (page - 1) * limit;
@@ -83,6 +84,23 @@ export async function GET(req: NextRequest) {
         } else {
           conditions.push('genres LIKE ?');
           params.push(`%${genre}%`);
+        }
+      }
+
+      if (platform) {
+        const p = platform.toLowerCase();
+        if (p === 'netflix') {
+          conditions.push(`(synopsis LIKE '%netflix%' OR clean_title LIKE '%stranger things%' OR clean_title LIKE '%wandinha%' OR clean_title LIKE '%round 6%' OR clean_title LIKE '%casa de papel%' OR clean_title LIKE '%the crown%' OR clean_title LIKE '%black mirror%' OR clean_title LIKE '%dark%' OR clean_title LIKE '%elite%' OR clean_title LIKE '%ozark%' OR clean_title LIKE '%bridgerton%' OR clean_title LIKE '%peaky blinders%' OR clean_title LIKE '%narcos%' OR clean_title LIKE '%the witcher%' OR clean_title LIKE '%heartstopper%' OR clean_title LIKE '%sex education%' OR clean_title LIKE '%dahmer%' OR clean_title LIKE '%arcane%' OR clean_title LIKE '%lupin%' OR clean_title LIKE '%outer banks%' OR clean_title LIKE '%emily in paris%' OR clean_title LIKE '%manifest%' OR clean_title LIKE '%you%' OR clean_title LIKE '%lucifer%' OR clean_title LIKE '%cobra kai%')`);
+        } else if (p === 'max' || p === 'hbo') {
+          conditions.push(`(synopsis LIKE '%hbo%' OR synopsis LIKE '%max%' OR clean_title LIKE '%game of thrones%' OR clean_title LIKE '%house of the dragon%' OR clean_title LIKE '%succession%' OR clean_title LIKE '%the last of us%' OR clean_title LIKE '%euphoria%' OR clean_title LIKE '%chernobyl%' OR clean_title LIKE '%sopranos%' OR clean_title LIKE '%the wire%' OR clean_title LIKE '%westworld%' OR clean_title LIKE '%rick and morty%' OR clean_title LIKE '%white lotus%' OR clean_title LIKE '%true detective%' OR clean_title LIKE '%barry%' OR clean_title LIKE '%peacemaker%' OR clean_title LIKE '%pacificador%' OR clean_title LIKE '%hacks%')`);
+        } else if (p === 'disney') {
+          conditions.push(`(synopsis LIKE '%disney%' OR synopsis LIKE '%pixar%' OR synopsis LIKE '%marvel%' OR synopsis LIKE '%star wars%' OR clean_title LIKE '%mandalorian%' OR clean_title LIKE '%loki%' OR clean_title LIKE '%wandavision%' OR clean_title LIKE '%ahsoka%' OR clean_title LIKE '%andor%' OR clean_title LIKE '%percy jackson%' OR clean_title LIKE '%vingadores%' OR clean_title LIKE '%avengers%' OR clean_title LIKE '%encanto%' OR clean_title LIKE '%moana%' OR clean_title LIKE '%frozen%')`);
+        } else if (p === 'prime') {
+          conditions.push(`(synopsis LIKE '%prime video%' OR synopsis LIKE '%amazon%' OR clean_title LIKE '%the boys%' OR clean_title LIKE '%senhor dos aneis%' OR clean_title LIKE '%invencivel%' OR clean_title LIKE '%reacher%' OR clean_title LIKE '%gen v%' OR clean_title LIKE '%fallout%' OR clean_title LIKE '%jack ryan%' OR clean_title LIKE '%roda do tempo%' OR clean_title LIKE '%fleabag%')`);
+        } else if (p === 'apple') {
+          conditions.push(`(synopsis LIKE '%apple tv%' OR synopsis LIKE '%apple%' OR clean_title LIKE '%ted lasso%' OR clean_title LIKE '%ruptura%' OR clean_title LIKE '%severance%' OR clean_title LIKE '%silo%' OR clean_title LIKE '%see%' OR clean_title LIKE '%fundacao%' OR clean_title LIKE '%morning show%' OR clean_title LIKE '%black bird%' OR clean_title LIKE '%slow horses%')`);
+        } else if (p === 'globo' || p === 'globoplay') {
+          conditions.push(`(synopsis LIKE '%globo%' OR synopsis LIKE '%globoplay%' OR clean_title LIKE '%sob pressao%' OR clean_title LIKE '%os outros%' OR clean_title LIKE '%justica%' OR clean_title LIKE '%arcanjo renegado%' OR clean_title LIKE '%verdades secretas%' OR clean_title LIKE '%as five%' OR clean_title LIKE '%pantanal%' OR clean_title LIKE '%avenida brasil%' OR clean_title LIKE '%todas as flores%')`);
         }
       }
 

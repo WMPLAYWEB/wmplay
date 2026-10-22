@@ -254,14 +254,6 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
       isDubbed: true
     });
   }
-  if (dub.doodstream) {
-    servers.push({
-      name: `4. ${labelPrefix} (DoodStream Reserva)`,
-      url: `https://playmogo.com/e/${dub.doodstream}`,
-      type: 'embed',
-      isDubbed: true
-    });
-  }
 
   return servers;
 }

@@ -25,13 +25,26 @@ import {
   History,
   Ratio,
   Sliders,
-  Check
+  Check,
+  ListVideo
 } from "lucide-react";
 
 export interface ServerOption {
   name: string;
   url: string;
   type: "video" | "embed";
+}
+
+export interface FormattedSeason {
+  seasonNumber: number;
+  seasonTitle: string;
+  episodes: {
+    number: number;
+    title: string;
+    link?: string;
+    duration?: string;
+    streamUrl?: string;
+  }[];
 }
 
 function formatSeconds(sec: number): string {
@@ -58,6 +71,11 @@ interface KodiVideoPlayerProps {
   onProgressUpdate?: (currentTime: number, duration: number) => void;
   onNextEpisode?: () => void;
   hasNextEpisode?: boolean;
+  isTv?: boolean;
+  seriesSeasons?: FormattedSeason[];
+  currentSeason?: number;
+  currentEpisode?: number;
+  onSelectEpisode?: (seasonNum: number, epNum: number, episodeTitle: string, episodeLink?: string) => void;
 }
 
 export default function KodiVideoPlayer({
@@ -73,6 +91,11 @@ export default function KodiVideoPlayer({
   onProgressUpdate,
   onNextEpisode,
   hasNextEpisode = false,
+  isTv = false,
+  seriesSeasons = [],
+  currentSeason,
+  currentEpisode,
+  onSelectEpisode,
 }: KodiVideoPlayerProps) {
   const currentServer = servers[activeServerIndex] || servers[0];
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -85,7 +108,14 @@ export default function KodiVideoPlayer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [antiPopupMode, setAntiPopupMode] = useState(true);
+
+  // Gaveta de Episódios Dentro do Player
+  const [isEpisodeDrawerOpen, setIsEpisodeDrawerOpen] = useState(false);
+  const [drawerSeasonTab, setDrawerSeasonTab] = useState<number>(currentSeason || 1);
+
+  useEffect(() => {
+    if (currentSeason) setDrawerSeasonTab(currentSeason);
+  }, [currentSeason]);
 
   // Novos Recursos Avançados do Player
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
@@ -372,16 +402,32 @@ export default function KodiVideoPlayer({
     }
   };
 
-  // Bloqueador de Anúncios Ativo (Intercepta pop-ups e abas abertas por scripts terceiros)
+  // Bloqueador de Anúncios Ativo Ultra-Rigoroso (Intercepta pop-ups, abas e links terceiros abusivos)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const originalOpen = window.open;
     window.open = function (...args) {
-      console.warn("[WMPLAY AdBlock] Anúncio em nova janela/aba bloqueado:", args[0]);
+      console.warn("[WMPLAY AdBlock] Tentativa de abertura de pop-up bloqueada:", args[0]);
       return null;
     };
+
+    // Intercepta e previne cliques maliciosos em tags <a> com target="_blank"
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement)?.closest('a');
+      if (target && target.getAttribute('target') === '_blank') {
+        const href = target.getAttribute('href') || '';
+        if (!href.startsWith('https://open.spotify.com') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.warn("[WMPLAY AdBlock] Clique em link externo suspenso/bloqueado:", href);
+        }
+      }
+    };
+
+    window.addEventListener('click', handleGlobalClick, true);
     return () => {
       window.open = originalOpen;
+      window.removeEventListener('click', handleGlobalClick, true);
     };
   }, []);
 
@@ -403,8 +449,21 @@ export default function KodiVideoPlayer({
         e.key === "Back"
       ) {
         e.preventDefault();
+        if (isEpisodeDrawerOpen) {
+          setIsEpisodeDrawerOpen(false);
+          return;
+        }
         onClose();
         return;
+      }
+
+      // Tecla E para abrir/fechar a Gaveta de Episódios em séries
+      if (e.key === "e" || e.key === "E") {
+        if (isTv && seriesSeasons && seriesSeasons.length > 0) {
+          e.preventDefault();
+          setIsEpisodeDrawerOpen((prev) => !prev);
+          return;
+        }
       }
 
       // Play / Pause no controle remoto e teclado (Espaço, K, MediaPlayPause)
@@ -791,12 +850,6 @@ export default function KodiVideoPlayer({
     }
   };
 
-  const handleOpenExternal = () => {
-    if (currentServer?.url) {
-      window.open(currentServer.url, "_blank", "noopener,noreferrer");
-    }
-  };
-
   return (
     <div
       className={
@@ -825,24 +878,10 @@ export default function KodiVideoPlayer({
                     ⚡ Modo TV Lite (Acelerado)
                   </span>
                 )}
-                {currentServer?.type !== "video" && (
-                  <button
-                    onClick={() => setAntiPopupMode((prev) => !prev)}
-                    className={`text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full font-mono flex items-center gap-1.5 transition-all cursor-pointer ${
-                      antiPopupMode
-                        ? "text-emerald-300 bg-emerald-950/80 border border-emerald-500/50 hover:bg-emerald-900"
-                        : "text-amber-300 bg-amber-950/80 border border-amber-500/50 hover:bg-amber-900"
-                    }`}
-                    title={
-                      antiPopupMode
-                        ? "Bloqueador de Anúncios Ativado: Pop-ups e abas são bloqueados automaticamente. Clique para desativar."
-                        : "Modo Aberto: Clique para reativar o Bloqueador de Anúncios."
-                    }
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${antiPopupMode ? "bg-emerald-400" : "bg-amber-400"}`} />
-                    {antiPopupMode ? "🛡️ Sem Anúncios (Ativo)" : "⚠️ Anúncios Permitidos"}
-                  </button>
-                )}
+                <span className="text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full font-mono flex items-center gap-1.5 text-emerald-300 bg-emerald-950/80 border border-emerald-500/50 shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  🛡️ Proteção Sem Anúncios Ativa
+                </span>
               </div>
               <h2 className="text-base sm:text-xl md:text-2xl font-black text-white drop-shadow truncate mt-0.5">
                 {title}
@@ -954,6 +993,27 @@ export default function KodiVideoPlayer({
                 </button>
               )}
 
+              {/* Botão Gaveta de Episódios (em séries) */}
+              {isTv && seriesSeasons && seriesSeasons.length > 0 && (
+                <button
+                  onClick={() => setIsEpisodeDrawerOpen((prev) => !prev)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl transition-all text-xs font-black shadow-md cursor-pointer ${
+                    isEpisodeDrawerOpen
+                      ? "bg-red-600 text-white shadow-red-600/40"
+                      : "bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 hover:border-red-500/60"
+                  }`}
+                  title="Trocar de Episódio sem sair do player (Tecla E)"
+                >
+                  <ListVideo className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" />
+                  <span>Episódios</span>
+                  {currentSeason && currentEpisode && (
+                    <span className="text-[10px] bg-black/60 px-1.5 py-0.5 rounded font-mono text-zinc-300">
+                      T{currentSeason}:E{currentEpisode}
+                    </span>
+                  )}
+                </button>
+              )}
+
               {/* Botão Próximo Episódio (quando disponível em séries) */}
               {hasNextEpisode && onNextEpisode && (
                 <button
@@ -998,16 +1058,6 @@ export default function KodiVideoPlayer({
                 title="Recarregar Servidor"
               >
                 <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-
-              {/* Abrir em Nova Aba */}
-              <button
-                onClick={handleOpenExternal}
-                className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl bg-zinc-900 hover:bg-red-950/80 border border-zinc-800 hover:border-red-500 text-red-400 text-xs font-bold transition-all shadow-md"
-                title="Abrir em Nova Aba"
-              >
-                <ExternalLink className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden lg:inline">Abrir em Nova Aba</span>
               </button>
 
               {/* Tela Cheia Nativa */}
@@ -1156,11 +1206,15 @@ export default function KodiVideoPlayer({
               )}
               {!isMiniPlayer && (
                 <button
-                  onClick={handleOpenExternal}
-                  className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-red-400 font-bold text-xs border border-zinc-800 flex items-center gap-1.5"
+                  onClick={() => {
+                    setIsLoading(true);
+                    setHasError(false);
+                    onSelectServer(activeServerIndex);
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-800 flex items-center gap-1.5 cursor-pointer"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Abrir Diretamente</span>
+                  <RotateCw className="w-3.5 h-3.5 text-red-400" />
+                  <span>Tentar Novamente</span>
                 </button>
               )}
             </div>
@@ -1458,15 +1512,11 @@ export default function KodiVideoPlayer({
         ) : (
           <div className="w-full h-full relative">
             <iframe
-              key={currentServer?.url + (antiPopupMode ? "-sandboxed" : "-direct")}
+              key={currentServer?.url}
               src={currentServer?.url}
               title={title}
               referrerPolicy="no-referrer"
-              sandbox={
-                antiPopupMode
-                  ? "allow-scripts allow-forms allow-presentation allow-encrypted-media"
-                  : undefined
-              }
+              sandbox="allow-scripts allow-forms allow-presentation allow-encrypted-media"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
               allowFullScreen
               className="w-full h-full border-0"
@@ -1486,6 +1536,101 @@ export default function KodiVideoPlayer({
                 </span>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* GAVETA DE EPISÓDIOS DENTRO DO PLAYER (TROCA RÁPIDA)             */}
+        {/* ============================================================== */}
+        {isEpisodeDrawerOpen && isTv && seriesSeasons && seriesSeasons.length > 0 && !isMiniPlayer && (
+          <div className="absolute inset-y-0 right-0 w-80 sm:w-96 max-w-[85vw] bg-black/95 backdrop-blur-2xl border-l border-zinc-800 z-50 flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
+            {/* Header da Gaveta */}
+            <div className="p-3.5 sm:p-4 border-b border-zinc-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-red-600/20 border border-red-600/40 flex items-center justify-center text-red-500 shrink-0">
+                  <ListVideo className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-xs sm:text-sm font-black text-white flex items-center gap-2">
+                    <span>Episódios</span>
+                    <span className="text-[10px] text-red-400 font-mono bg-red-950/80 px-1.5 py-0.5 rounded border border-red-600/30">
+                      T{drawerSeasonTab}
+                    </span>
+                  </h4>
+                  <p className="text-[10px] sm:text-[11px] text-zinc-400 truncate">{title}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsEpisodeDrawerOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                title="Fechar Gaveta"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Abas de Temporada */}
+            {seriesSeasons.length > 1 && (
+              <div className="px-3.5 py-2 border-b border-zinc-800 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                {seriesSeasons.map((s) => (
+                  <button
+                    key={s.seasonNumber}
+                    onClick={() => setDrawerSeasonTab(s.seasonNumber)}
+                    className={`px-3 py-1 rounded-lg text-xs font-black shrink-0 transition-all cursor-pointer ${
+                      drawerSeasonTab === s.seasonNumber
+                        ? "bg-red-600 text-white shadow-md shadow-red-600/30"
+                        : "bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800"
+                    }`}
+                  >
+                    T{s.seasonNumber}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Lista de Episódios */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {(seriesSeasons.find((s) => s.seasonNumber === drawerSeasonTab)?.episodes || []).map((ep) => {
+                const isCurrent = drawerSeasonTab === currentSeason && ep.number === currentEpisode;
+                return (
+                  <div
+                    key={ep.number}
+                    onClick={() => {
+                      if (onSelectEpisode) {
+                        onSelectEpisode(drawerSeasonTab, ep.number, ep.title, ep.link);
+                      }
+                      setIsEpisodeDrawerOpen(false);
+                    }}
+                    className={`p-2.5 sm:p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                      isCurrent
+                        ? "bg-red-950/80 border-red-500 text-white shadow-lg shadow-red-600/30"
+                        : "bg-zinc-900/70 hover:bg-zinc-850/90 border-zinc-800 hover:border-red-500/40 text-zinc-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div
+                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center font-mono font-black text-xs shrink-0 ${
+                          isCurrent ? "bg-red-600 text-white shadow-md shadow-red-600/50" : "bg-zinc-800 text-zinc-300"
+                        }`}
+                      >
+                        {isCurrent ? <Play className="w-3.5 h-3.5 fill-current" /> : ep.number}
+                      </div>
+                      <div className="min-w-0">
+                        <p className={`text-xs font-bold truncate ${isCurrent ? "text-red-400 font-black" : "text-zinc-200"}`}>
+                          Episódio {ep.number}
+                        </p>
+                        <p className="text-[10px] sm:text-[11px] text-zinc-400 truncate">{ep.title || `Episódio ${ep.number}`}</p>
+                      </div>
+                    </div>
+                    {isCurrent && (
+                      <span className="text-[9px] font-bold text-red-300 bg-red-950/90 border border-red-500/50 px-2 py-0.5 rounded-full shrink-0">
+                        Tocando
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
