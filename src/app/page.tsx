@@ -161,8 +161,41 @@ export default function KodiApp() {
       if (savedFavCh) setFavoriteChannels(JSON.parse(savedFavCh));
       const savedFavCat = localStorage.getItem("wmplay_fav_catalog_items");
       if (savedFavCat) setFavoriteCatalogItems(JSON.parse(savedFavCat));
+      const savedRecent = localStorage.getItem("wmplay_recent_searches");
+      if (savedRecent) setRecentSearches(JSON.parse(savedRecent));
     } catch {}
   }, []);
+
+  // Fechar dropdown de buscas recentes ao clicar fora
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowRecentDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const saveRecentSearch = (term: string) => {
+    const clean = term?.trim();
+    if (!clean || clean.length < 2) return;
+    setRecentSearches((prev) => {
+      const next = [clean, ...prev.filter((t) => t.toLowerCase() !== clean.toLowerCase())].slice(0, 8);
+      try {
+        localStorage.setItem("wmplay_recent_searches", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const clearRecentSearches = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRecentSearches([]);
+    try {
+      localStorage.removeItem("wmplay_recent_searches");
+    } catch {}
+  };
 
   const toggleFavoriteChannel = (channelId: string) => {
     setFavoriteChannels((prev) => {
@@ -285,6 +318,11 @@ export default function KodiApp() {
   const [catalogSearch, setCatalogSearch] = useState<string>("");
   const [jumpPageInput, setJumpPageInput] = useState<string>("");
 
+  // Histórico de Buscas Recentes
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [showRecentDropdown, setShowRecentDropdown] = useState<boolean>(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
   // Series Episodes Modal / View State
   const [selectedSeriesItem, setSelectedSeriesItem] = useState<CatalogItem | null>(null);
   const [seriesSeasons, setSeriesSeasons] = useState<FormattedSeason[]>([]);
@@ -388,6 +426,7 @@ export default function KodiApp() {
         : (getCurrentCatalogType() || "all");
       setCatalogPage(1);
       fetchCatalogData(type, 1, catalogSearch, catalogGenre);
+      saveRecentSearch(catalogSearch);
     }, 450);
 
     return () => clearTimeout(timer);
@@ -1231,10 +1270,13 @@ export default function KodiApp() {
             )}
 
             {/* Input de Busca Dinâmica */}
-            <div className="relative w-full min-w-0">
+            <div className="relative w-full min-w-0" ref={searchContainerRef}>
               <button
                 type="button"
                 onClick={() => {
+                  const queryToSave = catalogSearch || musicSearchQuery || searchQuery;
+                  saveRecentSearch(queryToSave);
+                  setShowRecentDropdown(false);
                   if (isBrowsingCatalog || (activeAddonView === "brazucaplay" && activeBrazucaCategory?.type !== "channels" && activeBrazucaCategory?.type !== "settings")) {
                     setCatalogPage(1);
                     fetchCatalogData(currentCatalogType || "all", 1, catalogSearch, catalogGenre);
@@ -1251,6 +1293,7 @@ export default function KodiApp() {
               </button>
               <input
                 type="text"
+                onFocus={() => setShowRecentDropdown(true)}
                 value={
                   (isBrowsingCatalog || (activeAddonView === "brazucaplay" && activeBrazucaCategory?.type !== "channels" && activeBrazucaCategory?.type !== "settings"))
                     ? catalogSearch
@@ -1270,6 +1313,9 @@ export default function KodiApp() {
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
+                    const queryToSave = catalogSearch || musicSearchQuery || searchQuery;
+                    saveRecentSearch(queryToSave);
+                    setShowRecentDropdown(false);
                     if (isBrowsingCatalog || (activeAddonView === "brazucaplay" && activeBrazucaCategory?.type !== "channels" && activeBrazucaCategory?.type !== "settings")) {
                       setCatalogPage(1);
                       fetchCatalogData(currentCatalogType || "all", 1, catalogSearch, catalogGenre);
@@ -1322,6 +1368,66 @@ export default function KodiApp() {
                   <X className="w-3.5 h-3.5" />
                 </button>
               ) : null}
+
+              {/* Dropdown de Buscas Recentes (1 Toque) */}
+              {showRecentDropdown && recentSearches.length > 0 && (
+                <div
+                  className={`absolute top-full left-0 right-0 mt-2 z-50 p-3 sm:p-4 rounded-2xl shadow-2xl backdrop-blur-xl border animate-in fade-in-50 zoom-in-95 duration-150 ${
+                    isLight
+                      ? "bg-white/95 border-zinc-200 text-zinc-950 shadow-xl"
+                      : "bg-zinc-950/95 border-zinc-800 text-white shadow-2xl"
+                  }`}
+                >
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-700/40">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-400">
+                      <Clock className="w-3.5 h-3.5 text-red-500" />
+                      <span>Buscas Recentes</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearRecentSearches}
+                      className="text-[11px] font-bold text-zinc-400 hover:text-red-500 transition-colors cursor-pointer"
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                    {recentSearches.map((term, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          if (
+                            isBrowsingCatalog ||
+                            (activeAddonView === "brazucaplay" &&
+                              activeBrazucaCategory?.type !== "channels" &&
+                              activeBrazucaCategory?.type !== "settings")
+                          ) {
+                            setCatalogSearch(term);
+                            setCatalogPage(1);
+                            fetchCatalogData(currentCatalogType || "all", 1, term, catalogGenre);
+                          } else if (activeCategory === "music") {
+                            setMusicSearchQuery(term);
+                            setMusicSearchTrigger((p) => p + 1);
+                          } else {
+                            setSearchQuery(term);
+                          }
+                          saveRecentSearch(term);
+                          setShowRecentDropdown(false);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                          isLight
+                            ? "bg-zinc-100 hover:bg-red-50 border-zinc-200 text-zinc-800 hover:text-red-600 hover:border-red-300"
+                            : "bg-zinc-900/90 hover:bg-red-950/40 border-zinc-800 hover:border-red-500/40 text-zinc-200 hover:text-red-400"
+                        }`}
+                      >
+                        <Search className="w-3 h-3 opacity-60" />
+                        <span>{term}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1739,16 +1845,17 @@ export default function KodiApp() {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  e.preventDefault();
                                   toggleFavoriteChannel(ch.id);
                                 }}
-                                className={`absolute top-2 right-2 z-20 p-1.5 rounded-full backdrop-blur-md transition-all cursor-pointer shadow-md ${
+                                className={`absolute top-2 right-2 z-20 p-2 rounded-full backdrop-blur-md transition-all cursor-pointer pointer-events-auto shadow-md ${
                                   isFav
                                     ? "bg-amber-500 text-white shadow-amber-500/50 scale-105"
-                                    : "bg-black/60 hover:bg-black/90 text-zinc-400 hover:text-amber-400"
+                                    : "bg-black/75 hover:bg-black/95 text-zinc-300 hover:text-amber-400 border border-white/10"
                                 }`}
                                 title={isFav ? "Remover dos Favoritos" : "Favoritar Canal"}
                               >
-                                <Star className={`w-3.5 h-3.5 ${isFav ? "fill-white text-white" : ""}`} />
+                                <Star className={`w-4 h-4 ${isFav ? "fill-white text-white" : ""}`} />
                               </button>
 
                               <img
@@ -1836,7 +1943,21 @@ export default function KodiApp() {
                       <p className={`text-sm leading-relaxed max-w-4xl line-clamp-4 ${isLight ? "text-zinc-700 font-semibold" : "text-slate-300"}`}>
                         {selectedSeriesItem.synopsis || "Sinopse não informada pelo repositório."}
                       </p>
-                      <div className="pt-2 flex items-center gap-3">
+                      <div className="pt-2 flex items-center gap-3 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => toggleFavoriteCatalog(selectedSeriesItem)}
+                          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-sm border ${
+                            favoriteCatalogItems.some((x) => x.id === selectedSeriesItem.id)
+                              ? "bg-amber-500 text-white border-amber-400 shadow-amber-500/30"
+                              : isLight
+                              ? "bg-zinc-100 hover:bg-amber-50 border-zinc-300 text-zinc-800 hover:text-amber-600"
+                              : "bg-slate-800 hover:bg-zinc-800 border-zinc-700 text-slate-300 hover:text-amber-400"
+                          }`}
+                        >
+                          <Star className={`w-4 h-4 ${favoriteCatalogItems.some((x) => x.id === selectedSeriesItem.id) ? "fill-white text-white" : "text-amber-400 fill-amber-400"}`} />
+                          <span>{favoriteCatalogItems.some((x) => x.id === selectedSeriesItem.id) ? "Salvo na Minha Lista" : "Salvar nos Favoritos"}</span>
+                        </button>
                         <button
                           onClick={() => setSelectedSeriesItem(null)}
                           className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors border ${
@@ -2042,7 +2163,21 @@ export default function KodiApp() {
                     <p className={`text-sm leading-relaxed max-w-4xl line-clamp-4 ${isLight ? "text-zinc-700 font-semibold" : "text-slate-300"}`}>
                       {selectedSeriesItem.synopsis || "Sinopse não informada pelo repositório."}
                     </p>
-                    <div className="pt-2 flex items-center gap-3">
+                    <div className="pt-2 flex items-center gap-3 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => toggleFavoriteCatalog(selectedSeriesItem)}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-sm border ${
+                          favoriteCatalogItems.some((x) => x.id === selectedSeriesItem.id)
+                            ? "bg-amber-500 text-white border-amber-400 shadow-amber-500/30"
+                            : isLight
+                            ? "bg-zinc-100 hover:bg-amber-50 border-zinc-300 text-zinc-800 hover:text-amber-600"
+                            : "bg-slate-800 hover:bg-zinc-800 border-zinc-700 text-slate-300 hover:text-amber-400"
+                        }`}
+                      >
+                        <Star className={`w-4 h-4 ${favoriteCatalogItems.some((x) => x.id === selectedSeriesItem.id) ? "fill-white text-white" : "text-amber-400 fill-amber-400"}`} />
+                        <span>{favoriteCatalogItems.some((x) => x.id === selectedSeriesItem.id) ? "Salvo na Minha Lista" : "Salvar nos Favoritos"}</span>
+                      </button>
                       <button
                         onClick={() => setSelectedSeriesItem(null)}
                         className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors border ${
@@ -2302,16 +2437,17 @@ export default function KodiApp() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
+                              e.preventDefault();
                               toggleFavoriteChannel(ch.id);
                             }}
-                            className={`absolute top-2 right-2 z-20 p-1.5 rounded-full backdrop-blur-md transition-all cursor-pointer shadow-md ${
+                            className={`absolute top-2 right-2 z-20 p-2 rounded-full backdrop-blur-md transition-all cursor-pointer pointer-events-auto shadow-md ${
                               isFav
                                 ? "bg-amber-500 text-white shadow-amber-500/50 scale-105"
-                                : "bg-black/60 hover:bg-black/90 text-zinc-400 hover:text-amber-400"
+                                : "bg-black/75 hover:bg-black/95 text-zinc-300 hover:text-amber-400 border border-white/10"
                             }`}
                             title={isFav ? "Remover dos Favoritos" : "Favoritar Canal"}
                           >
-                            <Star className={`w-3.5 h-3.5 ${isFav ? "fill-white text-white" : ""}`} />
+                            <Star className={`w-4 h-4 ${isFav ? "fill-white text-white" : ""}`} />
                           </button>
 
                           <img
@@ -2870,7 +3006,7 @@ function CatalogBrowseView({
                   />
 
                   {/* Badges superiores (Ano / Avaliação / Favorito) */}
-                  <div className="absolute top-1.5 left-1.5 right-1.5 sm:top-2 sm:left-2 sm:right-2 flex items-center justify-between">
+                  <div className="absolute top-1.5 left-1.5 right-1.5 sm:top-2 sm:left-2 sm:right-2 z-20 flex items-center justify-between pointer-events-none">
                     <div className="flex items-center gap-1">
                       {item.rating ? (
                         <span className="text-[9px] sm:text-[10px] font-bold text-amber-300 bg-black/85 backdrop-blur-md px-1.5 py-0.5 rounded-full flex items-center gap-0.5 border border-amber-500/30">
@@ -2890,26 +3026,27 @@ function CatalogBrowseView({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           onToggleFavoriteCatalog(item);
                         }}
-                        className={`p-1.5 rounded-full backdrop-blur-md transition-all cursor-pointer pointer-events-auto shadow-md ${
+                        className={`p-2 -m-1 sm:p-2 sm:-m-0.5 rounded-full backdrop-blur-md transition-all cursor-pointer pointer-events-auto shadow-md ${
                           isFav
                             ? "bg-amber-500 text-white shadow-amber-500/50 scale-105"
-                            : "bg-black/60 hover:bg-black/90 text-zinc-300 hover:text-amber-400"
+                            : "bg-black/75 hover:bg-black/95 text-zinc-300 hover:text-amber-400 border border-white/10"
                         }`}
                         title={isFav ? "Remover dos Favoritos" : "Salvar na Minha Lista"}
                       >
-                        <Star className={`w-3.5 h-3.5 ${isFav ? "fill-white text-white" : ""}`} />
+                        <Star className={`w-4 h-4 ${isFav ? "fill-white text-white" : ""}`} />
                       </button>
                     )}
                   </div>
 
                   {/* Overlay de Ação no Hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2.5 sm:p-3">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2.5 sm:p-3 pointer-events-none">
                     <p className="text-[10px] sm:text-[11px] text-slate-200 line-clamp-3 mb-2 leading-relaxed">
                       {item.synopsis || "Clique para assistir ou ver episódios."}
                     </p>
-                    <button className="w-full py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow-lg transition-colors">
+                    <button className="w-full py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow-lg transition-colors pointer-events-auto">
                       {item.type === "series" || item.type === "animes" || item.type === "doramas" || item.type === "desenhos" || item.type === "novelas" ? (
                         <>
                           <Folder className="w-3.5 h-3.5" />

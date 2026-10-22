@@ -22,7 +22,10 @@ import {
   Rewind,
   SkipForward,
   Clock,
-  History
+  History,
+  Ratio,
+  Sliders,
+  Check
 } from "lucide-react";
 
 export interface ServerOption {
@@ -91,6 +94,83 @@ export default function KodiVideoPlayer({
   const [showNextPrompt, setShowNextPrompt] = useState<boolean>(false);
   const [countdownNext, setCountdownNext] = useState<number>(15);
 
+  // 1. Ajuste de Tela / Zoom (Original, Preencher / Zoom, Esticar)
+  const [aspectMode, setAspectMode] = useState<"contain" | "cover" | "fill">("contain");
+  const [aspectFeedback, setAspectFeedback] = useState<string | null>(null);
+  const aspectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const aspectLabels: Record<string, string> = {
+    contain: "Original",
+    cover: "Preencher",
+    fill: "Esticar"
+  };
+
+  const cycleAspectMode = () => {
+    const next = aspectMode === "contain" ? "cover" : aspectMode === "cover" ? "fill" : "contain";
+    setAspectMode(next);
+    try {
+      localStorage.setItem("wmplay_aspect_mode", next);
+    } catch {}
+    setAspectFeedback(aspectLabels[next]);
+    if (aspectTimeoutRef.current) clearTimeout(aspectTimeoutRef.current);
+    aspectTimeoutRef.current = setTimeout(() => setAspectFeedback(null), 1400);
+  };
+
+  // 2. Seletor de Qualidade HLS (Live TV & HLS)
+  const [qualityLevels, setQualityLevels] = useState<{ index: number; label: string }[]>([]);
+  const [currentQualityIndex, setCurrentQualityIndex] = useState<number>(-1);
+  const [showQualityMenu, setShowQualityMenu] = useState<boolean>(false);
+
+  const handleSelectQuality = (index: number) => {
+    if (hlsRef.current) {
+      hlsRef.current.currentLevel = index;
+      setCurrentQualityIndex(index);
+      setShowQualityMenu(false);
+    }
+  };
+
+  // 3. Amplificador de Áudio / Sound Booster (Web Audio API até 200%)
+  const [audioBoost, setAudioBoost] = useState<number>(1);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  const sourceConnectedRef = useRef<boolean>(false);
+
+  const initAudioBoost = () => {
+    if (!videoRef.current || sourceConnectedRef.current) return;
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new AudioCtx();
+      }
+      if (!gainNodeRef.current) {
+        gainNodeRef.current = audioCtxRef.current.createGain();
+        gainNodeRef.current.connect(audioCtxRef.current.destination);
+      }
+      const source = audioCtxRef.current.createMediaElementSource(videoRef.current);
+      source.connect(gainNodeRef.current);
+      sourceConnectedRef.current = true;
+    } catch (err) {
+      console.warn("Web Audio Booster não inicializado:", err);
+    }
+  };
+
+  const cycleAudioBoost = () => {
+    initAudioBoost();
+    if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
+      audioCtxRef.current.resume();
+    }
+    const next = audioBoost === 1 ? 1.5 : audioBoost === 1.5 ? 2.0 : 1.0;
+    setAudioBoost(next);
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = next;
+    }
+    try {
+      localStorage.setItem("wmplay_audio_boost", String(next));
+    } catch {}
+    showVolumeIndicator(videoRef.current ? videoRef.current.volume : 1, isMuted, next);
+  };
+
   const lastTapRef = useRef<{ time: number; x: number }>({ time: 0, x: 0 });
   const lastProgressReportRef = useRef<number>(0);
   const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -99,15 +179,18 @@ export default function KodiVideoPlayer({
 
   // Estados e Referências de Volume Persistente
   const [currentVolume, setCurrentVolume] = useState<number>(1);
-  const [volumeFeedback, setVolumeFeedback] = useState<{ volume: number; muted: boolean } | null>(null);
+  const [volumeFeedback, setVolumeFeedback] = useState<{ volume: number; muted: boolean; boost?: number } | null>(null);
   const volumeFeedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Carregar volume e estado mudo salvos no localStorage
+  // Carregar configurações de volume, aspect e boost salvas no localStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       const savedVol = localStorage.getItem("wmplay_player_volume");
       const savedMuted = localStorage.getItem("wmplay_player_muted");
+      const savedAspect = localStorage.getItem("wmplay_aspect_mode") as any;
+      const savedBoost = localStorage.getItem("wmplay_audio_boost");
+
       if (savedVol !== null) {
         const val = parseFloat(savedVol);
         if (!isNaN(val) && val >= 0 && val <= 1) {
@@ -117,16 +200,25 @@ export default function KodiVideoPlayer({
       if (savedMuted !== null) {
         setIsMuted(savedMuted === "true");
       }
+      if (savedAspect === "contain" || savedAspect === "cover" || savedAspect === "fill") {
+        setAspectMode(savedAspect);
+      }
+      if (savedBoost !== null) {
+        const b = parseFloat(savedBoost);
+        if (b === 1 || b === 1.5 || b === 2) {
+          setAudioBoost(b);
+        }
+      }
     } catch {}
   }, []);
 
   // Exibir indicador visual de volume (estilo Smart TV/Kodi)
-  const showVolumeIndicator = (vol: number, muted: boolean) => {
-    setVolumeFeedback({ volume: vol, muted });
+  const showVolumeIndicator = (vol: number, muted: boolean, boost = audioBoost) => {
+    setVolumeFeedback({ volume: vol, muted, boost });
     if (volumeFeedbackTimeoutRef.current) clearTimeout(volumeFeedbackTimeoutRef.current);
     volumeFeedbackTimeoutRef.current = setTimeout(() => {
       setVolumeFeedback(null);
-    }, 1200);
+    }, 1400);
   };
 
   // Aplicar configurações de áudio persistidas a qualquer elemento de vídeo
@@ -354,6 +446,26 @@ export default function KodiVideoPlayer({
         }
       }
 
+      // Alternar Proporção / Zoom de Tela (Tecla Z)
+      if (e.key === "z" || e.key === "Z") {
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag !== "input" && tag !== "textarea") {
+          e.preventDefault();
+          cycleAspectMode();
+          return;
+        }
+      }
+
+      // Alternar Amplificador de Som (Tecla B)
+      if (e.key === "b" || e.key === "B") {
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag !== "input" && tag !== "textarea") {
+          e.preventDefault();
+          cycleAudioBoost();
+          return;
+        }
+      }
+
       // Ajustar Volume nas Setas Cima / Baixo (passo de 10%)
       if (e.key === "ArrowUp") {
         const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
@@ -516,6 +628,14 @@ export default function KodiVideoPlayer({
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           setIsLoading(false);
           applySavedAudioSettings(video);
+          if (hls.levels && hls.levels.length > 0) {
+            const levels = hls.levels.map((lvl, idx) => {
+              const height = lvl.height || 0;
+              const label = height >= 1080 ? '1080p' : height >= 720 ? '720p' : height >= 480 ? '480p' : height > 0 ? `${height}p` : `Qualidade ${idx + 1}`;
+              return { index: idx, label };
+            });
+            setQualityLevels([{ index: -1, label: 'Auto' }, ...levels]);
+          }
           video.play()
             .then(() => {
               setIsPlaying(true);
@@ -650,6 +770,9 @@ export default function KodiVideoPlayer({
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
+        setQualityLevels([]);
+        setCurrentQualityIndex(-1);
+        setShowQualityMenu(false);
       }
     };
   }, [currentServer]);
@@ -761,6 +884,73 @@ export default function KodiVideoPlayer({
                 >
                   <Gauge className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
                   <span>{playbackSpeed}x</span>
+                </button>
+              )}
+
+              {/* Botão de Ajuste de Tela / Zoom (Original, Preencher / Zoom, Esticar) */}
+              {currentServer?.type === "video" && (
+                <button
+                  onClick={cycleAspectMode}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-all border border-zinc-800 text-xs font-bold shadow-md cursor-pointer"
+                  title={`Ajuste de Tela: ${aspectLabels[aspectMode]} (Clique para alternar Original/Zoom/Esticar)`}
+                >
+                  <Ratio className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400" />
+                  <span className="hidden sm:inline">{aspectLabels[aspectMode]}</span>
+                </button>
+              )}
+
+              {/* Seletor Manual de Qualidade HLS (TV Ao Vivo e Vídeos HLS) */}
+              {qualityLevels.length > 1 && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowQualityMenu((prev) => !prev)}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-all border border-zinc-800 text-xs font-bold shadow-md cursor-pointer"
+                    title="Selecionar Resolução / Qualidade"
+                  >
+                    <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+                    <span>
+                      {currentQualityIndex === -1
+                        ? "Auto"
+                        : qualityLevels.find((q) => q.index === currentQualityIndex)?.label.split(" ")[0] || "HD"}
+                    </span>
+                  </button>
+                  {showQualityMenu && (
+                    <div className="absolute right-0 top-full mt-2 z-40 bg-zinc-950/95 border border-zinc-800 rounded-2xl shadow-2xl backdrop-blur-xl p-1.5 min-w-[150px] animate-in fade-in-50 zoom-in-95 duration-150">
+                      <div className="px-2.5 py-1 text-[10px] font-black uppercase text-zinc-500 tracking-wider">
+                        Qualidade
+                      </div>
+                      {qualityLevels.map((lvl) => (
+                        <button
+                          key={lvl.index}
+                          onClick={() => handleSelectQuality(lvl.index)}
+                          className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-between cursor-pointer ${
+                            currentQualityIndex === lvl.index
+                              ? "bg-red-600 text-white"
+                              : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                          }`}
+                        >
+                          <span>{lvl.label}</span>
+                          {currentQualityIndex === lvl.index && <Check className="w-3.5 h-3.5 text-white" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Botão de Amplificador de Som (Sound Booster) */}
+              {currentServer?.type === "video" && (
+                <button
+                  onClick={cycleAudioBoost}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl transition-all border text-xs font-bold shadow-md cursor-pointer ${
+                    audioBoost > 1
+                      ? "bg-amber-600/30 border-amber-500/60 text-amber-300 hover:bg-amber-600/40"
+                      : "bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-zinc-300 hover:text-white"
+                  }`}
+                  title={`Amplificador de Áudio: ${Math.round(audioBoost * 100)}% (Clique para amplificar)`}
+                >
+                  <Volume2 className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${audioBoost > 1 ? "text-amber-400" : "text-emerald-400"}`} />
+                  <span>{audioBoost > 1 ? `Boost ${Math.round(audioBoost * 100)}%` : "Som 100%"}</span>
                 </button>
               )}
 
@@ -1055,22 +1245,31 @@ export default function KodiVideoPlayer({
               </div>
             )}
 
-            {/* Feedback Visual de Volume / Mudo */}
+            {/* Feedback Visual de Volume / Mudo / Sound Boost */}
             {volumeFeedback && !isMiniPlayer && (
               <div className="absolute top-16 sm:top-20 z-30 pointer-events-none flex items-center gap-3 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl bg-black/85 backdrop-blur-md border border-white/20 text-white shadow-2xl animate-in zoom-in-75 duration-150">
                 {volumeFeedback.muted || volumeFeedback.volume === 0 ? (
                   <VolumeX className="w-5 h-5 sm:w-6 sm:h-6 text-red-400 shrink-0" />
                 ) : (
-                  <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white shrink-0" />
+                  <Volume2 className={`w-5 h-5 sm:w-6 sm:h-6 shrink-0 ${(volumeFeedback.boost || 1) > 1 ? "text-amber-400" : "text-white"}`} />
                 )}
                 <div className="flex flex-col min-w-[90px]">
-                  <span className="text-[11px] sm:text-xs font-bold text-zinc-200">
-                    {volumeFeedback.muted ? "Áudio Mudo" : `Volume: ${Math.round(volumeFeedback.volume * 100)}%`}
+                  <span className="text-[11px] sm:text-xs font-bold text-zinc-200 flex items-center gap-1.5">
+                    <span>{volumeFeedback.muted ? "Áudio Mudo" : `Volume: ${Math.round(volumeFeedback.volume * 100)}%`}</span>
+                    {(volumeFeedback.boost || 1) > 1 && !volumeFeedback.muted && (
+                      <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-amber-500 text-black">
+                        BOOST {Math.round((volumeFeedback.boost || 1) * 100)}%
+                      </span>
+                    )}
                   </span>
                   <div className="w-full h-1.5 bg-zinc-700/80 rounded-full overflow-hidden mt-1">
                     <div
                       className={`h-full transition-all duration-150 ${
-                        volumeFeedback.muted ? "bg-red-500" : "bg-red-600"
+                        volumeFeedback.muted
+                          ? "bg-red-500"
+                          : (volumeFeedback.boost || 1) > 1
+                          ? "bg-gradient-to-r from-red-600 to-amber-500"
+                          : "bg-red-600"
                       }`}
                       style={{
                         width: volumeFeedback.muted ? "0%" : `${Math.round(volumeFeedback.volume * 100)}%`,
@@ -1081,12 +1280,28 @@ export default function KodiVideoPlayer({
               </div>
             )}
 
+            {/* Feedback Visual de Ajuste de Tela */}
+            {aspectFeedback && !isMiniPlayer && (
+              <div className="absolute top-16 sm:top-20 z-30 pointer-events-none flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-black/85 backdrop-blur-md border border-white/20 text-white shadow-2xl animate-in zoom-in-75 duration-150">
+                <Ratio className="w-5 h-5 text-sky-400 shrink-0" />
+                <span className="text-xs sm:text-sm font-black">
+                  Ajuste de Tela: {aspectFeedback}
+                </span>
+              </div>
+            )}
+
             <video
               ref={videoRef}
               controls={!isMiniPlayer}
               playsInline
               poster={poster}
-              className="w-full h-full object-contain cursor-pointer"
+              className={`w-full h-full ${
+                aspectMode === "cover"
+                  ? "object-cover"
+                  : aspectMode === "fill"
+                  ? "object-fill"
+                  : "object-contain"
+              } cursor-pointer`}
               onVolumeChange={(e) => {
                 const v = e.currentTarget;
                 try {
