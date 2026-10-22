@@ -1510,31 +1510,28 @@ export default function KodiVideoPlayer({
             )}
           </div>
         ) : (
-          <div className="w-full h-full relative">
-            <iframe
-              key={currentServer?.url}
-              src={currentServer?.url}
-              title={title}
-              referrerPolicy="no-referrer"
-              sandbox="allow-scripts allow-forms allow-presentation allow-encrypted-media"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-              allowFullScreen
-              className="w-full h-full border-0"
-              onLoad={() => setIsLoading(false)}
-            />
-            {/* Aviso protetor no rodapé para modo tela cheia */}
-            {!isMiniPlayer && (
-              <div className="absolute bottom-2 left-4 right-4 z-10 hidden sm:flex items-center justify-between text-[11px] text-zinc-300 bg-black/85 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-zinc-800 pointer-events-none">
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>
-                    <b>🛡️ WMPLAY Protegido:</b> Pop-ups e abas bloqueadas automaticamente. Use os botões acima para alternar entre servidores Dublados.
-                  </span>
-                </div>
-                <span className="text-zinc-400 font-mono">
-                  {currentServer?.name}
-                </span>
-              </div>
+          <div className="w-full h-full relative flex flex-col items-center justify-center p-6 text-center bg-zinc-950">
+            <div className="w-16 h-16 rounded-2xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-500 mb-4 shadow-lg shadow-red-600/20">
+              <AlertCircle className="w-8 h-8" />
+            </div>
+            <h3 className="text-base sm:text-lg font-black text-white mb-2">
+              🛡️ Servidor Externo Bloqueado por Segurança
+            </h3>
+            <p className="text-xs sm:text-sm text-zinc-400 max-w-md mb-6 leading-relaxed">
+              O WMPLAY protege sua navegação contra anúncios desrespeitosos e bloqueou este reprodutor de terceiros.
+              Apenas transmissões 100% diretas e limpas são permitidas.
+            </p>
+            {servers.length > 1 && (
+              <button
+                onClick={() => {
+                  const nextIdx = (activeServerIndex + 1) % servers.length;
+                  onSelectServer(nextIdx);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-bold text-xs shadow-lg shadow-red-600/30 flex items-center gap-2 cursor-pointer transition-all"
+              >
+                <RotateCw className="w-4 h-4" />
+                <span>Testar Outro Servidor Direto</span>
+              </button>
             )}
           </div>
         )}

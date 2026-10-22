@@ -354,6 +354,41 @@ export default function KodiApp() {
     return () => clearInterval(interval);
   }, []);
 
+  // Bloqueador Global Ultra-Rigoroso de Pop-ups e Anúncios Indesejados
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // 1. Desativa completamente window.open para scripts maliciosos de terceiros
+    const originalOpen = window.open;
+    window.open = function (...args) {
+      console.warn("[WMPLAY AdBlock Global] Pop-up bloqueado:", args[0]);
+      return null;
+    };
+
+    // 2. Intercepta cliques em tags <a> com target="_blank"
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement)?.closest("a");
+      if (target && target.getAttribute("target") === "_blank") {
+        const href = target.getAttribute("href") || "";
+        if (
+          !href.startsWith("https://open.spotify.com") &&
+          !href.startsWith("mailto:") &&
+          !href.startsWith("tel:")
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.warn("[WMPLAY AdBlock Global] Link externo não autorizado bloqueado:", href);
+        }
+      }
+    };
+
+    window.addEventListener("click", handleGlobalClick, true);
+    return () => {
+      window.open = originalOpen;
+      window.removeEventListener("click", handleGlobalClick, true);
+    };
+  }, []);
+
   // Determine current active catalog type
   const getCurrentCatalogType = useCallback((): string => {
     if (activeAddonView === "brazucaplay" && activeBrazucaCategory) {
@@ -600,12 +635,16 @@ export default function KodiApp() {
     fetch(`/api/resolve-stream?${params.toString()}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && Array.isArray(data.servers) && data.servers.length > 0) {
+        const validDirectServers = (data.success && Array.isArray(data.servers))
+          ? data.servers.filter((s: any) => s.type === "video" && s.url && s.url !== "ERROR_UNAVAILABLE")
+          : [];
+
+        if (validDirectServers.length > 0) {
           setPlayingMedia((prev) => {
             if (!prev || prev.title !== title) return prev;
             return {
               ...prev,
-              servers: data.servers,
+              servers: validDirectServers,
               activeServerIndex: 0,
             };
           });

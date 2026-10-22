@@ -228,33 +228,6 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
     }
   }
 
-  // 2. Servidores Alternativos de Backup (Embeds)
-  // Só incluir StreamTape se não for 404 (evita erro de arquivo excluído)
-  if (dub.streamtape && tapeValid) {
-    servers.push({
-      name: `1. ${labelPrefix} (StreamTape Reserva)`,
-      url: `https://streamtape.com/e/${dub.streamtape}`,
-      type: 'embed',
-      isDubbed: true
-    });
-  }
-  if (dub.mixdrop) {
-    servers.push({
-      name: `2. ${labelPrefix} (MixDrop Reserva)`,
-      url: `https://mxdrop.click/e/${dub.mixdrop}`,
-      type: 'embed',
-      isDubbed: true
-    });
-  }
-  if (dub.byse) {
-    servers.push({
-      name: `3. ${labelPrefix} (Byse Reserva)`,
-      url: `https://bysebuho.com/e/${dub.byse}`,
-      type: 'embed',
-      isDubbed: true
-    });
-  }
-
   return servers;
 }
 
