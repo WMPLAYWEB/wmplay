@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import WmplayLogo from "@/components/WmplayLogo";
+import Ps1Button from "@/components/Ps1Button";
 import {
   X,
   Play,
@@ -467,7 +468,7 @@ export default function KodiVideoPlayer({
         }
       }
 
-      // Play / Pause no controle remoto e teclado (Espaço, K, MediaPlayPause)
+      // Play / Pause no controle remoto, teclado e PS1 (Cruz / X, Enter, Espaço, K, MediaPlayPause)
       if (
         e.key === "MediaPlayPause" ||
         e.keyCode === 179 ||
@@ -476,12 +477,26 @@ export default function KodiVideoPlayer({
         e.code === "Space" ||
         e.key === " " ||
         e.key === "k" ||
-        e.key === "K"
+        e.key === "K" ||
+        e.key === "x" ||
+        e.key === "X" ||
+        e.key === "Enter" ||
+        e.keyCode === 13
       ) {
         const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
         if (tag !== "input" && tag !== "textarea") {
           e.preventDefault();
           togglePlay();
+          return;
+        }
+      }
+
+      // Botão PS1 Círculo (● / C) - Fechar Player
+      if (e.key === "c" || e.key === "C") {
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag !== "input" && tag !== "textarea") {
+          e.preventDefault();
+          onClose();
           return;
         }
       }
@@ -506,8 +521,8 @@ export default function KodiVideoPlayer({
         }
       }
 
-      // Alternar Proporção / Zoom de Tela (Tecla Z)
-      if (e.key === "z" || e.key === "Z") {
+      // Alternar Proporção / Zoom de Tela - Botão PS1 Quadrado (Tecla Z / S)
+      if (e.key === "z" || e.key === "Z" || e.key === "s" || e.key === "S") {
         const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
         if (tag !== "input" && tag !== "textarea") {
           e.preventDefault();
@@ -885,6 +900,16 @@ export default function KodiVideoPlayer({
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   🛡️ Proteção Sem Anúncios Ativa
                 </span>
+
+                {/* Legenda de Botões PS1 */}
+                <div className="hidden lg:flex items-center gap-2.5 px-3 py-1 rounded-full bg-zinc-950/90 border border-zinc-700/80 text-[10px] font-bold text-zinc-300 shadow-sm">
+                  <span className="flex items-center gap-1"><Ps1Button type="cross" size="xs" /> Play/Pause</span>
+                  <span className="flex items-center gap-1"><Ps1Button type="circle" size="xs" /> Sair</span>
+                  {seriesSeasons && seriesSeasons.length > 0 && (
+                    <span className="flex items-center gap-1"><Ps1Button type="triangle" size="xs" /> Episódios</span>
+                  )}
+                  <span className="flex items-center gap-1"><Ps1Button type="square" size="xs" /> Formato</span>
+                </div>
               </div>
               <h2 className="text-base sm:text-xl md:text-2xl font-black text-white drop-shadow truncate mt-0.5">
                 {title}

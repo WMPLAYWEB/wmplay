@@ -62,6 +62,8 @@ import {
 } from "@/data/brazuca_full";
 import KodiVideoPlayer from "@/components/KodiVideoPlayer";
 import WmplayLogo from "@/components/WmplayLogo";
+import Ps1Button from "@/components/Ps1Button";
+import Ps1ControllerHud from "@/components/Ps1ControllerHud";
 
 type CategoryType = "movies" | "tv" | "music" | "live" | "addons";
 
@@ -1015,7 +1017,6 @@ export default function KodiApp() {
       const isUp = key === "ArrowUp" || keyCode === 38;
       const isRight = key === "ArrowRight" || keyCode === 39;
       const isDown = key === "ArrowDown" || keyCode === 40;
-      const isEnter = key === "Enter" || keyCode === 13;
       const isBack =
         key === "Escape" ||
         key === "Backspace" ||
@@ -1024,7 +1025,17 @@ export default function KodiApp() {
         keyCode === 461 ||
         keyCode === 10009;
 
-      if (isBack) {
+      // Botões do PS1:
+      // ✖ Cruz (Azul): Confirmar / Assistir / Abrir
+      // ● Círculo (Vermelho): Voltar / Fechar
+      // ■ Quadrado (Rosa): Favoritar / Minha Lista
+      // ▲ Triângulo (Verde): Episódios / Alternar Temporada / Menu
+      const isCross = key === "Enter" || key === "x" || key === "X" || keyCode === 13;
+      const isCircle = isBack || key === "c" || key === "C";
+      const isSquare = key === "f" || key === "F" || key === "s" || key === "S" || keyCode === 70 || keyCode === 83;
+      const isTriangle = key === "e" || key === "E" || key === "t" || key === "T" || keyCode === 69 || keyCode === 84;
+
+      if (isCircle) {
         if (selectedSeriesItem) {
           e.preventDefault();
           setSelectedSeriesItem(null);
@@ -1037,7 +1048,29 @@ export default function KodiApp() {
         }
       }
 
-      if (!isLeft && !isRight && !isUp && !isDown && !isEnter) return;
+      if (isSquare) {
+        if (selectedSeriesItem) {
+          e.preventDefault();
+          toggleFavoriteCatalog(selectedSeriesItem);
+          return;
+        }
+        const items = catalogGenre === "favoritos" ? favoriteCatalogItems : catalogItems;
+        if (tvFocusIndex !== null && items[tvFocusIndex]) {
+          e.preventDefault();
+          toggleFavoriteCatalog(items[tvFocusIndex]);
+          return;
+        }
+      }
+
+      if (isTriangle) {
+        if (selectedSeriesItem && seriesSeasons.length > 0) {
+          e.preventDefault();
+          setActiveSeasonTab((prev) => (prev >= seriesSeasons.length ? 1 : prev + 1));
+          return;
+        }
+      }
+
+      if (!isLeft && !isRight && !isUp && !isDown && !isCross) return;
 
       // Navegação dentro do Modal de Episódios de Série
       if (selectedSeriesItem) {
@@ -1046,7 +1079,7 @@ export default function KodiApp() {
         e.preventDefault();
         setIsTvModeActive(true);
 
-        if (isEnter) {
+        if (isCross) {
           if (tvFocusIndex !== null && episodes[tvFocusIndex]) {
             const ep = episodes[tvFocusIndex];
             handlePlayMedia(
@@ -1082,7 +1115,7 @@ export default function KodiApp() {
       e.preventDefault();
       setIsTvModeActive(true);
 
-      if (isEnter) {
+      if (isCross) {
         if (tvFocusIndex !== null && items[tvFocusIndex]) {
           const item = items[tvFocusIndex];
           if (
@@ -1145,6 +1178,71 @@ export default function KodiApp() {
       }
     }
   }, [tvFocusIndex]);
+
+  // Suporte Nativo a Controles Físicos (PlayStation 1/4/5 USB, Gamepad Bluetooth, etc.)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let animId: number;
+    let lastButtonTime = 0;
+
+    const pollGamepads = () => {
+      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+      const gp = Array.from(gamepads).find((g) => g && g.connected);
+
+      if (gp) {
+        const now = Date.now();
+        if (now - lastButtonTime > 200) {
+          // Mapeamento dos botões clássicos do PS1:
+          // Botão 0: ✖ Cruz (Enter / Selecionar)
+          // Botão 1: ● Círculo (Escape / Voltar)
+          // Botão 2: ■ Quadrado (F / Favoritar)
+          // Botão 3: ▲ Triângulo (E / Episódios / Menu)
+          const btnCross = gp.buttons[0]?.pressed;
+          const btnCircle = gp.buttons[1]?.pressed;
+          const btnSquare = gp.buttons[2]?.pressed;
+          const btnTriangle = gp.buttons[3]?.pressed;
+
+          // D-Pad e Analógico Esquerdo
+          const dpadUp = gp.buttons[12]?.pressed || (gp.axes[1] !== undefined && gp.axes[1] < -0.5);
+          const dpadDown = gp.buttons[13]?.pressed || (gp.axes[1] !== undefined && gp.axes[1] > 0.5);
+          const dpadLeft = gp.buttons[14]?.pressed || (gp.axes[0] !== undefined && gp.axes[0] < -0.5);
+          const dpadRight = gp.buttons[15]?.pressed || (gp.axes[0] !== undefined && gp.axes[0] > 0.5);
+
+          if (btnCross) {
+            lastButtonTime = now;
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", keyCode: 13, bubbles: true }));
+          } else if (btnCircle) {
+            lastButtonTime = now;
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", keyCode: 27, bubbles: true }));
+          } else if (btnSquare) {
+            lastButtonTime = now;
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "f", keyCode: 70, bubbles: true }));
+          } else if (btnTriangle) {
+            lastButtonTime = now;
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "e", keyCode: 69, bubbles: true }));
+          } else if (dpadUp) {
+            lastButtonTime = now;
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp", keyCode: 38, bubbles: true }));
+          } else if (dpadDown) {
+            lastButtonTime = now;
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", keyCode: 40, bubbles: true }));
+          } else if (dpadLeft) {
+            lastButtonTime = now;
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", keyCode: 37, bubbles: true }));
+          } else if (dpadRight) {
+            lastButtonTime = now;
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", keyCode: 39, bubbles: true }));
+          }
+        }
+      }
+
+      animId = requestAnimationFrame(pollGamepads);
+    };
+
+    animId = requestAnimationFrame(pollGamepads);
+    return () => cancelAnimationFrame(animId);
+  }, []);
 
   const GENRES_LIST = [
     "Todos",
@@ -2309,8 +2407,14 @@ export default function KodiApp() {
                                 </p>
                               </div>
                             </div>
-                            <div className="w-8 h-8 rounded-full bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-600 group-hover:bg-red-600 group-hover:text-white transition-all shrink-0 ml-2">
-                              <Play className="w-4 h-4 fill-current ml-0.5" />
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 ml-2">
+                              {isEpTvFocused ? (
+                                <Ps1Button type="cross" size="sm" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-600 group-hover:bg-red-600 group-hover:text-white transition-all">
+                                  <Play className="w-4 h-4 fill-current ml-0.5" />
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -2971,6 +3075,46 @@ export default function KodiApp() {
       </nav>
 
       {/* ============================================================== */}
+      {/* HUD FLUTUANTE DE ATALHOS DO CONTROLE PS1                       */}
+      {/* ============================================================== */}
+      {isTvModeActive && tvFocusIndex !== null && !playingMedia && (
+        <Ps1ControllerHud
+          mode={selectedSeriesItem ? "episodes" : "catalog"}
+          isLight={isLight}
+          focusedTitle={
+            selectedSeriesItem
+              ? seriesSeasons.find((s) => s.seasonNumber === activeSeasonTab)?.episodes[tvFocusIndex]?.title
+              : (catalogGenre === "favoritos" ? favoriteCatalogItems : catalogItems)[tvFocusIndex]?.title
+          }
+          onCross={() => {
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", keyCode: 13, bubbles: true }));
+          }}
+          onCircle={() => {
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", keyCode: 27, bubbles: true }));
+          }}
+          onTriangle={() => {
+            if (selectedSeriesItem && seriesSeasons.length > 0) {
+              setActiveSeasonTab((prev) => (prev >= seriesSeasons.length ? 1 : prev + 1));
+            } else {
+              setCatalogSearch("");
+              const searchInput = document.querySelector('input[placeholder*="Buscar"]') as HTMLInputElement;
+              if (searchInput) searchInput.focus();
+            }
+          }}
+          onSquare={() => {
+            if (selectedSeriesItem) {
+              toggleFavoriteCatalog(selectedSeriesItem);
+            } else {
+              const items = catalogGenre === "favoritos" ? favoriteCatalogItems : catalogItems;
+              if (tvFocusIndex !== null && items[tvFocusIndex]) {
+                toggleFavoriteCatalog(items[tvFocusIndex]);
+              }
+            }
+          }}
+        />
+      )}
+
+      {/* ============================================================== */}
       {/* MODAL PLAYER DE VÍDEO UNIVERSAL COM HLS.JS + SERVIDORES AUTO   */}
       {/* ============================================================== */}
       {playingMedia && (
@@ -3220,8 +3364,13 @@ function CatalogBrowseView({
               }`}
               title="Navegue no catálogo usando as setas do controle da Smart TV ou teclado (Enter para assistir)"
             >
-              <Tv className="w-3.5 h-3.5 text-red-500" />
-              <span>{isTvModeActive && tvFocusIndex !== null ? "🎮 Controle TV Ativo" : "🎮 Modo Smart TV"}</span>
+              <div className="flex items-center gap-1 shrink-0">
+                <Ps1Button type="triangle" size="xs" />
+                <Ps1Button type="circle" size="xs" />
+                <Ps1Button type="cross" size="xs" />
+                <Ps1Button type="square" size="xs" />
+              </div>
+              <span>{isTvModeActive && tvFocusIndex !== null ? "Controle PS1 Ativo" : "Controle PS1 / TV"}</span>
             </button>
           )}
 
@@ -3417,10 +3566,17 @@ function CatalogBrowseView({
                     )}
                   </div>
 
-                  {/* Indicador de Foco do Controle Remoto Smart TV */}
+                  {/* Indicador de Foco com Botões Oficiais PS1 */}
                   {isTvFocused && (
-                    <div className="absolute bottom-2 left-2 right-2 z-30 bg-red-600 text-white text-[10px] sm:text-xs font-black py-1 px-2 rounded-lg text-center shadow-lg animate-pulse flex items-center justify-center gap-1">
-                      <span>Pressione ENTER</span>
+                    <div className="absolute bottom-2 left-2 right-2 z-30 bg-zinc-950/95 border border-zinc-700/80 text-white text-[10px] sm:text-[11px] font-black py-1 px-2 rounded-xl text-center shadow-2xl flex items-center justify-center gap-2.5 backdrop-blur-md animate-pulse">
+                      <div className="flex items-center gap-1">
+                        <Ps1Button type="cross" size="xs" />
+                        <span className="text-blue-400 font-bold">Assistir</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Ps1Button type="square" size="xs" />
+                        <span className="text-pink-400 font-bold">Favoritar</span>
+                      </div>
                     </div>
                   )}
 
