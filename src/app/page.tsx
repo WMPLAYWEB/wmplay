@@ -50,7 +50,8 @@ import {
   Sun,
   Moon,
   Zap,
-  History
+  History,
+  Cast
 } from "lucide-react";
 import { SAMPLE_MEDIA, MediaItem } from "@/data/media";
 import { INITIAL_ADDONS, Addon } from "@/data/addons";
@@ -64,8 +65,9 @@ import KodiVideoPlayer from "@/components/KodiVideoPlayer";
 import WmplayLogo from "@/components/WmplayLogo";
 import Ps1Button from "@/components/Ps1Button";
 import Ps1ControllerHud from "@/components/Ps1ControllerHud";
+import CastConnectView from "@/components/CastConnectView";
 
-type CategoryType = "movies" | "tv" | "music" | "live" | "addons";
+type CategoryType = "movies" | "tv" | "music" | "live" | "addons" | "cast";
 
 interface MenuItem {
   id: CategoryType;
@@ -79,6 +81,7 @@ const MENU_ITEMS: MenuItem[] = [
   { id: "music", label: "Música", icon: Music },
   { id: "live", label: "TV ao Vivo (154 ch)", icon: Radio },
   { id: "addons", label: "Add-ons (Brazuca Play)", icon: Grid },
+  { id: "cast", label: "Transmitir para TV", icon: Cast },
 ];
 
 export interface CatalogItem {
@@ -166,6 +169,16 @@ export default function KodiApp() {
       if (savedFavCat) setFavoriteCatalogItems(JSON.parse(savedFavCat));
       const savedRecent = localStorage.getItem("wmplay_recent_searches");
       if (savedRecent) setRecentSearches(JSON.parse(savedRecent));
+
+      // Verificar se o usuário acessou via QR Code ou link de pareamento ?cast=...
+      if (typeof window !== "undefined") {
+        const urlParams = new URLSearchParams(window.location.search);
+        const castCode = urlParams.get("cast");
+        if (castCode) {
+          localStorage.setItem("wmplay_last_tv_code", castCode);
+          setActiveCategory("cast");
+        }
+      }
     } catch {}
   }, []);
 
@@ -3022,6 +3035,19 @@ export default function KodiApp() {
                 ))}
               </div>
             </div>
+          ) : activeCategory === "cast" ? (
+            /* ============================================================== */
+            /* SEÇÃO 6: TRANSMITIR DO CELULAR PARA A TV (SEM DELAY E SEM TRAVA) */
+            /* ============================================================== */
+            <CastConnectView
+              isLight={isLight}
+              playingMedia={playingMedia}
+              favoriteCatalogItems={favoriteCatalogItems}
+              catalogItems={catalogItems}
+              onPlayMediaOnLocal={(title, synopsis, thumbnail, tmdb_id, link, season, episode) => {
+                handlePlayMedia(title, synopsis, thumbnail, tmdb_id ? String(tmdb_id) : undefined, link, season, episode);
+              }}
+            />
           ) : (
             /* Fallback Mídia Padrão */
             <div className={`text-center py-20 ${isLight ? "text-zinc-600" : "text-slate-400"}`}>
@@ -3067,7 +3093,19 @@ export default function KodiApp() {
               <span className={`text-[10px] mt-0.5 tracking-tight font-bold ${
                 isActive ? "text-red-600" : isLight ? "text-zinc-800" : "text-slate-400"
               }`}>
-                {item.label}
+                {item.id === "movies"
+                  ? "Filmes"
+                  : item.id === "tv"
+                  ? "Séries"
+                  : item.id === "music"
+                  ? "Música"
+                  : item.id === "live"
+                  ? "Ao Vivo"
+                  : item.id === "addons"
+                  ? "Add-ons"
+                  : item.id === "cast"
+                  ? "Transmitir"
+                  : item.label}
               </span>
             </button>
           );

@@ -28,7 +28,11 @@ import {
   Ratio,
   Sliders,
   Check,
-  ListVideo
+  ListVideo,
+  Cast,
+  Wifi,
+  Smartphone,
+  Tv
 } from "lucide-react";
 
 export interface ServerOption {
@@ -118,6 +122,78 @@ export default function KodiVideoPlayer({
   useEffect(() => {
     if (currentSeason) setDrawerSeasonTab(currentSeason);
   }, [currentSeason]);
+
+  // Transmissão Direta para Smart TV (WMPLAY Connect / Chromecast / AirPlay)
+  const [isCastModalOpen, setIsCastModalOpen] = useState(false);
+  const [castTvCode, setCastTvCode] = useState("");
+  const [isSendingCast, setIsSendingCast] = useState(false);
+  const [castSuccessMsg, setCastSuccessMsg] = useState<string | null>(null);
+  const [castErrorMsg, setCastErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isCastModalOpen && typeof window !== "undefined") {
+      const saved = localStorage.getItem("wmplay_last_tv_code");
+      if (saved && !castTvCode) setCastTvCode(saved);
+    }
+  }, [isCastModalOpen, castTvCode]);
+
+  const handleSendCurrentVideoToTv = async (targetCode?: string) => {
+    const code = (targetCode || castTvCode).trim().replace(/\D/g, "");
+    if (code.length < 5) {
+      setCastErrorMsg("Digite o código de 6 dígitos exibido na TV.");
+      return;
+    }
+
+    setIsSendingCast(true);
+    setCastErrorMsg(null);
+    setCastSuccessMsg(null);
+
+    try {
+      const videoEl = videoRef.current;
+      const curTime = videoEl ? videoEl.currentTime : 0;
+
+      const res = await fetch("/api/cast/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "command",
+          code,
+          command: "play_media",
+          payload: {
+            media: {
+              title,
+              synopsis: info,
+              thumbnail: poster,
+              link: currentServer?.url,
+              season: currentSeason,
+              episode: currentEpisode,
+            },
+            currentTime: curTime,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "TV não encontrada com este código.");
+      }
+
+      localStorage.setItem("wmplay_last_tv_code", code);
+
+      if (videoEl) videoEl.pause();
+      setIsPlaying(false);
+
+      setCastSuccessMsg(`Reproduzindo na TV (#${code}) em Full HD sem delay!`);
+
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate([40, 80, 40]);
+      }
+    } catch (err: any) {
+      setCastErrorMsg(err.message || "Não foi possível transmitir para a TV.");
+    } finally {
+      setIsSendingCast(false);
+    }
+  };
 
   // Novos Recursos Avançados do Player
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
@@ -1064,6 +1140,20 @@ export default function KodiVideoPlayer({
                 <span className="hidden lg:inline text-xs font-bold">Mini Player</span>
               </button>
 
+              {/* Botão Transmitir para Smart TV (Sem Travamento) */}
+              <button
+                onClick={() => {
+                  setIsCastModalOpen(true);
+                  setCastSuccessMsg(null);
+                  setCastErrorMsg(null);
+                }}
+                className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-emerald-400 transition-all border border-zinc-800 shadow-md cursor-pointer group"
+                title="Transmitir para Smart TV (Chromecast, AirPlay ou WMPLAY Connect)"
+              >
+                <Cast className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline text-xs font-bold text-emerald-400">Transmitir</span>
+              </button>
+
               {/* Botão Picture-in-Picture Nativo */}
               {currentServer?.type === "video" && (
                 <button
@@ -1676,6 +1766,135 @@ export default function KodiVideoPlayer({
               {srv.name}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL DE TRANSMISSÃO DIRETA PARA SMART TV                      */}
+      {/* ============================================================== */}
+      {isCastModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="max-w-md w-full bg-zinc-950 border border-zinc-800 rounded-3xl p-6 shadow-2xl space-y-5 text-white relative">
+            <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <Cast className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black">Transmitir para Smart TV</h3>
+                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">
+                    Zero Delay · Hardware Nativo
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsCastModalOpen(false)}
+                className="p-1.5 rounded-xl hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Sucesso na Transmissão */}
+            {castSuccessMsg && (
+              <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-2">
+                <Check className="w-4 h-4 shrink-0 text-emerald-400" />
+                <span>{castSuccessMsg}</span>
+              </div>
+            )}
+
+            {/* Erro */}
+            {castErrorMsg && (
+              <div className="p-3.5 rounded-2xl bg-red-950/80 border border-red-500/40 text-red-300 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                <span>{castErrorMsg}</span>
+              </div>
+            )}
+
+            {/* Transmissão Direta via WMPLAY Connect */}
+            <div className="space-y-3">
+              <label className="block text-xs font-black uppercase text-zinc-400 tracking-wider">
+                Código da TV (6 Dígitos)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={castTvCode}
+                  onChange={(e) => {
+                    setCastTvCode(e.target.value.replace(/\D/g, ""));
+                    setCastErrorMsg(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSendCurrentVideoToTv();
+                  }}
+                  placeholder="Ex: 489210"
+                  className="flex-1 py-3 px-4 font-mono font-black text-center text-lg rounded-2xl bg-zinc-900 border border-zinc-700 text-white outline-none focus:border-red-500"
+                />
+                <button
+                  onClick={() => handleSendCurrentVideoToTv()}
+                  disabled={isSendingCast || castTvCode.length < 5}
+                  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white text-xs font-black shadow-lg shadow-red-600/30 transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                >
+                  {isSendingCast ? "Enviando..." : "Enviar pra TV"}
+                </button>
+              </div>
+              <p className="text-[11px] text-zinc-500 leading-relaxed">
+                Abra o WMPLAY na TV e veja o código na aba <strong>Transmitir</strong> ou em{" "}
+                <span className="text-zinc-300 font-mono">/tv</span>.
+              </p>
+            </div>
+
+            {/* Métodos Nativos */}
+            <div className="pt-2 border-t border-zinc-800/80 space-y-2">
+              <span className="text-[10px] font-black uppercase text-zinc-500 tracking-wider block">
+                Outros Métodos Nativos:
+              </span>
+
+              <div className="grid grid-cols-2 gap-2">
+                {/* Google Cast */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== "undefined" && (window as any).cast?.framework) {
+                      try {
+                        (window as any).cast.framework.CastContext.getInstance().requestSession();
+                      } catch {
+                        alert("Iniciando busca por Chromecast...");
+                      }
+                    } else {
+                      alert(
+                        "Para usar o Chromecast, abra o WMPLAY no Google Chrome em uma rede Wi-Fi com o Chromecast conectado."
+                      );
+                    }
+                  }}
+                  className="p-3 rounded-2xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer"
+                >
+                  <Cast className="w-4 h-4 text-blue-400" />
+                  <span>Chromecast</span>
+                </button>
+
+                {/* Apple AirPlay */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const videoEl = videoRef.current;
+                    if (videoEl && (videoEl as any).webkitShowPlaybackTargetPicker) {
+                      (videoEl as any).webkitShowPlaybackTargetPicker();
+                    } else {
+                      alert("Apple AirPlay disponível no Safari (iOS / Mac).");
+                    }
+                  }}
+                  className="p-3 rounded-2xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer"
+                >
+                  <Tv className="w-4 h-4 text-slate-300" />
+                  <span>AirPlay</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
