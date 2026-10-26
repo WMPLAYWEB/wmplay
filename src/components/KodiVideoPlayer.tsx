@@ -285,6 +285,13 @@ export default function KodiVideoPlayer({
   const lastToggleTimeRef = useRef<number>(0);
   const lastNativePauseTimeRef = useRef<number>(0);
 
+  // Feedback Visual Central Animado (Play / Pause ao tocar ou clicar no meio da tela)
+  const [centerFeedback, setCenterFeedback] = useState<"play" | "pause" | null>(null);
+  const centerFeedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const touchActiveUntilRef = useRef<number>(0);
+  const touchStartPosRef = useRef<{ x: number; y: number; time: number }>({ x: 0, y: 0, time: 0 });
+  const singleTapTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // Estados e Referências de Volume Persistente
   const [currentVolume, setCurrentVolume] = useState<number>(1);
   const [volumeFeedback, setVolumeFeedback] = useState<{ volume: number; muted: boolean; boost?: number } | null>(null);
@@ -457,27 +464,82 @@ export default function KodiVideoPlayer({
     }, 700);
   };
 
-  // Detector de toque duplo na tela (YouTube-style para celulares e tablets)
-  const handleVideoTouch = (e: React.TouchEvent<HTMLDivElement>) => {
+  // Exibir feedback animado central ao pausar ou reproduzir
+  const showCenterFeedback = (action: "play" | "pause") => {
+    setCenterFeedback(action);
+    if (centerFeedbackTimeoutRef.current) clearTimeout(centerFeedbackTimeoutRef.current);
+    centerFeedbackTimeoutRef.current = setTimeout(() => {
+      setCenterFeedback(null);
+    }, 600);
+  };
+
+  // Alternar reproduzir / pausar com feedback visual no centro da tela
+  const togglePlayWithFeedback = () => {
+    if (!videoRef.current) return;
+    const willPlay = videoRef.current.paused;
+    togglePlay();
+    showCenterFeedback(willPlay ? "play" : "pause");
+  };
+
+  // Toque na tela em Celulares / Tablets (Toque simples = Play/Pause com animação, Toque duplo = Seek -10s/+10s)
+  const handleScreenTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     if (e.touches.length !== 1) return;
     const touch = e.touches[0];
+    touchStartPosRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+    touchActiveUntilRef.current = Date.now() + 650;
+  };
+
+  const handleScreenTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchActiveUntilRef.current = Date.now() + 650;
+    if (e.changedTouches.length !== 1) return;
+    const touch = e.changedTouches[0];
+    const start = touchStartPosRef.current;
+    const diffX = Math.abs(touch.clientX - start.x);
+    const diffY = Math.abs(touch.clientY - start.y);
+
+    // Se o dedo moveu mais de 16px, é um gesto de deslizar ou rolar a página
+    if (diffX > 16 || diffY > 16) {
+      return;
+    }
+
     const now = Date.now();
-    const timeDiff = now - lastTapRef.current.time;
     const rect = e.currentTarget.getBoundingClientRect();
     const touchX = touch.clientX - rect.left;
     const isLeftSide = touchX < rect.width / 2;
+    const timeSinceLastTap = now - lastTapRef.current.time;
 
-    if (timeDiff > 40 && timeDiff < 320) {
-      // Toque duplo detectado!
+    // Toque duplo detectado (-10s na esquerda, +10s na direita)
+    if (timeSinceLastTap > 50 && timeSinceLastTap < 300) {
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+        singleTapTimerRef.current = null;
+      }
+      lastTapRef.current = { time: 0, x: 0 };
       if (isLeftSide) {
         handleSeekDelta(-10);
       } else {
         handleSeekDelta(10);
       }
-      lastTapRef.current = { time: 0, x: 0 };
-    } else {
-      lastTapRef.current = { time: now, x: touchX };
+      return;
     }
+
+    // Toque simples no meio da tela: aguarda 220ms para confirmar se haverá segundo toque
+    lastTapRef.current = { time: now, x: touchX };
+    if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
+    singleTapTimerRef.current = setTimeout(() => {
+      singleTapTimerRef.current = null;
+      lastTapRef.current = { time: 0, x: 0 };
+      togglePlayWithFeedback();
+    }, 220);
+  };
+
+  // Clique de mouse no PC / Desktop ou controle remoto air mouse (Ação imediata sem delay)
+  const handleScreenClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Ignora cliques sintetizados após toques na tela móvel
+    if (Date.now() < touchActiveUntilRef.current) {
+      return;
+    }
+    togglePlayWithFeedback();
   };
 
   // Bloqueador de Anúncios Ativo Ultra-Rigoroso (Intercepta pop-ups, abas e links terceiros abusivos)
@@ -562,7 +624,7 @@ export default function KodiVideoPlayer({
         const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
         if (tag !== "input" && tag !== "textarea") {
           e.preventDefault();
-          togglePlay();
+          togglePlayWithFeedback();
           return;
         }
       }
@@ -1342,8 +1404,7 @@ export default function KodiVideoPlayer({
         {/* Player: Stream de Vídeo Direto ou Iframe Embed */}
         {currentServer?.type === "video" ? (
           <div
-            className="w-full h-full relative group flex items-center justify-center"
-            onTouchStart={handleVideoTouch}
+            className="w-full h-full relative group flex items-center justify-center overflow-hidden"
           >
             {/* Banner de Retomada de Reprodução */}
             {showResumeBanner && !isMiniPlayer && (
@@ -1462,6 +1523,19 @@ export default function KodiVideoPlayer({
               </div>
             )}
 
+            {/* Feedback Visual Central Animado de Play / Pause */}
+            {centerFeedback && !isMiniPlayer && (
+              <div className="absolute z-30 pointer-events-none flex items-center justify-center animate-in zoom-in-50 fade-in duration-150">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-black/80 backdrop-blur-md border border-white/25 text-white flex items-center justify-center shadow-2xl">
+                  {centerFeedback === "play" ? (
+                    <Play className="w-10 h-10 sm:w-12 sm:h-12 fill-white text-white ml-1 animate-pulse" />
+                  ) : (
+                    <Pause className="w-10 h-10 sm:w-12 sm:h-12 fill-white text-white animate-pulse" />
+                  )}
+                </div>
+              </div>
+            )}
+
             <video
               ref={videoRef}
               controls={!isMiniPlayer}
@@ -1484,21 +1558,15 @@ export default function KodiVideoPlayer({
                 setIsMuted(v.muted);
               }}
               onClick={(e) => {
-                const now = Date.now();
-                // Se o vídeo foi pausado pelos controles nativos nos últimos 400ms, não desfazer a pausa!
-                if (now - lastNativePauseTimeRef.current < 400) {
+                if (Date.now() < touchActiveUntilRef.current) {
                   return;
                 }
-                // Em tela com controles nativos, ignorar cliques nos últimos 95px (barra de controle nativa)
-                // para não anular o clique no botão nativo de Pause/Play e na barra de progresso
-                if (!isMiniPlayer) {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const clickFromBottom = rect.bottom - e.clientY;
-                  if (clickFromBottom <= 95) {
-                    return;
-                  }
+                const rect = e.currentTarget.getBoundingClientRect();
+                const clickFromBottom = rect.bottom - e.clientY;
+                if (clickFromBottom <= 80) {
+                  return;
                 }
-                togglePlay();
+                togglePlayWithFeedback();
               }}
               onTimeUpdate={(e) => {
                 const v = e.currentTarget;
@@ -1546,6 +1614,17 @@ export default function KodiVideoPlayer({
               }}
             />
 
+            {/* Camada Transparente de Toque e Clique no Meio da Tela (Pausar / Reproduzir + Double Tap Buscar) */}
+            {!isMiniPlayer && !isLoading && !hasError && (
+              <div
+                className="absolute inset-x-0 top-0 bottom-20 z-10 cursor-pointer pointer-events-auto select-none"
+                onClick={handleScreenClick}
+                onTouchStart={handleScreenTouchStart}
+                onTouchEnd={handleScreenTouchEnd}
+                title={isPlaying ? "Clique ou toque para pausar" : "Clique ou toque para reproduzir"}
+              />
+            )}
+
             {/* Controles de Sobreposição no Mini Player ao passar o mouse ou tocar */}
             {isMiniPlayer && (
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 pointer-events-none z-30">
@@ -1592,9 +1671,9 @@ export default function KodiVideoPlayer({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  togglePlay();
+                  togglePlayWithFeedback();
                 }}
-                className="absolute z-10 w-20 h-20 rounded-full bg-black/60 hover:bg-red-600/90 text-white flex items-center justify-center shadow-2xl backdrop-blur-md border border-white/20 transition-all hover:scale-110 cursor-pointer pointer-events-auto group/btn"
+                className="absolute z-20 w-20 h-20 rounded-full bg-black/60 hover:bg-red-600/90 text-white flex items-center justify-center shadow-2xl backdrop-blur-md border border-white/20 transition-all hover:scale-110 cursor-pointer pointer-events-auto group/btn"
                 title="Continuar Assistindo (Play)"
               >
                 <Play className="w-10 h-10 fill-white text-white ml-1 group-hover/btn:scale-110 transition-transform" />
@@ -1607,9 +1686,9 @@ export default function KodiVideoPlayer({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  togglePlay();
+                  togglePlayWithFeedback();
                 }}
-                className="absolute z-10 flex flex-col items-center justify-center gap-3 p-5 sm:p-7 rounded-2xl bg-black/70 hover:bg-black/90 backdrop-blur-md border border-white/20 transition-all hover:scale-105 cursor-pointer shadow-2xl group/playbtn"
+                className="absolute z-20 flex flex-col items-center justify-center gap-3 p-5 sm:p-7 rounded-2xl bg-black/70 hover:bg-black/90 backdrop-blur-md border border-white/20 transition-all hover:scale-105 cursor-pointer shadow-2xl group/playbtn"
                 title="Clique para Iniciar Reprodução"
               >
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-red-600 group-hover/playbtn:bg-red-500 flex items-center justify-center shadow-lg shadow-red-600/50 transition-transform">
