@@ -67,7 +67,7 @@ import Ps1Button from "@/components/Ps1Button";
 import Ps1ControllerHud from "@/components/Ps1ControllerHud";
 import CastConnectView from "@/components/CastConnectView";
 
-type CategoryType = "movies" | "tv" | "music" | "live" | "addons" | "cast";
+type CategoryType = "movies" | "tv" | "releases" | "music" | "live" | "addons" | "cast";
 
 interface MenuItem {
   id: CategoryType;
@@ -78,10 +78,10 @@ interface MenuItem {
 const MENU_ITEMS: MenuItem[] = [
   { id: "movies", label: "Filmes (17.8k+)", icon: Film },
   { id: "tv", label: "Séries (13k+)", icon: Tv },
+  { id: "releases", label: "Lançamentos (1.1k+)", icon: Sparkles },
   { id: "music", label: "Música", icon: Music },
   { id: "live", label: "TV ao Vivo (154 ch)", icon: Radio },
   { id: "addons", label: "Add-ons (Brazuca Play)", icon: Grid },
-  { id: "cast", label: "Transmitir para TV", icon: Cast },
 ];
 
 export interface CatalogItem {
@@ -419,6 +419,7 @@ export default function KodiApp() {
     }
     if (activeCategory === "movies") return "filmes";
     if (activeCategory === "tv") return "series";
+    if (activeCategory === "releases") return "lancamentos";
     return "";
   }, [activeAddonView, activeBrazucaCategory, activeCategory]);
 
@@ -492,6 +493,7 @@ export default function KodiApp() {
     const isSearchingCatalog =
       activeCategory === "movies" ||
       activeCategory === "tv" ||
+      activeCategory === "releases" ||
       (activeAddonView === "brazucaplay" &&
         activeBrazucaCategory?.type !== "channels" &&
         activeBrazucaCategory?.type !== "settings");
@@ -500,7 +502,7 @@ export default function KodiApp() {
 
     const timer = setTimeout(() => {
       // Se estiver pesquisando por termo, buscar em 'all' caso esteja em movies ou tv para não limitar filmes/séries
-      const type = (activeCategory === "movies" || activeCategory === "tv" || isBrazucaRootSearching)
+      const type = (activeCategory === "movies" || activeCategory === "tv" || activeCategory === "releases" || isBrazucaRootSearching)
         ? "all"
         : (getCurrentCatalogType() || "all");
       setCatalogPage(1);
@@ -987,13 +989,14 @@ export default function KodiApp() {
   const isBrowsingCatalog =
     activeCategory === "movies" ||
     activeCategory === "tv" ||
+    activeCategory === "releases" ||
     isBrazucaRootSearching ||
     (activeAddonView === "brazucaplay" &&
       activeBrazucaCategory &&
       activeBrazucaCategory.type !== "channels" &&
       activeBrazucaCategory.type !== "settings");
 
-  const currentCatalogType = (catalogSearch.trim() && (activeCategory === "movies" || activeCategory === "tv" || isBrazucaRootSearching))
+  const currentCatalogType = (catalogSearch.trim() && (activeCategory === "movies" || activeCategory === "tv" || activeCategory === "releases" || isBrazucaRootSearching))
     ? "all"
     : (getCurrentCatalogType() || (isBrazucaRootSearching ? "all" : ""));
   const isLight = theme === "offwhite";
@@ -2510,7 +2513,7 @@ export default function KodiApp() {
                 />
               )}
             </div>
-          ) : activeCategory === "movies" || activeCategory === "tv" ? (
+          ) : activeCategory === "movies" || activeCategory === "tv" || activeCategory === "releases" ? (
             /* ============================================================== */
             /* SEÇÃO 2: CATÁLOGO DIRETO VIA MENU LATERAL DO KODI              */
             /* ============================================================== */
@@ -2678,12 +2681,20 @@ export default function KodiApp() {
                 title={
                   catalogSearch.trim()
                     ? `Resultados para "${catalogSearch}"`
-                    : (activeCategory === "movies" ? "Filmes do Catálogo" : "Séries de TV")
+                    : activeCategory === "movies"
+                    ? "Filmes do Catálogo"
+                    : activeCategory === "tv"
+                    ? "Séries de TV"
+                    : "Lançamentos no Cinema e Streaming"
                 }
                 badge={
                   catalogSearch.trim()
                     ? "Busca Global"
-                    : (activeCategory === "movies" ? "17.857 Filmes" : "13.075 Séries")
+                    : activeCategory === "movies"
+                    ? "17.857 Filmes"
+                    : activeCategory === "tv"
+                    ? "13.075 Séries"
+                    : "1.137 Lançamentos"
                 }
                 catalogLoading={catalogLoading}
                 catalogItems={catalogItems}
@@ -3097,6 +3108,8 @@ export default function KodiApp() {
                   ? "Filmes"
                   : item.id === "tv"
                   ? "Séries"
+                  : item.id === "releases"
+                  ? "Lançamentos"
                   : item.id === "music"
                   ? "Música"
                   : item.id === "live"
