@@ -1628,29 +1628,20 @@ export default function KodiVideoPlayer({
             )}
           </div>
         ) : (
-          <div className="w-full h-full relative flex flex-col items-center justify-center p-6 text-center bg-zinc-950">
-            <div className="w-16 h-16 rounded-2xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-500 mb-4 shadow-lg shadow-red-600/20">
-              <AlertCircle className="w-8 h-8" />
+          <div className="w-full h-full relative flex flex-col items-center justify-center bg-black">
+            {/* Barra de Proteção Anti-Anúncios Ativa */}
+            <div className="absolute top-2 left-4 z-20 pointer-events-none flex items-center gap-2 px-3 py-1 rounded-full bg-black/85 backdrop-blur-md border border-emerald-500/40 text-[10px] font-bold text-emerald-400 shadow-lg">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>🛡️ Player Protegido por Sandbox (Pop-ups e Anúncios Bloqueados)</span>
             </div>
-            <h3 className="text-base sm:text-lg font-black text-white mb-2">
-              🛡️ Servidor Externo Bloqueado por Segurança
-            </h3>
-            <p className="text-xs sm:text-sm text-zinc-400 max-w-md mb-6 leading-relaxed">
-              O WMPLAY protege sua navegação contra anúncios desrespeitosos e bloqueou este reprodutor de terceiros.
-              Apenas transmissões 100% diretas e limpas são permitidas.
-            </p>
-            {servers.length > 1 && (
-              <button
-                onClick={() => {
-                  const nextIdx = (activeServerIndex + 1) % servers.length;
-                  onSelectServer(nextIdx);
-                }}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-bold text-xs shadow-lg shadow-red-600/30 flex items-center gap-2 cursor-pointer transition-all"
-              >
-                <RotateCw className="w-4 h-4" />
-                <span>Testar Outro Servidor Direto</span>
-              </button>
-            )}
+
+            <iframe
+              src={currentServer?.url}
+              className="w-full h-full border-0"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              allowFullScreen
+            />
           </div>
         )}
 

@@ -3,7 +3,7 @@ export default {
     const url = new URL(request.url);
 
     // URL do Túnel Cloudflare do WMPLAY
-    const BACKEND_HOST = env.BACKEND_HOST || "remaining-postal-delete-pupils.trycloudflare.com";
+    const BACKEND_HOST = env.BACKEND_HOST || "photographic-fusion-pearl-last.trycloudflare.com";
     const targetUrl = new URL(url.pathname + url.search, `https://${BACKEND_HOST}`);
 
     const newHeaders = new Headers(request.headers);

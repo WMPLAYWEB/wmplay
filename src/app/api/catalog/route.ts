@@ -44,8 +44,12 @@ export async function GET(req: NextRequest) {
       const params: (string | number)[] = [];
 
       if (filterType !== 'all') {
-        conditions.push('type = ?');
-        params.push(filterType);
+        if (filterType === 'novelas') {
+          conditions.push("(type = 'novelas' OR genres LIKE '%Soap%')");
+        } else {
+          conditions.push('type = ?');
+          params.push(filterType);
+        }
       }
 
       let cleanSearch = '';

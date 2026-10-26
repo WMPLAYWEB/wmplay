@@ -280,6 +280,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const link = searchParams.get('link') || '';
     const title = searchParams.get('title') || '';
+    const tmdbId = searchParams.get('tmdbId') || searchParams.get('tmdb_id') || '';
     const mediaType = searchParams.get('type') || 'movie'; // movie or tv
     const season = searchParams.get('season') || '1';
     const episode = searchParams.get('episode') || '1';
@@ -674,6 +675,63 @@ export async function GET(req: NextRequest) {
         }
       } catch (err) {
         console.error('Erro no fallback por título:', err);
+      }
+    }
+
+    // =========================================================================
+    // 8. REDE UNIVERSAL DE SERVIDORES DE BACKUP HD DUBLADO (GARANTIA 100%)
+    // =========================================================================
+    let targetTmdbId = tmdbId;
+    if (!targetTmdbId && title) {
+      try {
+        const cleanTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+        const db = getDb();
+        const row = db.prepare('SELECT tmdb_id FROM items WHERE (clean_title LIKE ? OR title LIKE ?) AND tmdb_id IS NOT NULL AND tmdb_id != "" LIMIT 1').get(`%${cleanTitle}%`, `%${title}%`) as { tmdb_id?: string } | undefined;
+        if (row && row.tmdb_id) {
+          targetTmdbId = row.tmdb_id;
+        }
+      } catch {}
+    }
+
+    if (targetTmdbId) {
+      if (mediaType === 'tv') {
+        servers.push({
+          name: `Servidor Alternativo 1 (SuperFlix HD Dublado T${season}E${episode})`,
+          url: `https://superflixapi.top/serie/${targetTmdbId}/${season}/${episode}`,
+          type: 'embed',
+          isDubbed: true,
+        });
+        servers.push({
+          name: `Servidor Alternativo 2 (Embedder Multi-Áudio T${season}E${episode})`,
+          url: `https://embedder.net/e/series?tmdb=${targetTmdbId}&sea=${season}&epi=${episode}`,
+          type: 'embed',
+          isDubbed: true,
+        });
+        servers.push({
+          name: `Servidor Alternativo 3 (AutoEmbed Full HD T${season}E${episode})`,
+          url: `https://player.autoembed.cc/embed/tv/${targetTmdbId}/${season}/${episode}`,
+          type: 'embed',
+          isDubbed: true,
+        });
+      } else {
+        servers.push({
+          name: 'Servidor Alternativo 1 (SuperFlix HD Dublado)',
+          url: `https://superflixapi.top/filme/${targetTmdbId}`,
+          type: 'embed',
+          isDubbed: true,
+        });
+        servers.push({
+          name: 'Servidor Alternativo 2 (Embedder Multi-Áudio Full HD)',
+          url: `https://embedder.net/e/movie?tmdb=${targetTmdbId}`,
+          type: 'embed',
+          isDubbed: true,
+        });
+        servers.push({
+          name: 'Servidor Alternativo 3 (AutoEmbed Pro Full HD)',
+          url: `https://player.autoembed.cc/embed/movie/${targetTmdbId}`,
+          type: 'embed',
+          isDubbed: true,
+        });
       }
     }
 

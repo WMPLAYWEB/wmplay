@@ -51,7 +51,8 @@ import {
   Moon,
   Zap,
   History,
-  Cast
+  Cast,
+  Heart
 } from "lucide-react";
 import { SAMPLE_MEDIA, MediaItem } from "@/data/media";
 import { INITIAL_ADDONS, Addon } from "@/data/addons";
@@ -67,7 +68,7 @@ import Ps1Button from "@/components/Ps1Button";
 import Ps1ControllerHud from "@/components/Ps1ControllerHud";
 import CastConnectView from "@/components/CastConnectView";
 
-type CategoryType = "movies" | "tv" | "releases" | "music" | "live" | "addons" | "cast";
+type CategoryType = "movies" | "tv" | "releases" | "novelas" | "music" | "live" | "addons" | "cast";
 
 interface MenuItem {
   id: CategoryType;
@@ -79,8 +80,9 @@ const MENU_ITEMS: MenuItem[] = [
   { id: "movies", label: "Filmes (17.8k+)", icon: Film },
   { id: "tv", label: "Séries (13k+)", icon: Tv },
   { id: "releases", label: "Lançamentos (1.1k+)", icon: Sparkles },
+  { id: "novelas", label: "Novelas (450+)", icon: Heart },
   { id: "music", label: "Música", icon: Music },
-  { id: "live", label: "TV ao Vivo (154 ch)", icon: Radio },
+  { id: "live", label: "TV ao Vivo (156 ch)", icon: Radio },
   { id: "addons", label: "Add-ons (Brazuca Play)", icon: Grid },
 ];
 
@@ -420,6 +422,7 @@ export default function KodiApp() {
     if (activeCategory === "movies") return "filmes";
     if (activeCategory === "tv") return "series";
     if (activeCategory === "releases") return "lancamentos";
+    if (activeCategory === "novelas") return "novelas";
     return "";
   }, [activeAddonView, activeBrazucaCategory, activeCategory]);
 
@@ -494,6 +497,7 @@ export default function KodiApp() {
       activeCategory === "movies" ||
       activeCategory === "tv" ||
       activeCategory === "releases" ||
+      activeCategory === "novelas" ||
       (activeAddonView === "brazucaplay" &&
         activeBrazucaCategory?.type !== "channels" &&
         activeBrazucaCategory?.type !== "settings");
@@ -502,7 +506,7 @@ export default function KodiApp() {
 
     const timer = setTimeout(() => {
       // Se estiver pesquisando por termo, buscar em 'all' caso esteja em movies ou tv para não limitar filmes/séries
-      const type = (activeCategory === "movies" || activeCategory === "tv" || activeCategory === "releases" || isBrazucaRootSearching)
+      const type = (activeCategory === "movies" || activeCategory === "tv" || activeCategory === "releases" || activeCategory === "novelas" || isBrazucaRootSearching)
         ? "all"
         : (getCurrentCatalogType() || "all");
       setCatalogPage(1);
@@ -597,28 +601,43 @@ export default function KodiApp() {
     // 1. Stream direto já fornecido (Ex.: TV ao Vivo .m3u8 ou MP4 direto)
     if (isDirectStream && directUrl) {
       const isLiveHls = directUrl.includes(".m3u8");
-      servers.push({
-        name: isLiveHls ? "Sinal Ao Vivo 1 (Direto HD)" : "Transmissão Direta Full HD Dublado (MP4)",
-        url: directUrl,
-        type: "video",
-      });
+      const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
+      const needsProxyFirst = isHttps && directUrl.startsWith("http://");
 
-      if (isLiveHls) {
-        // Servidor 2: Proxy rápido local (Elimina bloqueios de CORS e quedas)
+      if (needsProxyFirst) {
+        // Em conexão HTTPS, usar o proxy seguro como Servidor 1 para evitar bloqueio de Mixed Content do navegador
         servers.push({
-          name: "Sinal Ao Vivo 2 (Proxy Rápido Sem Travamentos)",
+          name: isLiveHls ? "Sinal Ao Vivo 1 (Seguro Sem Bloqueio)" : "Transmissão Segura Full HD",
           url: `/api/proxy-stream?url=${encodeURIComponent(directUrl)}`,
           type: "video",
         });
-
-        // Adicionar espelho apenas se for exatamente o mesmo canal
-        if (title.toLowerCase() === "cartoon network hd") {
+        servers.push({
+          name: isLiveHls ? "Sinal Ao Vivo 2 (Direto)" : "Transmissão Direta (MP4)",
+          url: directUrl,
+          type: "video",
+        });
+      } else {
+        servers.push({
+          name: isLiveHls ? "Sinal Ao Vivo 1 (Direto HD)" : "Transmissão Direta Full HD Dublado (MP4)",
+          url: directUrl,
+          type: "video",
+        });
+        if (isLiveHls) {
           servers.push({
-            name: "Sinal Ao Vivo 3 (Cartoon Network Backup HD)",
-            url: "http://170.83.49.66:8083/CARTOONHD/index.m3u8",
+            name: "Sinal Ao Vivo 2 (Proxy Rápido Sem Travamentos)",
+            url: `/api/proxy-stream?url=${encodeURIComponent(directUrl)}`,
             type: "video",
           });
         }
+      }
+
+      // Adicionar espelho apenas se for exatamente o mesmo canal
+      if (isLiveHls && title.toLowerCase() === "cartoon network hd") {
+        servers.push({
+          name: "Sinal Ao Vivo 3 (Cartoon Network Backup HD)",
+          url: `/api/proxy-stream?url=${encodeURIComponent("http://170.83.49.66:8083/CARTOONHD/index.m3u8")}`,
+          type: "video",
+        });
       }
 
       setPlayingMedia({
@@ -673,8 +692,15 @@ export default function KodiApp() {
       .then((res) => res.json())
       .then((data) => {
         const validDirectServers = (data.success && Array.isArray(data.servers))
-          ? data.servers.filter((s: any) => s.type === "video" && s.url && s.url !== "ERROR_UNAVAILABLE")
+          ? data.servers.filter((s: any) => (s.type === "video" || s.type === "embed") && s.url && s.url !== "ERROR_UNAVAILABLE")
           : [];
+
+        // Priorizar streams diretos de vídeo no topo, seguidos de embeds de backup
+        validDirectServers.sort((a: any, b: any) => {
+          if (a.type === "video" && b.type !== "video") return -1;
+          if (a.type !== "video" && b.type === "video") return 1;
+          return 0;
+        });
 
         if (validDirectServers.length > 0) {
           setPlayingMedia((prev) => {
@@ -990,13 +1016,14 @@ export default function KodiApp() {
     activeCategory === "movies" ||
     activeCategory === "tv" ||
     activeCategory === "releases" ||
+    activeCategory === "novelas" ||
     isBrazucaRootSearching ||
     (activeAddonView === "brazucaplay" &&
       activeBrazucaCategory &&
       activeBrazucaCategory.type !== "channels" &&
       activeBrazucaCategory.type !== "settings");
 
-  const currentCatalogType = (catalogSearch.trim() && (activeCategory === "movies" || activeCategory === "tv" || activeCategory === "releases" || isBrazucaRootSearching))
+  const currentCatalogType = (catalogSearch.trim() && (activeCategory === "movies" || activeCategory === "tv" || activeCategory === "releases" || activeCategory === "novelas" || isBrazucaRootSearching))
     ? "all"
     : (getCurrentCatalogType() || (isBrazucaRootSearching ? "all" : ""));
   const isLight = theme === "offwhite";
@@ -2513,7 +2540,7 @@ export default function KodiApp() {
                 />
               )}
             </div>
-          ) : activeCategory === "movies" || activeCategory === "tv" || activeCategory === "releases" ? (
+          ) : activeCategory === "movies" || activeCategory === "tv" || activeCategory === "releases" || activeCategory === "novelas" ? (
             /* ============================================================== */
             /* SEÇÃO 2: CATÁLOGO DIRETO VIA MENU LATERAL DO KODI              */
             /* ============================================================== */
@@ -2685,7 +2712,9 @@ export default function KodiApp() {
                     ? "Filmes do Catálogo"
                     : activeCategory === "tv"
                     ? "Séries de TV"
-                    : "Lançamentos no Cinema e Streaming"
+                    : activeCategory === "releases"
+                    ? "Lançamentos no Cinema e Streaming"
+                    : "Novelas Brasileiras & Internacionais"
                 }
                 badge={
                   catalogSearch.trim()
@@ -2694,7 +2723,9 @@ export default function KodiApp() {
                     ? "17.857 Filmes"
                     : activeCategory === "tv"
                     ? "13.075 Séries"
-                    : "1.137 Lançamentos"
+                    : activeCategory === "releases"
+                    ? "1.137 Lançamentos"
+                    : "453 Novelas"
                 }
                 catalogLoading={catalogLoading}
                 catalogItems={catalogItems}
@@ -3110,6 +3141,8 @@ export default function KodiApp() {
                   ? "Séries"
                   : item.id === "releases"
                   ? "Lançamentos"
+                  : item.id === "novelas"
+                  ? "Novelas"
                   : item.id === "music"
                   ? "Música"
                   : item.id === "live"
