@@ -288,6 +288,55 @@ export async function GET(req: NextRequest) {
     const servers: StreamServer[] = [];
 
     // =========================================================================
+    // 0. CANAIS ESPECIAIS AO VIVO (REDE GLOBO, GLOBONEWS, ETC.)
+    // =========================================================================
+    const lowerTitle = title.toLowerCase();
+    const isGloboNews = lowerTitle.includes('globonews') || link.includes('ch_globonews');
+    const isGlobo = !isGloboNews && (
+      lowerTitle.includes('globo') ||
+      link.includes('ch_globo') ||
+      link.includes('globotvbahia')
+    );
+
+    if (isGlobo) {
+      servers.push(
+        {
+          name: 'Rede Globo HD Ao Vivo (Sinal Principal Full HD)',
+          url: '/api/proxy-stream?url=' + encodeURIComponent('http://hls1.sua.tv/live/globotvbahiafhdbr2/s.m3u8'),
+          type: 'video',
+          isDubbed: true
+        },
+        {
+          name: 'Rede Globo HD (Sinal Direto HLS)',
+          url: 'http://hls1.sua.tv/live/globotvbahiafhdbr2/s.m3u8',
+          type: 'video',
+          isDubbed: true
+        },
+        {
+          name: 'ge Fast (Globo Esporte 24h Ao Vivo HD Oficial)',
+          url: 'https://amg00716-globo-amg00716c1-tcl-br-9495.playouts.now.amagi.tv/playlist.m3u8',
+          type: 'video',
+          isDubbed: true
+        }
+      );
+    } else if (isGloboNews) {
+      servers.push(
+        {
+          name: 'GloboNews HD Ao Vivo (Sinal Principal)',
+          url: '/api/proxy-stream?url=' + encodeURIComponent('http://79.127.238.228:14093'),
+          type: 'video',
+          isDubbed: true
+        },
+        {
+          name: 'GloboNews HD (Sinal Direto)',
+          url: 'http://79.127.238.228:14093',
+          type: 'video',
+          isDubbed: true
+        }
+      );
+    }
+
+    // =========================================================================
     // 1. REPRODUÇÃO DIRETA DE EPISÓDIOS RESOLVIDOS DO BRAZUCA PLAY (MP4 Sem Anúncios)
     // =========================================================================
     if (link.includes('resolver2_episodes=')) {
@@ -554,12 +603,22 @@ export async function GET(req: NextRequest) {
           isDubbed: true
         });
       } else {
+        const isHttp = link.startsWith('http://');
+        const mainUrl = isHttp ? `/api/proxy-stream?url=${encodeURIComponent(link)}` : link;
         servers.push({
           name: link.includes('.m3u8') ? 'Sinal Direto HD (Sem Anúncios)' : 'Transmissão Direta MP4 Dublado (Sem Anúncios)',
-          url: link,
+          url: mainUrl,
           type: 'video',
           isDubbed: true
         });
+        if (isHttp) {
+          servers.push({
+            name: 'Sinal Alternativo (Direto HLS)',
+            url: link,
+            type: 'video',
+            isDubbed: true
+          });
+        }
       }
     }
 

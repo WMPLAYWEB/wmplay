@@ -586,7 +586,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
     "logo": "/logos/globo.png",
     "category": "aberta",
     "epg": "Guia EPG · Programação Rede Globo HD Ao Vivo",
-    "streamUrl": "https://jmp2.uk/plu-61b790b985706b00072cb797.m3u8"
+    "streamUrl": "/api/proxy-stream?url=http%3A%2F%2Fhls1.sua.tv%2Flive%2Fglobotvbahiafhdbr2%2Fs.m3u8"
   },
   {
     "id": "ch_globonews",
@@ -594,7 +594,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
     "logo": "/logos/globonews.png",
     "category": "noticias_docs",
     "epg": "Guia EPG · Programação GloboNews HD Ao Vivo",
-    "streamUrl": "https://dai.google.com/linear/hls/event/1XSOdtQ0SH2G8OEmEfGgjQ/master.m3u8"
+    "streamUrl": "/api/proxy-stream?url=http%3A%2F%2F79.127.238.228%3A14093"
   },
   {
     "id": "ch_gloob",
@@ -1258,7 +1258,7 @@ export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
     "logo": "/logos/tvtem.png",
     "category": "aberta",
     "epg": "Guia EPG · Programação TV TEM Globo Ao Vivo",
-    "streamUrl": "http://168.197.104.22/CHEF_TV/index.m3u8"
+    "streamUrl": "/api/proxy-stream?url=http%3A%2F%2Fhls1.sua.tv%2Flive%2Fglobotvbahiafhdbr2%2Fs.m3u8"
   },
   {
     "id": "ch_tv_aparecida",
