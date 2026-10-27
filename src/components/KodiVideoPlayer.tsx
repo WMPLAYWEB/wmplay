@@ -32,7 +32,11 @@ import {
   Cast,
   Wifi,
   Smartphone,
-  Tv
+  Tv,
+  ChevronDown,
+  Settings,
+  ArrowLeft,
+  Server
 } from "lucide-react";
 
 export interface ServerOption {
@@ -222,6 +226,71 @@ export default function KodiVideoPlayer({
     setAspectFeedback(aspectLabels[next]);
     if (aspectTimeoutRef.current) clearTimeout(aspectTimeoutRef.current);
     aspectTimeoutRef.current = setTimeout(() => setAspectFeedback(null), 1400);
+  };
+
+  // Menus Dropdown Superiores (Servidores e Ajustes)
+  const [showServerMenu, setShowServerMenu] = useState<boolean>(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState<boolean>(false);
+
+  // Auto-Ocultação de Controles (HUD) ao Assistir (Estilo Netflix / Kodi)
+  const [isControlsVisible, setIsControlsVisible] = useState<boolean>(true);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const resetControlsTimeout = () => {
+    setIsControlsVisible(true);
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    if (
+      isPlaying &&
+      !showServerMenu &&
+      !showSettingsMenu &&
+      !isEpisodeDrawerOpen &&
+      !isCastModalOpen
+    ) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        setIsControlsVisible(false);
+      }, 3500);
+    }
+  };
+
+  useEffect(() => {
+    if (!isPlaying) {
+      setIsControlsVisible(true);
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    } else {
+      resetControlsTimeout();
+    }
+  }, [isPlaying, showServerMenu, showSettingsMenu, isEpisodeDrawerOpen, isCastModalOpen]);
+
+  // Fechar menus dropdown ao clicar fora
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("#server-menu-btn") && !target.closest("#server-menu-dropdown")) {
+        setShowServerMenu(false);
+      }
+      if (!target.closest("#settings-menu-btn") && !target.closest("#settings-menu-dropdown")) {
+        setShowSettingsMenu(false);
+      }
+    };
+    if (showServerMenu || showSettingsMenu) {
+      window.addEventListener("click", handleOutsideClick);
+      return () => window.removeEventListener("click", handleOutsideClick);
+    }
+  }, [showServerMenu, showSettingsMenu]);
+
+  // Formatador curto de nomes de servidor para o botão
+  const getShortServerName = (srvName?: string, index = 0) => {
+    if (!srvName) return `Servidor ${index + 1}`;
+    if (srvName.includes("Wasabi")) return "Wasabi Full HD";
+    if (srvName.includes("VidLink Pro")) return "VidLink 1080p";
+    if (srvName.includes("VidSrc CDN")) return "VidSrc CDN";
+    if (srvName.includes("VidSrc Multi-Áudio")) return "VidSrc Dublado";
+    if (srvName.includes("Embedder")) return "Embedder HD";
+    if (srvName.includes("SuperFlix")) return "SuperFlix";
+    if (srvName.includes("Direta") || srvName.includes("MP4")) return "Direto Full HD";
+    if (srvName.includes("Globo")) return "Rede Globo";
+    if (srvName.length > 18) return `Servidor ${index + 1}`;
+    return srvName;
   };
 
   // 2. Seletor de Qualidade HLS (Live TV & HLS)
@@ -1013,241 +1082,356 @@ export default function KodiVideoPlayer({
       className={
         isMiniPlayer
           ? "fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-50 w-[calc(100vw-32px)] max-w-[340px] sm:max-w-[380px] md:max-w-[440px] aspect-video rounded-2xl shadow-2xl border-2 border-red-500/80 bg-black overflow-hidden group animate-in slide-in-from-bottom-5 duration-200 shadow-red-950/60"
-          : `fixed inset-0 z-50 bg-black flex flex-col items-center justify-center ${
+          : `fixed inset-0 z-50 bg-black flex items-center justify-center overflow-hidden select-none ${
               isLiteMode ? "" : "backdrop-blur-xl animate-in fade-in duration-200"
             }`
       }
+      onMouseMove={resetControlsTimeout}
+      onTouchStart={resetControlsTimeout}
     >
       {/* ============================================================== */}
-      {/* CABEÇALHO DO MODO TELA CHEIA / MODAL COMPLETO                  */}
+      {/* CABEÇALHO DO MODO TELA CHEIA / MODAL COMPLETO (OVERLAY HUD)     */}
       {/* ============================================================== */}
       {!isMiniPlayer && (
-        <div className="absolute top-0 left-0 right-0 p-2.5 sm:p-4 md:p-6 bg-gradient-to-b from-black/95 via-black/85 to-transparent z-20">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex-1 min-w-0 pr-2">
-              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                <div className="flex items-center gap-1.5">
-                  <WmplayLogo size="sm" iconOnly={true} className="scale-75 origin-left" />
-                  <p className="text-[10px] sm:text-xs text-red-500 uppercase tracking-widest font-black flex items-center gap-1.5">
-                    WMPLAY · Reprodução
-                  </p>
-                </div>
-                {isLiteMode && (
-                  <span className="text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full font-mono flex items-center gap-1.5 text-amber-300 bg-amber-950/80 border border-amber-500/50">
-                    <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                    ⚡ Modo TV Lite (Acelerado)
-                  </span>
-                )}
-                <span className="text-[9px] sm:text-[10px] font-bold px-2.5 py-1 rounded-full font-mono flex items-center gap-1.5 text-emerald-300 bg-emerald-950/80 border border-emerald-500/50 shadow-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  🛡️ Proteção Sem Anúncios Ativa
-                </span>
+        <div
+          className={`absolute top-0 left-0 right-0 p-3 sm:p-4 md:p-5 bg-gradient-to-b from-black/95 via-black/75 to-transparent z-40 transition-all duration-300 ${
+            isControlsVisible ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
+          }`}
+          onMouseEnter={() => {
+            setIsControlsVisible(true);
+            if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+          }}
+          onMouseLeave={resetControlsTimeout}
+        >
+          <div className="flex items-center justify-between gap-2.5 sm:gap-4 max-w-full">
+            {/* LADO ESQUERDO: Botão Voltar + Título + Status */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-2 sm:p-2.5 rounded-full bg-zinc-900/80 hover:bg-red-600 text-white transition-all shadow-lg border border-white/10 shrink-0 cursor-pointer hover:scale-105 active:scale-95"
+                title="Voltar / Fechar Player (Esc)"
+              >
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </button>
 
-                {/* Legenda de Botões PS1 */}
-                <div className="hidden lg:flex items-center gap-2.5 px-3 py-1 rounded-full bg-zinc-950/90 border border-zinc-700/80 text-[10px] font-bold text-zinc-300 shadow-sm">
-                  <span className="flex items-center gap-1"><Ps1Button type="cross" size="xs" /> Play/Pause</span>
-                  <span className="flex items-center gap-1"><Ps1Button type="circle" size="xs" /> Sair</span>
-                  {seriesSeasons && seriesSeasons.length > 0 && (
-                    <span className="flex items-center gap-1"><Ps1Button type="triangle" size="xs" /> Episódios</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  <h2 className="text-sm sm:text-base md:text-lg font-black text-white drop-shadow truncate">
+                    {title}
+                  </h2>
+                  {isTv && currentSeason && currentEpisode && (
+                    <span className="px-2 py-0.5 rounded-md bg-red-600/90 text-white text-[10px] sm:text-[11px] font-mono font-black shrink-0 shadow-sm">
+                      T{currentSeason}:E{currentEpisode}
+                    </span>
                   )}
-                  <span className="flex items-center gap-1"><Ps1Button type="square" size="xs" /> Formato</span>
+                  <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    1080p Full HD
+                  </span>
                 </div>
+                {info && (
+                  <p className="text-[11px] text-zinc-400 truncate max-w-2xl hidden md:block">
+                    {info}
+                  </p>
+                )}
               </div>
-              <h2 className="text-base sm:text-xl md:text-2xl font-black text-white drop-shadow truncate mt-0.5">
-                {title}
-              </h2>
-              {info && (
-                <p className="text-[11px] sm:text-xs text-slate-300 mt-0.5 max-w-3xl truncate">
-                  {info}
-                </p>
-              )}
             </div>
 
-            {/* Ações do Topo */}
-            <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 shrink-0">
-              {/* Seletor de Servidores (Desktop) */}
+            {/* LADO DIREITO: Servidores + Episódios + Ajustes + Ferramentas */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {/* Dropdown de Servidores (Compacto em 1 único botão) */}
               {servers.length > 1 && (
-                <div className="hidden md:flex items-center gap-1 bg-zinc-950/90 border border-zinc-800 p-1 rounded-xl max-w-md overflow-x-auto">
-                  {servers.map((srv, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => onSelectServer(idx)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                        activeServerIndex === idx
-                          ? "bg-red-600 text-white shadow-md shadow-red-600/30"
-                          : "text-zinc-400 hover:text-white hover:bg-zinc-900"
-                      }`}
-                    >
-                      {srv.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Botão de Velocidade de Reprodução */}
-              {currentServer?.type === "video" && (
-                <button
-                  onClick={handleCycleSpeed}
-                  className="flex items-center gap-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-all border border-zinc-800 text-xs font-black shadow-md cursor-pointer"
-                  title="Alterar Velocidade de Reprodução (1x, 1.25x, 1.5x, 2x)"
-                >
-                  <Gauge className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
-                  <span>{playbackSpeed}x</span>
-                </button>
-              )}
-
-              {/* Botão de Ajuste de Tela / Zoom (Original, Preencher / Zoom, Esticar) */}
-              {currentServer?.type === "video" && (
-                <button
-                  onClick={cycleAspectMode}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-all border border-zinc-800 text-xs font-bold shadow-md cursor-pointer"
-                  title={`Ajuste de Tela: ${aspectLabels[aspectMode]} (Clique para alternar Original/Zoom/Esticar)`}
-                >
-                  <Ratio className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400" />
-                  <span className="hidden sm:inline">{aspectLabels[aspectMode]}</span>
-                </button>
-              )}
-
-              {/* Seletor Manual de Qualidade HLS (TV Ao Vivo e Vídeos HLS) */}
-              {qualityLevels.length > 1 && (
                 <div className="relative">
                   <button
-                    onClick={() => setShowQualityMenu((prev) => !prev)}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-all border border-zinc-800 text-xs font-bold shadow-md cursor-pointer"
-                    title="Selecionar Resolução / Qualidade"
+                    id="server-menu-btn"
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowServerMenu((prev) => !prev);
+                      setShowSettingsMenu(false);
+                    }}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold shadow-lg transition-all cursor-pointer border ${
+                      showServerMenu
+                        ? "bg-red-600 text-white border-red-500 shadow-red-600/30"
+                        : "bg-zinc-900/90 hover:bg-zinc-800 text-white border-zinc-700/80 hover:border-red-500/50"
+                    }`}
+                    title="Alternar Servidor de Transmissão"
                   >
-                    <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
-                    <span>
-                      {currentQualityIndex === -1
-                        ? "Auto"
-                        : qualityLevels.find((q) => q.index === currentQualityIndex)?.label.split(" ")[0] || "HD"}
+                    <Server className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                    <span className="max-w-[85px] sm:max-w-[130px] truncate">
+                      {getShortServerName(currentServer?.name, activeServerIndex)}
                     </span>
+                    <ChevronDown className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
                   </button>
-                  {showQualityMenu && (
-                    <div className="absolute right-0 top-full mt-2 z-40 bg-zinc-950/95 border border-zinc-800 rounded-2xl shadow-2xl backdrop-blur-xl p-1.5 min-w-[150px] animate-in fade-in-50 zoom-in-95 duration-150">
-                      <div className="px-2.5 py-1 text-[10px] font-black uppercase text-zinc-500 tracking-wider">
-                        Qualidade
+
+                  {/* Dropdown Menu de Servidores */}
+                  {showServerMenu && (
+                    <div
+                      id="server-menu-dropdown"
+                      className="absolute right-0 top-full mt-2 z-50 w-72 sm:w-80 bg-zinc-950/95 border border-zinc-800 rounded-2xl shadow-2xl backdrop-blur-2xl p-2 animate-in fade-in zoom-in-95 duration-150"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="px-3 py-2 border-b border-zinc-800/80 flex items-center justify-between">
+                        <span className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                          <Server className="w-3.5 h-3.5 text-red-500" /> Servidores
+                        </span>
+                        <span className="text-[10px] text-zinc-400 font-mono">
+                          {servers.length} disponíveis
+                        </span>
                       </div>
-                      {qualityLevels.map((lvl) => (
-                        <button
-                          key={lvl.index}
-                          onClick={() => handleSelectQuality(lvl.index)}
-                          className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-between cursor-pointer ${
-                            currentQualityIndex === lvl.index
-                              ? "bg-red-600 text-white"
-                              : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
-                          }`}
-                        >
-                          <span>{lvl.label}</span>
-                          {currentQualityIndex === lvl.index && <Check className="w-3.5 h-3.5 text-white" />}
-                        </button>
-                      ))}
+                      <div className="max-h-64 overflow-y-auto py-1 space-y-1">
+                        {servers.map((srv, idx) => {
+                          const isSelected = activeServerIndex === idx;
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                onSelectServer(idx);
+                                setShowServerMenu(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between gap-2 cursor-pointer ${
+                                isSelected
+                                  ? "bg-red-600 text-white shadow-md shadow-red-600/30"
+                                  : "text-zinc-300 hover:bg-zinc-900 hover:text-white"
+                              }`}
+                            >
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold">{srv.name}</p>
+                                <p className={`text-[10px] truncate ${isSelected ? "text-red-100" : "text-zinc-500"}`}>
+                                  {srv.type === "video" ? "Stream Direto Nativo" : "Player CDN Cloudflare"}
+                                </p>
+                              </div>
+                              {isSelected && <Check className="w-4 h-4 text-white shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Botão de Amplificador de Som (Sound Booster) */}
-              {currentServer?.type === "video" && (
-                <button
-                  onClick={cycleAudioBoost}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl transition-all border text-xs font-bold shadow-md cursor-pointer ${
-                    audioBoost > 1
-                      ? "bg-amber-600/30 border-amber-500/60 text-amber-300 hover:bg-amber-600/40"
-                      : "bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-zinc-300 hover:text-white"
-                  }`}
-                  title={`Amplificador de Áudio: ${Math.round(audioBoost * 100)}% (Clique para amplificar)`}
-                >
-                  <Volume2 className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${audioBoost > 1 ? "text-amber-400" : "text-emerald-400"}`} />
-                  <span>{audioBoost > 1 ? `Boost ${Math.round(audioBoost * 100)}%` : "Som 100%"}</span>
-                </button>
-              )}
-
-              {/* Botão Gaveta de Episódios (em séries) */}
+              {/* Botão Gaveta de Episódios (Séries) */}
               {isTv && seriesSeasons && seriesSeasons.length > 0 && (
                 <button
+                  type="button"
                   onClick={() => setIsEpisodeDrawerOpen((prev) => !prev)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl transition-all text-xs font-black shadow-md cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold shadow-lg transition-all cursor-pointer ${
                     isEpisodeDrawerOpen
                       ? "bg-red-600 text-white shadow-red-600/40"
-                      : "bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 hover:border-red-500/60"
+                      : "bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/80 hover:border-red-500/50"
                   }`}
-                  title="Trocar de Episódio sem sair do player (Tecla E)"
+                  title="Lista de Episódios (Tecla E)"
                 >
-                  <ListVideo className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" />
-                  <span>Episódios</span>
-                  {currentSeason && currentEpisode && (
-                    <span className="text-[10px] bg-black/60 px-1.5 py-0.5 rounded font-mono text-zinc-300">
-                      T{currentSeason}:E{currentEpisode}
-                    </span>
-                  )}
+                  <ListVideo className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 shrink-0" />
+                  <span className="hidden sm:inline">Episódios</span>
                 </button>
               )}
 
-              {/* Botão Próximo Episódio (quando disponível em séries) */}
+              {/* Botão Próximo Episódio (Séries) */}
               {hasNextEpisode && onNextEpisode && (
                 <button
+                  type="button"
                   onClick={onNextEpisode}
-                  className="flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white transition-all text-xs font-black shadow-md shadow-red-600/30 cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-black shadow-lg shadow-red-600/30 transition-all cursor-pointer"
                   title="Assistir Próximo Episódio"
                 >
                   <SkipForward className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Próximo</span>
+                  <span className="hidden md:inline">Próximo</span>
                 </button>
               )}
 
-              {/* Botão Mini Player Flutuante */}
-              <button
-                onClick={() => setIsMiniPlayer(true)}
-                className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-all border border-zinc-800 shadow-md"
-                title="Minimizar (Modo Mini Player Flutuante)"
-              >
-                <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-400" />
-                <span className="hidden lg:inline text-xs font-bold">Mini Player</span>
-              </button>
+              {/* Botão de Ajustes (Velocidade, Formato, Volume Boost, Qualidade) */}
+              {currentServer?.type === "video" && (
+                <div className="relative">
+                  <button
+                    id="settings-menu-btn"
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowSettingsMenu((prev) => !prev);
+                      setShowServerMenu(false);
+                    }}
+                    className={`flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-bold shadow-lg transition-all cursor-pointer border ${
+                      showSettingsMenu
+                        ? "bg-red-600 text-white border-red-500 shadow-red-600/30"
+                        : "bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-700/80 hover:border-red-500/50"
+                    }`}
+                    title="Ajustes de Áudio, Velocidade e Formato"
+                  >
+                    <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-300" />
+                    <span className="hidden sm:inline">Ajustes</span>
+                  </button>
 
-              {/* Botão Transmitir para Smart TV (Sem Travamento) */}
+                  {/* Dropdown Menu de Ajustes */}
+                  {showSettingsMenu && (
+                    <div
+                      id="settings-menu-dropdown"
+                      className="absolute right-0 top-full mt-2 z-50 w-72 sm:w-80 bg-zinc-950/95 border border-zinc-800 rounded-2xl shadow-2xl backdrop-blur-2xl p-3 animate-in fade-in zoom-in-95 duration-150 space-y-3"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
+                        <span className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                          <Settings className="w-3.5 h-3.5 text-red-500" /> Ajustes de Reprodução
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowSettingsMenu(false)}
+                          className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Ajuste de Formato de Tela / Aspect */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
+                          <Ratio className="w-3.5 h-3.5 text-sky-400" /> Formato de Tela
+                        </label>
+                        <div className="grid grid-cols-3 gap-1.5 bg-zinc-900/80 p-1 rounded-xl border border-zinc-800">
+                          {(["contain", "cover", "fill"] as const).map((mode) => (
+                            <button
+                              key={mode}
+                              type="button"
+                              onClick={() => {
+                                setAspectMode(mode);
+                                try { localStorage.setItem("wmplay_aspect_mode", mode); } catch {}
+                                setAspectFeedback(aspectLabels[mode]);
+                                if (aspectTimeoutRef.current) clearTimeout(aspectTimeoutRef.current);
+                                aspectTimeoutRef.current = setTimeout(() => setAspectFeedback(null), 1400);
+                              }}
+                              className={`py-1 text-xs font-bold rounded-lg transition-all ${
+                                aspectMode === mode
+                                  ? "bg-red-600 text-white shadow"
+                                  : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                              }`}
+                            >
+                              {aspectLabels[mode]}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Velocidade de Reprodução */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
+                          <Gauge className="w-3.5 h-3.5 text-amber-400" /> Velocidade
+                        </label>
+                        <div className="grid grid-cols-4 gap-1.5 bg-zinc-900/80 p-1 rounded-xl border border-zinc-800">
+                          {[1, 1.25, 1.5, 2].map((spd) => (
+                            <button
+                              key={spd}
+                              type="button"
+                              onClick={() => {
+                                setPlaybackSpeed(spd);
+                                if (videoRef.current) videoRef.current.playbackRate = spd;
+                              }}
+                              className={`py-1 text-xs font-bold rounded-lg transition-all ${
+                                playbackSpeed === spd
+                                  ? "bg-red-600 text-white shadow"
+                                  : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                              }`}
+                            >
+                              {spd}x
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Amplificador de Som (Web Audio Booster) */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
+                          <Volume2 className="w-3.5 h-3.5 text-emerald-400" /> Som & Booster
+                        </label>
+                        <div className="grid grid-cols-3 gap-1.5 bg-zinc-900/80 p-1 rounded-xl border border-zinc-800">
+                          {[1, 1.5, 2].map((boostVal) => (
+                            <button
+                              key={boostVal}
+                              type="button"
+                              onClick={() => {
+                                initAudioBoost();
+                                if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
+                                  audioCtxRef.current.resume();
+                                }
+                                setAudioBoost(boostVal);
+                                if (gainNodeRef.current) gainNodeRef.current.gain.value = boostVal;
+                                try { localStorage.setItem("wmplay_audio_boost", String(boostVal)); } catch {}
+                                showVolumeIndicator(videoRef.current ? videoRef.current.volume : 1, isMuted, boostVal);
+                              }}
+                              className={`py-1 text-xs font-bold rounded-lg transition-all ${
+                                audioBoost === boostVal
+                                  ? "bg-emerald-600 text-white shadow"
+                                  : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                              }`}
+                            >
+                              {boostVal === 1 ? "100%" : `${Math.round(boostVal * 100)}%`}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Qualidade HLS (se disponível) */}
+                      {qualityLevels.length > 1 && (
+                        <div className="space-y-1.5">
+                          <label className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
+                            <Sliders className="w-3.5 h-3.5 text-purple-400" /> Qualidade de Imagem
+                          </label>
+                          <div className="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto">
+                            {qualityLevels.map((lvl) => (
+                              <button
+                                key={lvl.index}
+                                type="button"
+                                onClick={() => handleSelectQuality(lvl.index)}
+                                className={`py-1 px-2 text-xs font-bold rounded-lg transition-all flex items-center justify-between border ${
+                                  currentQualityIndex === lvl.index
+                                    ? "bg-red-600 text-white border-red-500"
+                                    : "bg-zinc-900/80 text-zinc-400 hover:text-white border-zinc-800"
+                                }`}
+                              >
+                                <span className="truncate">{lvl.label}</span>
+                                {currentQualityIndex === lvl.index && <Check className="w-3 h-3 text-white" />}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Transmitir para Smart TV */}
               <button
+                type="button"
                 onClick={() => {
                   setIsCastModalOpen(true);
                   setCastSuccessMsg(null);
                   setCastErrorMsg(null);
                 }}
-                className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-emerald-400 transition-all border border-zinc-800 shadow-md cursor-pointer group"
-                title="Transmitir para Smart TV (Chromecast, AirPlay ou WMPLAY Connect)"
+                className="hidden sm:flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-emerald-400 border border-zinc-700/80 shadow-lg transition-all cursor-pointer hover:scale-105"
+                title="Transmitir para Smart TV (WMPLAY Connect)"
               >
-                <Cast className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
-                <span className="hidden sm:inline text-xs font-bold text-emerald-400">Transmitir</span>
+                <Cast className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+                <span className="hidden lg:inline text-xs font-bold">Transmitir</span>
               </button>
 
-              {/* Botão Picture-in-Picture Nativo */}
-              {currentServer?.type === "video" && (
-                <button
-                  onClick={handleToggleNativePip}
-                  className="p-2 sm:p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors border border-zinc-800"
-                  title="Picture-in-Picture Externo"
-                >
-                  <PictureInPicture2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </button>
-              )}
-
-              {/* Recarregar Servidor Atual */}
+              {/* Mini Player */}
               <button
-                onClick={() => {
-                  setIsLoading(true);
-                  setHasError(false);
-                  onSelectServer(activeServerIndex);
-                }}
-                className="p-2 sm:p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
-                title="Recarregar Servidor"
+                type="button"
+                onClick={() => setIsMiniPlayer(true)}
+                className="p-2 sm:p-2.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/80 shadow-lg transition-all cursor-pointer"
+                title="Modo Mini Player Flutuante"
               >
-                <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-400" />
               </button>
 
               {/* Tela Cheia Nativa */}
               <button
+                type="button"
                 onClick={handleFullscreen}
-                className="p-2 sm:p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white transition-colors border border-zinc-800"
+                className="p-2 sm:p-2.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-white border border-zinc-700/80 shadow-lg transition-all cursor-pointer"
                 title="Alternar Tela Cheia"
               >
                 <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -1255,33 +1439,15 @@ export default function KodiVideoPlayer({
 
               {/* Fechar Player */}
               <button
+                type="button"
                 onClick={onClose}
-                className="p-2 sm:p-2.5 rounded-xl bg-zinc-900 hover:bg-red-600 text-white transition-colors border border-zinc-800"
-                title="Fechar Player"
+                className="p-2 sm:p-2.5 rounded-xl bg-zinc-900/90 hover:bg-red-600 text-white border border-zinc-700/80 shadow-lg transition-all cursor-pointer"
+                title="Fechar Player (Esc)"
               >
-                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </button>
             </div>
           </div>
-
-          {/* Seletor de Servidores (Mobile & Tablet) */}
-          {servers.length > 1 && (
-            <div className="flex md:hidden items-center gap-1.5 bg-zinc-950/90 border border-zinc-800 p-1 rounded-xl max-w-full overflow-x-auto scrollbar-none mt-2">
-              {servers.map((srv, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => onSelectServer(idx)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap shrink-0 ${
-                    activeServerIndex === idx
-                      ? "bg-red-600 text-white shadow-md shadow-red-600/30"
-                      : "text-zinc-400 hover:text-white hover:bg-zinc-900"
-                  }`}
-                >
-                  {srv.name}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
@@ -1341,7 +1507,7 @@ export default function KodiVideoPlayer({
         className={
           isMiniPlayer
             ? "w-full h-full relative bg-black flex items-center justify-center"
-            : "w-full max-w-6xl aspect-video relative rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border border-red-600/30 bg-black mt-20 sm:mt-16 flex items-center justify-center shadow-red-950/20"
+            : "w-full h-full relative bg-black flex items-center justify-center overflow-hidden"
         }
       >
         {/* Indicador de Carregamento */}
@@ -1713,12 +1879,6 @@ export default function KodiVideoPlayer({
           </div>
         ) : (
           <div className="w-full h-full relative flex flex-col items-center justify-center bg-black">
-            {/* Barra de Proteção Anti-Anúncios Ativa */}
-            <div className="absolute top-2 left-4 z-20 pointer-events-none flex items-center gap-2 px-3 py-1 rounded-full bg-black/85 backdrop-blur-md border border-emerald-500/40 text-[10px] font-bold text-emerald-400 shadow-lg">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>🛡️ Player Protegido por Sandbox (Pop-ups e Anúncios Bloqueados)</span>
-            </div>
-
             <iframe
               src={currentServer?.url}
               className="w-full h-full border-0"
@@ -1825,22 +1985,22 @@ export default function KodiVideoPlayer({
         )}
       </div>
 
-      {/* Seletor rápido inferior em telas móveis quando em tela cheia */}
-      {!isMiniPlayer && servers.length > 1 && (
-        <div className="flex sm:hidden items-center gap-2 mt-3 overflow-x-auto max-w-full px-4">
-          {servers.map((srv, idx) => (
-            <button
-              key={idx}
-              onClick={() => onSelectServer(idx)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                activeServerIndex === idx
-                  ? "bg-red-600 text-white"
-                  : "bg-black border border-zinc-800 text-zinc-400"
-              }`}
-            >
-              {srv.name}
-            </button>
-          ))}
+      {/* Legenda de Teclas e Controles Remotos (Bottom Left HUD) */}
+      {!isMiniPlayer && (
+        <div
+          className={`absolute bottom-4 left-4 z-30 hidden md:flex items-center gap-3 px-3.5 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/10 text-[10px] font-bold text-zinc-400 shadow-xl pointer-events-none transition-all duration-300 ${
+            isControlsVisible ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          <span className="flex items-center gap-1 text-zinc-300"><Ps1Button type="cross" size="xs" /> Play/Pause</span>
+          <span className="flex items-center gap-1 text-zinc-300"><Ps1Button type="circle" size="xs" /> Sair</span>
+          {seriesSeasons && seriesSeasons.length > 0 && (
+            <span className="flex items-center gap-1 text-zinc-300"><Ps1Button type="triangle" size="xs" /> Episódios (E)</span>
+          )}
+          <span className="flex items-center gap-1 text-zinc-300"><Ps1Button type="square" size="xs" /> Formato</span>
+          {isLiteMode && (
+            <span className="text-amber-400 flex items-center gap-1 font-mono">⚡ TV Lite</span>
+          )}
         </div>
       )}
 
