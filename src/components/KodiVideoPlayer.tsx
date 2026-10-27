@@ -1079,13 +1079,15 @@ export default function KodiVideoPlayer({
 
   return (
     <div
+      id="wmplay-cinema-player"
       className={
         isMiniPlayer
-          ? "fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-50 w-[calc(100vw-32px)] max-w-[340px] sm:max-w-[380px] md:max-w-[440px] aspect-video rounded-2xl shadow-2xl border-2 border-red-500/80 bg-black overflow-hidden group animate-in slide-in-from-bottom-5 duration-200 shadow-red-950/60"
-          : `fixed inset-0 z-50 bg-black flex items-center justify-center overflow-hidden select-none ${
+          ? "wmplay-cinema-player fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-50 w-[calc(100vw-32px)] max-w-[340px] sm:max-w-[380px] md:max-w-[440px] aspect-video rounded-2xl shadow-2xl border-2 border-red-500/80 bg-black overflow-hidden group animate-in slide-in-from-bottom-5 duration-200 shadow-red-950/60 !text-white"
+          : `wmplay-cinema-player fixed inset-0 z-50 bg-black flex items-center justify-center overflow-hidden select-none !text-white ${
               isLiteMode ? "" : "backdrop-blur-xl animate-in fade-in duration-200"
             }`
       }
+      style={{ color: "#ffffff" }}
       onMouseMove={resetControlsTimeout}
       onTouchStart={resetControlsTimeout}
     >
@@ -1105,33 +1107,33 @@ export default function KodiVideoPlayer({
         >
           <div className="flex items-center justify-between gap-2.5 sm:gap-4 max-w-full">
             {/* LADO ESQUERDO: Botão Voltar + Título + Status */}
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 sm:p-2.5 rounded-full bg-zinc-900/80 hover:bg-red-600 text-white transition-all shadow-lg border border-white/10 shrink-0 cursor-pointer hover:scale-105 active:scale-95"
+                className="p-2 sm:p-2.5 rounded-full !bg-zinc-900/90 hover:!bg-red-600 !text-white transition-all shadow-xl border border-white/20 shrink-0 cursor-pointer hover:scale-105 active:scale-95"
                 title="Voltar / Fechar Player (Esc)"
               >
-                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 !text-white" />
               </button>
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                  <h2 className="text-sm sm:text-base md:text-lg font-black text-white drop-shadow truncate">
+                  <h2 className="text-sm sm:text-base md:text-lg font-black !text-white drop-shadow truncate" style={{ color: "#ffffff" }}>
                     {title}
                   </h2>
                   {isTv && currentSeason && currentEpisode && (
-                    <span className="px-2 py-0.5 rounded-md bg-red-600/90 text-white text-[10px] sm:text-[11px] font-mono font-black shrink-0 shadow-sm">
+                    <span className="px-2 py-0.5 rounded-md !bg-red-600 !text-white text-[10px] sm:text-[11px] font-mono font-black shrink-0 shadow-sm">
                       T{currentSeason}:E{currentEpisode}
                     </span>
                   )}
-                  <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold shrink-0">
+                  <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full !bg-emerald-950/90 !text-emerald-400 border border-emerald-500/50 text-[10px] font-bold shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     1080p Full HD
                   </span>
                 </div>
                 {info && (
-                  <p className="text-[11px] text-zinc-400 truncate max-w-2xl hidden md:block">
+                  <p className="text-[11px] !text-zinc-300 truncate max-w-2xl hidden md:block">
                     {info}
                   </p>
                 )}
@@ -1151,32 +1153,32 @@ export default function KodiVideoPlayer({
                       setShowServerMenu((prev) => !prev);
                       setShowSettingsMenu(false);
                     }}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold shadow-lg transition-all cursor-pointer border ${
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold shadow-xl transition-all cursor-pointer border ${
                       showServerMenu
-                        ? "bg-red-600 text-white border-red-500 shadow-red-600/30"
-                        : "bg-zinc-900/90 hover:bg-zinc-800 text-white border-zinc-700/80 hover:border-red-500/50"
+                        ? "!bg-red-600 !text-white border-red-500 shadow-red-600/40"
+                        : "!bg-zinc-900/90 hover:!bg-zinc-800 !text-white border-zinc-700 hover:border-red-500/50"
                     }`}
                     title="Alternar Servidor de Transmissão"
                   >
                     <Server className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                    <span className="max-w-[85px] sm:max-w-[130px] truncate">
+                    <span className="max-w-[85px] sm:max-w-[130px] truncate !text-white font-bold" style={{ color: "#ffffff" }}>
                       {getShortServerName(currentServer?.name, activeServerIndex)}
                     </span>
-                    <ChevronDown className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                    <ChevronDown className="w-3.5 h-3.5 !text-zinc-300 shrink-0" />
                   </button>
 
                   {/* Dropdown Menu de Servidores */}
                   {showServerMenu && (
                     <div
                       id="server-menu-dropdown"
-                      className="absolute right-0 top-full mt-2 z-50 w-72 sm:w-80 bg-zinc-950/95 border border-zinc-800 rounded-2xl shadow-2xl backdrop-blur-2xl p-2 animate-in fade-in zoom-in-95 duration-150"
+                      className="absolute right-0 top-full mt-2 z-50 w-72 sm:w-80 !bg-zinc-950/95 border border-zinc-800 rounded-2xl shadow-2xl backdrop-blur-2xl p-2 animate-in fade-in zoom-in-95 duration-150"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="px-3 py-2 border-b border-zinc-800/80 flex items-center justify-between">
-                        <span className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <span className="text-xs font-black !text-white uppercase tracking-wider flex items-center gap-1.5">
                           <Server className="w-3.5 h-3.5 text-red-500" /> Servidores
                         </span>
-                        <span className="text-[10px] text-zinc-400 font-mono">
+                        <span className="text-[10px] !text-zinc-400 font-mono">
                           {servers.length} disponíveis
                         </span>
                       </div>
@@ -1193,17 +1195,17 @@ export default function KodiVideoPlayer({
                               }}
                               className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between gap-2 cursor-pointer ${
                                 isSelected
-                                  ? "bg-red-600 text-white shadow-md shadow-red-600/30"
-                                  : "text-zinc-300 hover:bg-zinc-900 hover:text-white"
+                                  ? "!bg-red-600 !text-white shadow-md shadow-red-600/30"
+                                  : "!text-zinc-200 hover:!bg-zinc-900 hover:!text-white"
                               }`}
                             >
                               <div className="min-w-0">
                                 <p className="truncate font-semibold">{srv.name}</p>
-                                <p className={`text-[10px] truncate ${isSelected ? "text-red-100" : "text-zinc-500"}`}>
+                                <p className={`text-[10px] truncate ${isSelected ? "!text-red-100" : "!text-zinc-400"}`}>
                                   {srv.type === "video" ? "Stream Direto Nativo" : "Player CDN Cloudflare"}
                                 </p>
                               </div>
-                              {isSelected && <Check className="w-4 h-4 text-white shrink-0" />}
+                              {isSelected && <Check className="w-4 h-4 !text-white shrink-0" />}
                             </button>
                           );
                         })}
@@ -1218,15 +1220,15 @@ export default function KodiVideoPlayer({
                 <button
                   type="button"
                   onClick={() => setIsEpisodeDrawerOpen((prev) => !prev)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold shadow-lg transition-all cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold shadow-xl transition-all cursor-pointer ${
                     isEpisodeDrawerOpen
-                      ? "bg-red-600 text-white shadow-red-600/40"
-                      : "bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/80 hover:border-red-500/50"
+                      ? "!bg-red-600 !text-white shadow-red-600/40"
+                      : "!bg-zinc-900/90 hover:!bg-zinc-800 !text-zinc-200 border border-zinc-700 hover:border-red-500/50"
                   }`}
                   title="Lista de Episódios (Tecla E)"
                 >
                   <ListVideo className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 shrink-0" />
-                  <span className="hidden sm:inline">Episódios</span>
+                  <span className="hidden sm:inline !text-white font-bold">Episódios</span>
                 </button>
               )}
 
@@ -1235,11 +1237,11 @@ export default function KodiVideoPlayer({
                 <button
                   type="button"
                   onClick={onNextEpisode}
-                  className="flex items-center gap-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-black shadow-lg shadow-red-600/30 transition-all cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl !bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 !text-white text-xs font-black shadow-lg shadow-red-600/30 transition-all cursor-pointer"
                   title="Assistir Próximo Episódio"
                 >
-                  <SkipForward className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="hidden md:inline">Próximo</span>
+                  <SkipForward className="w-3.5 h-3.5 sm:w-4 sm:h-4 !text-white" />
+                  <span className="hidden md:inline !text-white font-bold">Próximo</span>
                 </button>
               )}
 
@@ -1254,32 +1256,32 @@ export default function KodiVideoPlayer({
                       setShowSettingsMenu((prev) => !prev);
                       setShowServerMenu(false);
                     }}
-                    className={`flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-bold shadow-lg transition-all cursor-pointer border ${
+                    className={`flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-bold shadow-xl transition-all cursor-pointer border ${
                       showSettingsMenu
-                        ? "bg-red-600 text-white border-red-500 shadow-red-600/30"
-                        : "bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-700/80 hover:border-red-500/50"
+                        ? "!bg-red-600 !text-white border-red-500 shadow-red-600/40"
+                        : "!bg-zinc-900/90 hover:!bg-zinc-800 !text-white border-zinc-700 hover:border-red-500/50"
                     }`}
                     title="Ajustes de Áudio, Velocidade e Formato"
                   >
-                    <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-300" />
-                    <span className="hidden sm:inline">Ajustes</span>
+                    <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4 !text-zinc-200" />
+                    <span className="hidden sm:inline !text-white font-bold">Ajustes</span>
                   </button>
 
                   {/* Dropdown Menu de Ajustes */}
                   {showSettingsMenu && (
                     <div
                       id="settings-menu-dropdown"
-                      className="absolute right-0 top-full mt-2 z-50 w-72 sm:w-80 bg-zinc-950/95 border border-zinc-800 rounded-2xl shadow-2xl backdrop-blur-2xl p-3 animate-in fade-in zoom-in-95 duration-150 space-y-3"
+                      className="absolute right-0 top-full mt-2 z-50 w-72 sm:w-80 !bg-zinc-950/95 border border-zinc-800 rounded-2xl shadow-2xl backdrop-blur-2xl p-3 animate-in fade-in zoom-in-95 duration-150 space-y-3"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                        <span className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <span className="text-xs font-black !text-white uppercase tracking-wider flex items-center gap-1.5">
                           <Settings className="w-3.5 h-3.5 text-red-500" /> Ajustes de Reprodução
                         </span>
                         <button
                           type="button"
                           onClick={() => setShowSettingsMenu(false)}
-                          className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                          className="p-1 rounded-lg hover:!bg-zinc-800 !text-zinc-400 hover:!text-white"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -1287,10 +1289,10 @@ export default function KodiVideoPlayer({
 
                       {/* Ajuste de Formato de Tela / Aspect */}
                       <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
+                        <label className="text-[11px] font-bold !text-zinc-300 flex items-center gap-1.5">
                           <Ratio className="w-3.5 h-3.5 text-sky-400" /> Formato de Tela
                         </label>
-                        <div className="grid grid-cols-3 gap-1.5 bg-zinc-900/80 p-1 rounded-xl border border-zinc-800">
+                        <div className="grid grid-cols-3 gap-1.5 !bg-zinc-900/80 p-1 rounded-xl border border-zinc-800">
                           {(["contain", "cover", "fill"] as const).map((mode) => (
                             <button
                               key={mode}
@@ -1304,8 +1306,8 @@ export default function KodiVideoPlayer({
                               }}
                               className={`py-1 text-xs font-bold rounded-lg transition-all ${
                                 aspectMode === mode
-                                  ? "bg-red-600 text-white shadow"
-                                  : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                                  ? "!bg-red-600 !text-white shadow"
+                                  : "!text-zinc-300 hover:!text-white hover:!bg-zinc-800"
                               }`}
                             >
                               {aspectLabels[mode]}
@@ -1316,10 +1318,10 @@ export default function KodiVideoPlayer({
 
                       {/* Velocidade de Reprodução */}
                       <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
+                        <label className="text-[11px] font-bold !text-zinc-300 flex items-center gap-1.5">
                           <Gauge className="w-3.5 h-3.5 text-amber-400" /> Velocidade
                         </label>
-                        <div className="grid grid-cols-4 gap-1.5 bg-zinc-900/80 p-1 rounded-xl border border-zinc-800">
+                        <div className="grid grid-cols-4 gap-1.5 !bg-zinc-900/80 p-1 rounded-xl border border-zinc-800">
                           {[1, 1.25, 1.5, 2].map((spd) => (
                             <button
                               key={spd}
@@ -1330,8 +1332,8 @@ export default function KodiVideoPlayer({
                               }}
                               className={`py-1 text-xs font-bold rounded-lg transition-all ${
                                 playbackSpeed === spd
-                                  ? "bg-red-600 text-white shadow"
-                                  : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                                  ? "!bg-red-600 !text-white shadow"
+                                  : "!text-zinc-300 hover:!text-white hover:!bg-zinc-800"
                               }`}
                             >
                               {spd}x
@@ -1342,10 +1344,10 @@ export default function KodiVideoPlayer({
 
                       {/* Amplificador de Som (Web Audio Booster) */}
                       <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
+                        <label className="text-[11px] font-bold !text-zinc-300 flex items-center gap-1.5">
                           <Volume2 className="w-3.5 h-3.5 text-emerald-400" /> Som & Booster
                         </label>
-                        <div className="grid grid-cols-3 gap-1.5 bg-zinc-900/80 p-1 rounded-xl border border-zinc-800">
+                        <div className="grid grid-cols-3 gap-1.5 !bg-zinc-900/80 p-1 rounded-xl border border-zinc-800">
                           {[1, 1.5, 2].map((boostVal) => (
                             <button
                               key={boostVal}
@@ -1362,8 +1364,8 @@ export default function KodiVideoPlayer({
                               }}
                               className={`py-1 text-xs font-bold rounded-lg transition-all ${
                                 audioBoost === boostVal
-                                  ? "bg-emerald-600 text-white shadow"
-                                  : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                                  ? "!bg-emerald-600 !text-white shadow"
+                                  : "!text-zinc-300 hover:!text-white hover:!bg-zinc-800"
                               }`}
                             >
                               {boostVal === 1 ? "100%" : `${Math.round(boostVal * 100)}%`}
@@ -1375,7 +1377,7 @@ export default function KodiVideoPlayer({
                       {/* Qualidade HLS (se disponível) */}
                       {qualityLevels.length > 1 && (
                         <div className="space-y-1.5">
-                          <label className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5">
+                          <label className="text-[11px] font-bold !text-zinc-300 flex items-center gap-1.5">
                             <Sliders className="w-3.5 h-3.5 text-purple-400" /> Qualidade de Imagem
                           </label>
                           <div className="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto">
@@ -1386,12 +1388,12 @@ export default function KodiVideoPlayer({
                                 onClick={() => handleSelectQuality(lvl.index)}
                                 className={`py-1 px-2 text-xs font-bold rounded-lg transition-all flex items-center justify-between border ${
                                   currentQualityIndex === lvl.index
-                                    ? "bg-red-600 text-white border-red-500"
-                                    : "bg-zinc-900/80 text-zinc-400 hover:text-white border-zinc-800"
+                                    ? "!bg-red-600 !text-white border-red-500"
+                                    : "!bg-zinc-900/80 !text-zinc-300 hover:!text-white border-zinc-800"
                                 }`}
                               >
                                 <span className="truncate">{lvl.label}</span>
-                                {currentQualityIndex === lvl.index && <Check className="w-3 h-3 text-white" />}
+                                {currentQualityIndex === lvl.index && <Check className="w-3 h-3 !text-white" />}
                               </button>
                             ))}
                           </div>
@@ -1410,18 +1412,18 @@ export default function KodiVideoPlayer({
                   setCastSuccessMsg(null);
                   setCastErrorMsg(null);
                 }}
-                className="hidden sm:flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-emerald-400 border border-zinc-700/80 shadow-lg transition-all cursor-pointer hover:scale-105"
+                className="hidden sm:flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 rounded-xl !bg-zinc-900/90 hover:!bg-zinc-800 !text-emerald-400 border border-zinc-700 shadow-xl transition-all cursor-pointer hover:scale-105"
                 title="Transmitir para Smart TV (WMPLAY Connect)"
               >
                 <Cast className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
-                <span className="hidden lg:inline text-xs font-bold">Transmitir</span>
+                <span className="hidden lg:inline text-xs font-bold !text-emerald-300">Transmitir</span>
               </button>
 
               {/* Mini Player */}
               <button
                 type="button"
                 onClick={() => setIsMiniPlayer(true)}
-                className="p-2 sm:p-2.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/80 shadow-lg transition-all cursor-pointer"
+                className="p-2 sm:p-2.5 rounded-xl !bg-zinc-900/90 hover:!bg-zinc-800 !text-zinc-200 hover:!text-white border border-zinc-700 shadow-xl transition-all cursor-pointer"
                 title="Modo Mini Player Flutuante"
               >
                 <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-400" />
@@ -1431,20 +1433,20 @@ export default function KodiVideoPlayer({
               <button
                 type="button"
                 onClick={handleFullscreen}
-                className="p-2 sm:p-2.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-white border border-zinc-700/80 shadow-lg transition-all cursor-pointer"
+                className="p-2 sm:p-2.5 rounded-xl !bg-zinc-900/90 hover:!bg-zinc-800 !text-white border border-zinc-700 shadow-xl transition-all cursor-pointer"
                 title="Alternar Tela Cheia"
               >
-                <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 !text-white" />
               </button>
 
               {/* Fechar Player */}
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 sm:p-2.5 rounded-xl bg-zinc-900/90 hover:bg-red-600 text-white border border-zinc-700/80 shadow-lg transition-all cursor-pointer"
+                className="p-2 sm:p-2.5 rounded-xl !bg-zinc-900/90 hover:!bg-red-600 !text-white border border-zinc-700 shadow-xl transition-all cursor-pointer"
                 title="Fechar Player (Esc)"
               >
-                <X className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5 !text-white" />
               </button>
             </div>
           </div>

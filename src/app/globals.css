@@ -424,8 +424,99 @@ body {
 }
 
 /* ============================================================== */
-/* PRESERVAÇÃO INTEGRAL DO PLAYER DE VÍDEO & YOUTUBE              */
+/* PRESERVAÇÃO INTEGRAL DO PLAYER DE VÍDEO & YOUTUBE (MODO CINEMA)*/
 /* ============================================================== */
+.wmplay-cinema-player,
+.theme-offwhite .wmplay-cinema-player,
+.theme-offwhite #wmplay-cinema-player {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.theme-offwhite .wmplay-cinema-player h1,
+.theme-offwhite .wmplay-cinema-player h2,
+.theme-offwhite .wmplay-cinema-player h3,
+.theme-offwhite .wmplay-cinema-player h4,
+.theme-offwhite .wmplay-cinema-player strong,
+.theme-offwhite .wmplay-cinema-player b,
+.theme-offwhite .wmplay-cinema-player .text-white {
+  color: #ffffff !important;
+}
+
+.theme-offwhite .wmplay-cinema-player p,
+.theme-offwhite .wmplay-cinema-player span,
+.theme-offwhite .wmplay-cinema-player .text-zinc-200,
+.theme-offwhite .wmplay-cinema-player .text-zinc-300,
+.theme-offwhite .wmplay-cinema-player .text-slate-200,
+.theme-offwhite .wmplay-cinema-player .text-slate-300 {
+  color: #e2e8f0 !important;
+}
+
+.theme-offwhite .wmplay-cinema-player .text-zinc-400,
+.theme-offwhite .wmplay-cinema-player .text-zinc-500,
+.theme-offwhite .wmplay-cinema-player .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+.theme-offwhite .wmplay-cinema-player .text-emerald-400,
+.theme-offwhite .wmplay-cinema-player .text-emerald-300 {
+  color: #34d399 !important;
+}
+
+.theme-offwhite .wmplay-cinema-player .text-red-400,
+.theme-offwhite .wmplay-cinema-player .text-red-500 {
+  color: #ef4444 !important;
+}
+
+.theme-offwhite .wmplay-cinema-player .text-amber-400,
+.theme-offwhite .wmplay-cinema-player .text-amber-300 {
+  color: #fbbf24 !important;
+}
+
+.theme-offwhite .wmplay-cinema-player .text-sky-400 {
+  color: #38bdf8 !important;
+}
+
+.theme-offwhite .wmplay-cinema-player button {
+  color: #ffffff !important;
+}
+
+.theme-offwhite .wmplay-cinema-player svg {
+  color: currentColor !important;
+}
+
+.theme-offwhite .wmplay-cinema-player .bg-black {
+  background-color: #000000 !important;
+}
+
+.theme-offwhite .wmplay-cinema-player .bg-zinc-950,
+.theme-offwhite .wmplay-cinema-player .bg-zinc-950\/95,
+.theme-offwhite .wmplay-cinema-player .bg-zinc-950\/90 {
+  background-color: #09090b !important;
+}
+
+.theme-offwhite .wmplay-cinema-player .bg-zinc-900,
+.theme-offwhite .wmplay-cinema-player .bg-zinc-900\/90,
+.theme-offwhite .wmplay-cinema-player .bg-zinc-900\/80 {
+  background-color: #18181b !important;
+}
+
+.theme-offwhite .wmplay-cinema-player .bg-zinc-800,
+.theme-offwhite .wmplay-cinema-player .bg-zinc-850 {
+  background-color: #27272a !important;
+}
+
+.theme-offwhite .wmplay-cinema-player .bg-red-600 {
+  background-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.theme-offwhite .wmplay-cinema-player .border-zinc-800,
+.theme-offwhite .wmplay-cinema-player .border-zinc-700,
+.theme-offwhite .wmplay-cinema-player .border-zinc-700\/80 {
+  border-color: #3f3f46 !important;
+}
+
 .theme-offwhite #kodi-player-container,
 .theme-offwhite #kodi-player-container video {
   background-color: #000000 !important;
