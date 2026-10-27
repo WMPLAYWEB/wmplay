@@ -823,11 +823,15 @@ export default function KodiVideoPlayer({
         const hls = new Hls({
           enableWorker: !isLiteMode, // Desativa Web Workers pesados em TVs com pouca RAM
           lowLatencyMode: false,
+          startLevel: -1, // Seleção automática inteligente baseada em banda
+          abrEwmaDefaultEstimate: 10000000, // 10 Mbps de estimativa inicial: inicia IMEDIATAMENTE em Full HD 1080p sem degradar para 360p
           liveSyncDurationCount: isLiteMode ? 2 : 3,
           liveMaxLatencyDurationCount: isLiteMode ? 5 : 8,
-          maxBufferLength: isLiteMode ? 10 : 30, // TV Lite: buffer de 10s para não estourar memória RAM da TV
-          maxMaxBufferLength: isLiteMode ? 20 : 60,
-          backBufferLength: isLiteMode ? 10 : 30,
+          maxBufferLength: isLiteMode ? 30 : 120, // Buffer 2 minutos à frente para nunca travar por micro-oscilações de rede
+          maxMaxBufferLength: isLiteMode ? 60 : 600, // Buffer expandido de até 10 minutos
+          maxBufferSize: isLiteMode ? 30 * 1024 * 1024 : 120 * 1024 * 1024, // 120 MB de buffer contínuo
+          backBufferLength: isLiteMode ? 20 : 60,
+          progressive: true, // Download progressivo de chunks HLS
           maxBufferHole: 0.5,
           highBufferWatchdogPeriod: 2,
           nudgeOffset: 0.1,
@@ -844,10 +848,10 @@ export default function KodiVideoPlayer({
           if (hls.levels && hls.levels.length > 0) {
             const levels = hls.levels.map((lvl, idx) => {
               const height = lvl.height || 0;
-              const label = height >= 1080 ? '1080p' : height >= 720 ? '720p' : height >= 480 ? '480p' : height > 0 ? `${height}p` : `Qualidade ${idx + 1}`;
+              const label = height >= 1080 ? '1080p Full HD' : height >= 720 ? '720p HD' : height >= 480 ? '480p SD' : height > 0 ? `${height}p` : `Qualidade ${idx + 1}`;
               return { index: idx, label };
             });
-            setQualityLevels([{ index: -1, label: 'Auto' }, ...levels]);
+            setQualityLevels([{ index: -1, label: 'Auto (1080p Full HD)' }, ...levels]);
           }
           video.play()
             .then(() => {
@@ -1540,6 +1544,7 @@ export default function KodiVideoPlayer({
               ref={videoRef}
               controls={!isMiniPlayer}
               playsInline
+              preload="auto"
               poster={poster}
               className={`w-full h-full ${
                 aspectMode === "cover"

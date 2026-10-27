@@ -281,7 +281,7 @@ export async function GET(req: NextRequest) {
     const link = searchParams.get('link') || '';
     const title = searchParams.get('title') || '';
     const tmdbId = searchParams.get('tmdbId') || searchParams.get('tmdb_id') || '';
-    const mediaType = searchParams.get('type') || 'movie'; // movie or tv
+    const mediaType = searchParams.get('type') || searchParams.get('mediaType') || 'movie'; // movie or tv
     const season = searchParams.get('season') || '1';
     const episode = searchParams.get('episode') || '1';
 
@@ -755,39 +755,63 @@ export async function GET(req: NextRequest) {
     if (targetTmdbId) {
       if (mediaType === 'tv') {
         servers.push({
-          name: `Servidor Alternativo 1 (SuperFlix HD Dublado T${season}E${episode})`,
-          url: `https://superflixapi.top/serie/${targetTmdbId}/${season}/${episode}`,
+          name: `VidLink Pro Full HD 1080p (Alta Velocidade T${season}E${episode})`,
+          url: `https://vidlink.pro/tv/${targetTmdbId}/${season}/${episode}?primaryColor=e50914&secondaryColor=ffffff`,
           type: 'embed',
           isDubbed: true,
         });
         servers.push({
-          name: `Servidor Alternativo 2 (Embedder Multi-Áudio T${season}E${episode})`,
+          name: `VidSrc CDN Full HD (T${season}E${episode})`,
+          url: `https://vidsrc.to/embed/tv/${targetTmdbId}/${season}/${episode}`,
+          type: 'embed',
+          isDubbed: true,
+        });
+        servers.push({
+          name: `VidSrc Multi-Áudio Full HD (T${season}E${episode})`,
+          url: `https://vidsrc.sh/embed/tv?tmdb=${targetTmdbId}&season=${season}&episode=${episode}`,
+          type: 'embed',
+          isDubbed: true,
+        });
+        servers.push({
+          name: `Embedder Multi-Áudio (T${season}E${episode})`,
           url: `https://embedder.net/e/series?tmdb=${targetTmdbId}&sea=${season}&epi=${episode}`,
           type: 'embed',
           isDubbed: true,
         });
         servers.push({
-          name: `Servidor Alternativo 3 (AutoEmbed Full HD T${season}E${episode})`,
-          url: `https://player.autoembed.cc/embed/tv/${targetTmdbId}/${season}/${episode}`,
+          name: `SuperFlix Backup (T${season}E${episode})`,
+          url: `https://superflixapi.top/serie/${targetTmdbId}/${season}/${episode}`,
           type: 'embed',
           isDubbed: true,
         });
       } else {
         servers.push({
-          name: 'Servidor Alternativo 1 (SuperFlix HD Dublado)',
-          url: `https://superflixapi.top/filme/${targetTmdbId}`,
+          name: 'VidLink Pro Full HD 1080p (Alta Velocidade / Sem Travamentos)',
+          url: `https://vidlink.pro/movie/${targetTmdbId}?primaryColor=e50914&secondaryColor=ffffff`,
           type: 'embed',
           isDubbed: true,
         });
         servers.push({
-          name: 'Servidor Alternativo 2 (Embedder Multi-Áudio Full HD)',
+          name: 'VidSrc CDN Full HD (1080p)',
+          url: `https://vidsrc.to/embed/movie/${targetTmdbId}`,
+          type: 'embed',
+          isDubbed: true,
+        });
+        servers.push({
+          name: 'VidSrc Multi-Áudio Full HD',
+          url: `https://vidsrc.sh/embed/movie?tmdb=${targetTmdbId}`,
+          type: 'embed',
+          isDubbed: true,
+        });
+        servers.push({
+          name: 'Embedder Multi-Áudio Full HD',
           url: `https://embedder.net/e/movie?tmdb=${targetTmdbId}`,
           type: 'embed',
           isDubbed: true,
         });
         servers.push({
-          name: 'Servidor Alternativo 3 (AutoEmbed Pro Full HD)',
-          url: `https://player.autoembed.cc/embed/movie/${targetTmdbId}`,
+          name: 'SuperFlix Backup HD Dublado',
+          url: `https://superflixapi.top/filme/${targetTmdbId}`,
           type: 'embed',
           isDubbed: true,
         });
