@@ -2065,8 +2065,7 @@ export default function KodiVideoPlayer({
             <iframe
               src={currentServer?.url}
               className="w-full h-full border-0"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
-              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
               allowFullScreen
             />
           </div>
