@@ -824,19 +824,13 @@ export async function GET(req: NextRequest) {
       const isSeries = mediaType === 'tv' || link.includes('tmdb_ep=') || link.includes('season=') || link.includes('resolver2_tvshows=') || link.includes('serie3=');
       if (isSeries) {
         servers.push({
-          name: `VidLink Pro Full HD 1080p (Alta Velocidade T${targetSeason}E${targetEpisode})`,
-          url: `https://vidlink.pro/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}?primaryColor=e50914&secondaryColor=ffffff`,
-          type: 'embed',
-          isDubbed: true,
-        });
-        servers.push({
           name: `VidSrc Prime Full HD (T${targetSeason}E${targetEpisode})`,
           url: `https://vidsrc.pm/embed/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}`,
           type: 'embed',
           isDubbed: true,
         });
         servers.push({
-          name: `VidSrc VIP Global Full HD (T${targetSeason}E${targetEpisode})`,
+          name: `VidSrc VIP Global Full HD (Multi-Áudio T${targetSeason}E${targetEpisode})`,
           url: `https://vidsrc.me/embed/tv?tmdb=${targetTmdbId}&season=${targetSeason}&episode=${targetEpisode}`,
           type: 'embed',
           isDubbed: true,
@@ -848,12 +842,6 @@ export async function GET(req: NextRequest) {
           isDubbed: true,
         });
       } else {
-        servers.push({
-          name: 'VidLink Pro Full HD 1080p (Alta Velocidade)',
-          url: `https://vidlink.pro/movie/${targetTmdbId}?primaryColor=e50914&secondaryColor=ffffff`,
-          type: 'embed',
-          isDubbed: true,
-        });
         servers.push({
           name: 'VidSrc Prime Full HD (1080p)',
           url: `https://vidsrc.pm/embed/movie/${targetTmdbId}`,

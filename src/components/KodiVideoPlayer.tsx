@@ -367,7 +367,6 @@ export default function KodiVideoPlayer({
     if (srvName.includes("VidSrc Prime")) return "VidSrc Prime";
     if (srvName.includes("VidSrc VIP")) return "VidSrc VIP";
     if (srvName.includes("VidSrc")) return "VidSrc HD";
-    if (srvName.includes("VidLink Pro") || srvName.includes("VidLink")) return "VidLink 1080p";
     if (srvName.includes("2Embed")) return "2Embed VIP";
     if (srvName.includes("MixDrop")) return "MixDrop HD";
     if (srvName.includes("StreamTape")) return "StreamTape HD";
@@ -2103,12 +2102,8 @@ export default function KodiVideoPlayer({
             <iframe
               src={currentServer?.url}
               className="w-full h-full border-0"
-              sandbox={
-                currentServer?.url && currentServer.url.includes("vidlink.pro")
-                  ? undefined
-                  : "allow-scripts allow-same-origin allow-forms allow-presentation"
-              }
-              referrerPolicy="origin"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+              referrerPolicy="no-referrer"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
               allowFullScreen
             />
