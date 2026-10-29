@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Hls from "hls.js";
 import WmplayLogo from "@/components/WmplayLogo";
-import Ps1Button from "@/components/Ps1Button";
 import {
   X,
   Info,
@@ -309,26 +308,29 @@ export default function KodiVideoPlayer({
     setIsControlsVisible(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     if (
-      isPlaying &&
       !showServerMenu &&
       !showSettingsMenu &&
       !isEpisodeDrawerOpen &&
       !isCastModalOpen
     ) {
-      controlsTimeoutRef.current = setTimeout(() => {
-        setIsControlsVisible(false);
-      }, 3500);
+      if (isPlaying || currentServer?.type === "embed") {
+        controlsTimeoutRef.current = setTimeout(() => {
+          setIsControlsVisible(false);
+        }, 3000);
+      }
     }
   };
 
   useEffect(() => {
-    if (!isPlaying) {
+    if (currentServer?.type === "embed") {
+      resetControlsTimeout();
+    } else if (!isPlaying) {
       setIsControlsVisible(true);
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     } else {
       resetControlsTimeout();
     }
-  }, [isPlaying, showServerMenu, showSettingsMenu, isEpisodeDrawerOpen, isCastModalOpen]);
+  }, [isPlaying, currentServer, showServerMenu, showSettingsMenu, isEpisodeDrawerOpen, isCastModalOpen]);
 
   // Fechar menus dropdown ao clicar fora
   useEffect(() => {
@@ -351,8 +353,9 @@ export default function KodiVideoPlayer({
   // Formatador curto de nomes de servidor para o botão
   const getShortServerName = (srvName?: string, index = 0) => {
     if (!srvName) return `Servidor ${index + 1}`;
-    if (srvName.includes("VidSrc Prime")) return "VidSrc Prime";
     if (srvName.includes("VidSrc VIP")) return "VidSrc VIP";
+    if (srvName.includes("VidSrc To")) return "VidSrc To";
+    if (srvName.includes("VidSrc Prime")) return "VidSrc Prime";
     if (srvName.includes("VidSrc")) return "VidSrc HD";
     if (srvName.includes("2Embed")) return "2Embed VIP";
     if (srvName.includes("MixDrop")) return "MixDrop HD";
@@ -705,21 +708,10 @@ export default function KodiVideoPlayer({
       }
     };
 
-    // Previne desvio de foco para popunder quando um iframe externo tenta desfocar a janela
-    const handleWindowBlur = () => {
-      setTimeout(() => {
-        if (!document.hidden && document.activeElement && document.activeElement.tagName === 'IFRAME') {
-          window.focus();
-        }
-      }, 100);
-    };
-
     window.addEventListener('click', handleGlobalClick, true);
-    window.addEventListener('blur', handleWindowBlur);
     return () => {
       window.open = originalOpen;
       window.removeEventListener('click', handleGlobalClick, true);
-      window.removeEventListener('blur', handleWindowBlur);
     };
   }, []);
 
@@ -2097,14 +2089,16 @@ export default function KodiVideoPlayer({
               key={currentServer?.url}
               src={currentServer?.url}
               className="w-full h-full border-0"
-              referrerPolicy="no-referrer"
+              referrerPolicy="no-referrer-when-downgrade"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
               allowFullScreen
             />
 
             {/* Quick Switch Server Bar (Pills para troca instantânea de servidor no modo Embed) */}
             {servers && servers.length > 1 && !isMiniPlayer && (
-              <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 max-w-[96vw] overflow-x-auto no-scrollbar py-1 px-2.5 flex items-center gap-1.5 bg-black/85 backdrop-blur-xl border border-zinc-700/80 rounded-2xl shadow-2xl">
+              <div className={`absolute top-16 left-1/2 -translate-x-1/2 z-40 max-w-[96vw] overflow-x-auto no-scrollbar py-1 px-2.5 flex items-center gap-1.5 bg-black/85 backdrop-blur-xl border border-zinc-700/80 rounded-2xl shadow-2xl transition-all duration-300 ${
+                isControlsVisible ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
+              }`}>
                 <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1 shrink-0 pl-1">
                   <Server className="w-3 h-3 text-amber-400" /> Servidores:
                 </span>
@@ -2146,14 +2140,6 @@ export default function KodiVideoPlayer({
                 <span className="hidden sm:flex text-[10px] font-black text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded-full items-center gap-1 shrink-0 ml-1">
                   <ShieldCheck className="w-3 h-3 text-emerald-400" /> Sem Anúncios
                 </span>
-              </div>
-            )}
-
-            {/* Aviso/Dica de segurança para o usuário saber o que fazer */}
-            {servers && servers.length > 1 && !isMiniPlayer && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-3.5 py-1.5 rounded-full bg-black/85 backdrop-blur-md border border-zinc-700/60 text-zinc-300 text-[11px] font-medium flex items-center gap-2 shadow-2xl select-none max-w-[90vw] text-center">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>Bloqueador de popups e anúncios ativo · Se o player não iniciar, selecione outro servidor acima.</span>
               </div>
             )}
           </div>
@@ -2255,24 +2241,6 @@ export default function KodiVideoPlayer({
         )}
       </div>
 
-      {/* Legenda de Teclas e Controles Remotos (Bottom Left HUD) */}
-      {!isMiniPlayer && (
-        <div
-          className={`absolute bottom-4 left-4 z-30 hidden md:flex items-center gap-3 px-3.5 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/10 text-[10px] font-bold text-zinc-400 shadow-xl pointer-events-none transition-all duration-300 ${
-            isControlsVisible ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          <span className="flex items-center gap-1 text-zinc-300"><Ps1Button type="cross" size="xs" /> Play/Pause</span>
-          <span className="flex items-center gap-1 text-zinc-300"><Ps1Button type="circle" size="xs" /> Sair</span>
-          {seriesSeasons && seriesSeasons.length > 0 && (
-            <span className="flex items-center gap-1 text-zinc-300"><Ps1Button type="triangle" size="xs" /> Episódios (E)</span>
-          )}
-          <span className="flex items-center gap-1 text-zinc-300"><Ps1Button type="square" size="xs" /> Formato</span>
-          {isLiteMode && (
-            <span className="text-amber-400 flex items-center gap-1 font-mono">⚡ TV Lite</span>
-          )}
-        </div>
-      )}
 
       {/* ============================================================== */}
       {/* MODAL DE TRANSMISSÃO DIRETA PARA SMART TV                      */}

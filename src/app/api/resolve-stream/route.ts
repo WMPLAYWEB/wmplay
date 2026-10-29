@@ -840,6 +840,12 @@ export async function GET(req: NextRequest) {
           isDubbed: true,
         });
         servers.push({
+          name: `VidSrc To Full HD (T${targetSeason}E${targetEpisode})`,
+          url: `https://vidsrc.to/embed/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}`,
+          type: 'embed',
+          isDubbed: true,
+        });
+        servers.push({
           name: `VidSrc Prime Full HD (T${targetSeason}E${targetEpisode})`,
           url: `https://vidsrc.pm/embed/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}`,
           type: 'embed',
@@ -855,6 +861,12 @@ export async function GET(req: NextRequest) {
         servers.push({
           name: 'VidSrc VIP Global Full HD (Multi-Áudio)',
           url: `https://vidsrc.sh/embed/movie?tmdb=${targetTmdbId}`,
+          type: 'embed',
+          isDubbed: true,
+        });
+        servers.push({
+          name: 'VidSrc To Full HD (Ultra Rápido)',
+          url: `https://vidsrc.to/embed/movie/${targetTmdbId}`,
           type: 'embed',
           isDubbed: true,
         });
