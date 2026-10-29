@@ -199,7 +199,30 @@ export async function GET(req: NextRequest) {
     let tmdbId = searchParams.get('tmdbId') || '';
     const title = searchParams.get('title') || 'Série';
 
-    // Se tmdbId não foi fornecido, buscar no TMDB pelo título em português
+    // Se o link contiver tmdb= ou tmdb_ep=, extrair diretamente
+    if (!tmdbId && link.includes('tmdb=')) {
+      const match = link.match(/tmdb=(\d+)/);
+      if (match && match[1]) tmdbId = match[1];
+    }
+    if (!tmdbId && link.includes('tmdb_ep=')) {
+      const match = link.match(/tmdb_ep=(\d+)/);
+      if (match && match[1]) tmdbId = match[1];
+    }
+
+    // Se o link for de novela ou não tiver tmdbId, buscar no banco
+    if (!tmdbId && (link.includes('novelas=') || title)) {
+      try {
+        const db = getDb();
+        const row = db.prepare(
+          'SELECT tmdb_id FROM items WHERE link = ? OR link LIKE ? OR title = ? OR title LIKE ? LIMIT 1'
+        ).get(link, `%${link}%`, title, `%${title}%`) as { tmdb_id?: string } | undefined;
+        if (row && row.tmdb_id) {
+          tmdbId = row.tmdb_id;
+        }
+      } catch {}
+    }
+
+    // Se ainda assim não foi fornecido, buscar no TMDB pelo título em português
     if (!tmdbId && title && title !== 'Série') {
       try {
         const cleanTitle = title.replace(/\s*-\s*.*$/, '').trim();
@@ -302,6 +325,10 @@ export async function GET(req: NextRequest) {
         let isDorama = false;
         if (link.includes('resolver3_tvshows=')) {
           slug = link.split('resolver3_tvshows=')[1].split('|')[0];
+          // Evitar resolver3 com slugs puramente numéricos (animes trocados como no caso de 3%)
+          if (/^\d+$/.test(slug)) {
+            slug = '';
+          }
         } else if (link.includes('animes2=')) {
           slug = link.split('animes2=')[1].split('|')[0];
         } else {
@@ -309,27 +336,29 @@ export async function GET(req: NextRequest) {
           isDorama = true;
         }
 
-        let data = isDorama ? await callResolver(1, `tvshows=${slug}`) : null;
-        if (!data || typeof data !== 'object') {
-          data = await callResolver(3, `tvshows=${slug}`);
-        }
-        if (data && typeof data === 'object' && !data.result) {
-          for (const [seasonKey, seasonVal] of Object.entries(data)) {
-            const sNum = parseInt(seasonKey, 10) || 1;
-            seasonsMap[sNum] = seasonsMap[sNum] || [];
-            const eps = (seasonVal as any)?.episodes || {};
-            for (const [epKey, epVal] of Object.entries(eps)) {
-              const epNum = parseInt(epKey, 10) || 1;
-              const epTitle = (epVal as any)?.title || `Episódio ${epNum}`;
-              seasonsMap[sNum].push({
-                number: epNum,
-                title: epTitle,
-                duration: '45m',
-                link: isDorama
-                  ? `doramas_resolver1=${slug}&season=${sNum}&episode=${epNum}`
-                  : `resolver3_episodes=${slug}#${sNum}#${epNum}#Dublado&season=${sNum}&episode=${epNum}`,
-                streamUrl: ''
-              });
+        if (slug) {
+          let data = isDorama ? await callResolver(1, `tvshows=${slug}`) : null;
+          if (!data || typeof data !== 'object') {
+            data = await callResolver(3, `tvshows=${slug}`);
+          }
+          if (data && typeof data === 'object' && !data.result) {
+            for (const [seasonKey, seasonVal] of Object.entries(data)) {
+              const sNum = parseInt(seasonKey, 10) || 1;
+              seasonsMap[sNum] = seasonsMap[sNum] || [];
+              const eps = (seasonVal as any)?.episodes || {};
+              for (const [epKey, epVal] of Object.entries(eps)) {
+                const epNum = parseInt(epKey, 10) || 1;
+                const epTitle = (epVal as any)?.title || `Episódio ${epNum}`;
+                seasonsMap[sNum].push({
+                  number: epNum,
+                  title: epTitle,
+                  duration: '45m',
+                  link: isDorama
+                    ? `doramas_resolver1=${slug}&season=${sNum}&episode=${epNum}`
+                    : `resolver3_episodes=${slug}#${sNum}#${epNum}#Dublado&season=${sNum}&episode=${epNum}`,
+                  streamUrl: ''
+                });
+              }
             }
           }
         }
@@ -424,43 +453,60 @@ export async function GET(req: NextRequest) {
           if (validSeasons.length > 0) {
             // Se nenhuma das fontes acima retornou temporadas, estruturar as temporadas do TMDB
             if (Object.keys(seasonsMap).length === 0) {
-              for (const s of validSeasons) {
-                const sNum = s.season_number;
-                const epCount = s.episode_count || 10;
-                seasonsMap[sNum] = [];
-                for (let ep = 1; ep <= epCount; ep++) {
-                  seasonsMap[sNum].push({
-                    number: ep,
-                    title: `Episódio ${ep}`,
-                    duration: '45m',
-                    link: `${link}&season=${sNum}&episode=${ep}`,
-                    streamUrl: ''
-                  });
-                }
-              }
-            }
-
-            // Enriquecer nomes de episódios existentes com títulos oficiais em Português
-            const enrichSeasons = validSeasons.slice(0, 6);
-            await Promise.all(
-              enrichSeasons.map(async (s: any) => {
-                const sNum = s.season_number;
-                try {
+              await Promise.all(
+                validSeasons.map(async (s: any) => {
+                  const sNum = s.season_number;
+                  seasonsMap[sNum] = [];
                   const sEpisodes = await fetchTmdbSeasonEpisodes(tmdbId, sNum);
-                  if (Array.isArray(sEpisodes) && sEpisodes.length > 0 && seasonsMap[sNum]) {
+                  if (Array.isArray(sEpisodes) && sEpisodes.length > 0) {
                     sEpisodes.forEach((epObj: any) => {
-                      const existing = seasonsMap[sNum].find(e => e.number === epObj.episode_number);
-                      if (existing && epObj.name && epObj.name !== `Episódio ${epObj.episode_number}`) {
-                        existing.title = `Episódio ${epObj.episode_number}: ${epObj.name}`;
-                      }
-                      if (existing && epObj.still_path && !existing.thumbnail) {
-                        existing.thumbnail = `https://image.tmdb.org/t/p/w300${epObj.still_path}`;
-                      }
+                      const epNum = epObj.episode_number || 1;
+                      seasonsMap[sNum].push({
+                        number: epNum,
+                        title: epObj.name ? `Episódio ${epNum}: ${epObj.name}` : `Episódio ${epNum}`,
+                        duration: epObj.runtime ? `${epObj.runtime}m` : '45m',
+                        thumbnail: epObj.still_path ? `https://image.tmdb.org/t/p/w300${epObj.still_path}` : '',
+                        link: `tmdb_ep=${tmdbId}&season=${sNum}&episode=${epNum}&title=${encodeURIComponent(title)}`,
+                        streamUrl: ''
+                      });
                     });
+                  } else {
+                    const epCount = s.episode_count || 10;
+                    for (let ep = 1; ep <= epCount; ep++) {
+                      seasonsMap[sNum].push({
+                        number: ep,
+                        title: `Episódio ${ep}`,
+                        duration: '45m',
+                        link: `tmdb_ep=${tmdbId}&season=${sNum}&episode=${ep}&title=${encodeURIComponent(title)}`,
+                        streamUrl: ''
+                      });
+                    }
                   }
-                } catch {}
-              })
-            );
+                })
+              );
+            } else {
+              // Enriquecer nomes de episódios existentes com títulos oficiais em Português
+              const enrichSeasons = validSeasons.slice(0, 6);
+              await Promise.all(
+                enrichSeasons.map(async (s: any) => {
+                  const sNum = s.season_number;
+                  try {
+                    const sEpisodes = await fetchTmdbSeasonEpisodes(tmdbId, sNum);
+                    if (Array.isArray(sEpisodes) && sEpisodes.length > 0 && seasonsMap[sNum]) {
+                      sEpisodes.forEach((epObj: any) => {
+                        const existing = seasonsMap[sNum].find(e => e.number === epObj.episode_number);
+                        if (existing && epObj.name && epObj.name !== `Episódio ${epObj.episode_number}`) {
+                          existing.title = `Episódio ${epObj.episode_number}: ${epObj.name}`;
+                        }
+                        if (existing && epObj.still_path && !existing.thumbnail) {
+                          existing.thumbnail = `https://image.tmdb.org/t/p/w300${epObj.still_path}`;
+                        }
+                      });
+                    }
+                  } catch {}
+                })
+              );
+            }
           }
         }
       } catch (err) {

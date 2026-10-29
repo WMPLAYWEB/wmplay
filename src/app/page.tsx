@@ -1475,21 +1475,10 @@ export default function KodiApp() {
                 setActiveBrazucaCategory(null);
                 setSelectedSeriesItem(null);
               }}
-              className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-red-700 to-rose-800 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-bold py-2.5 rounded-lg shadow-md transition-all"
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-700 to-rose-800 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-bold py-2.5 rounded-lg shadow-md transition-all"
             >
               <Flame className="w-3.5 h-3.5" />
               <span>Brazuca Play</span>
-            </button>
-            <button
-              onClick={() => setIsZipModalOpen(true)}
-              className={`p-2.5 rounded-lg border transition-colors ${
-                isLight
-                  ? "bg-zinc-100 hover:bg-red-50 border-zinc-300 text-zinc-800 hover:text-red-600 shadow-sm"
-                  : "bg-slate-800 hover:bg-zinc-800 border-transparent text-slate-300 hover:text-white"
-              }`}
-              title="Instalar via ZIP"
-            >
-              <UploadCloud className="w-4 h-4 text-red-500" />
             </button>
           </div>
         </div>
@@ -1614,24 +1603,10 @@ export default function KodiApp() {
                     setSelectedSeriesItem(null);
                     setIsMobileMenuOpen(false);
                   }}
-                  className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-red-700 to-rose-800 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-bold py-2.5 rounded-xl shadow-md transition-all"
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-700 to-rose-800 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-bold py-2.5 rounded-xl shadow-md transition-all"
                 >
                   <Flame className="w-3.5 h-3.5" />
                   <span>Brazuca Play</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setIsZipModalOpen(true);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`p-2.5 rounded-xl border transition-colors ${
-                    isLight
-                      ? "bg-zinc-100 hover:bg-red-50 border-zinc-300 text-zinc-800 hover:text-red-600 shadow-sm"
-                      : "bg-slate-800 hover:bg-zinc-800 border-transparent text-slate-300 hover:text-white"
-                  }`}
-                  title="Instalar via ZIP"
-                >
-                  <UploadCloud className="w-4 h-4 text-red-500" />
                 </button>
               </div>
             </div>
@@ -1893,17 +1868,7 @@ export default function KodiApp() {
               <span className="font-black hidden sm:inline ml-1.5">{isLiteMode ? "TV Lite (Ativo)" : "Modo TV Lite"}</span>
             </button>
 
-            <button
-              onClick={() => setIsZipModalOpen(true)}
-              className={`hidden md:flex items-center gap-2 border text-xs font-bold px-4 py-2 rounded-xl transition-all ${
-                isLight
-                  ? "bg-zinc-100 hover:bg-red-50 border-zinc-300 hover:border-red-500 text-zinc-800 hover:text-red-600 shadow-sm"
-                  : "bg-slate-800 hover:bg-red-950/80 border-red-600/30 hover:border-red-500 text-red-400 font-semibold"
-              }`}
-            >
-              <UploadCloud className="w-4 h-4 text-red-500" />
-              <span>Instalar ZIP</span>
-            </button>
+
             <div className={`hidden sm:block h-6 w-px ${isLight ? "bg-zinc-300" : "bg-slate-800"}`} />
             <div className={`hidden sm:flex items-center gap-2 text-xs font-mono font-bold ${
               isLight ? "text-zinc-800" : "text-slate-400"
@@ -2376,9 +2341,17 @@ export default function KodiApp() {
                         )}
                       </div>
                       <h2 className={`text-3xl font-black ${isLight ? "text-zinc-950" : "text-white"}`}>{selectedSeriesItem.title}</h2>
-                      <p className={`text-sm leading-relaxed max-w-4xl line-clamp-4 ${isLight ? "text-zinc-700 font-semibold" : "text-slate-300"}`}>
-                        {selectedSeriesItem.synopsis || "Sinopse não informada pelo repositório."}
-                      </p>
+                      <div className={`mt-2 p-3.5 rounded-xl border max-w-4xl max-h-56 overflow-y-auto select-text shadow-inner ${
+                        isLight ? "bg-zinc-50 border-zinc-200" : "bg-black/40 border-zinc-800/80"
+                      }`}>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-[11px] font-black uppercase tracking-wider text-red-500">Sinopse Completa</span>
+                          <div className={`h-px flex-1 ${isLight ? "bg-zinc-200" : "bg-zinc-800"}`} />
+                        </div>
+                        <p className={`text-sm sm:text-base leading-relaxed ${isLight ? "text-zinc-800 font-medium" : "text-zinc-200 font-normal"}`}>
+                          {selectedSeriesItem.synopsis || "Sinopse não informada pelo repositório."}
+                        </p>
+                      </div>
                       <div className="pt-2 flex items-center gap-3 flex-wrap">
                         <button
                           type="button"
@@ -2622,9 +2595,17 @@ export default function KodiApp() {
                       )}
                     </div>
                     <h2 className={`text-3xl font-black ${isLight ? "text-zinc-950" : "text-white"}`}>{selectedSeriesItem.title}</h2>
-                    <p className={`text-sm leading-relaxed max-w-4xl line-clamp-4 ${isLight ? "text-zinc-700 font-semibold" : "text-slate-300"}`}>
-                      {selectedSeriesItem.synopsis || "Sinopse não informada pelo repositório."}
-                    </p>
+                    <div className={`mt-2 p-3.5 rounded-xl border max-w-4xl max-h-56 overflow-y-auto select-text shadow-inner ${
+                      isLight ? "bg-zinc-50 border-zinc-200" : "bg-black/40 border-zinc-800/80"
+                    }`}>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-[11px] font-black uppercase tracking-wider text-red-500">Sinopse Completa</span>
+                        <div className={`h-px flex-1 ${isLight ? "bg-zinc-200" : "bg-zinc-800"}`} />
+                      </div>
+                      <p className={`text-sm sm:text-base leading-relaxed ${isLight ? "text-zinc-800 font-medium" : "text-zinc-200 font-normal"}`}>
+                        {selectedSeriesItem.synopsis || "Sinopse não informada pelo repositório."}
+                      </p>
+                    </div>
                     <div className="pt-2 flex items-center gap-3 flex-wrap">
                       <button
                         type="button"
@@ -3037,14 +3018,6 @@ export default function KodiApp() {
                       </button>
                     ))}
                   </div>
-
-                  <button
-                    onClick={() => setIsZipModalOpen(true)}
-                    className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-rose-700 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-red-600/30 transition-all hover:scale-105"
-                  >
-                    <UploadCloud className="w-4 h-4" />
-                    <span>Instalar via ZIP</span>
-                  </button>
                 </div>
               </div>
 

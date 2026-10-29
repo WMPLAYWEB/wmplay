@@ -6,6 +6,7 @@ import WmplayLogo from "@/components/WmplayLogo";
 import Ps1Button from "@/components/Ps1Button";
 import {
   X,
+  Info,
   Play,
   Pause,
   Volume2,
@@ -296,6 +297,7 @@ export default function KodiVideoPlayer({
   // Menus Dropdown Superiores (Servidores e Ajustes)
   const [showServerMenu, setShowServerMenu] = useState<boolean>(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState<boolean>(false);
+  const [showSynopsisModal, setShowSynopsisModal] = useState<boolean>(false);
 
   // Auto-Ocultação de Controles (HUD) ao Assistir (Estilo Netflix / Kodi)
   const [isControlsVisible, setIsControlsVisible] = useState<boolean>(true);
@@ -1244,9 +1246,22 @@ export default function KodiVideoPlayer({
                   </span>
                 </div>
                 {info && (
-                  <p className="text-[11px] !text-zinc-300 truncate max-w-2xl hidden md:block">
-                    {info}
-                  </p>
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowSynopsisModal((prev) => !prev);
+                    }}
+                    title="Clique para abrir a sinopse completa"
+                    className="flex items-center gap-1.5 cursor-pointer group mt-0.5"
+                  >
+                    <Info className="w-3.5 h-3.5 text-red-400 shrink-0 group-hover:text-red-300" />
+                    <p className="text-xs !text-zinc-200 line-clamp-1 max-w-xl group-hover:!text-white transition-colors">
+                      {info}
+                    </p>
+                    <span className="text-[10px] text-red-400 font-bold ml-1 hover:underline shrink-0 hidden sm:inline">
+                      (Ver sinopse completa)
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
@@ -2296,6 +2311,53 @@ export default function KodiVideoPlayer({
                   <span>AirPlay</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE SINOPSE COMPLETA */}
+      {showSynopsisModal && info && (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowSynopsisModal(false);
+          }}
+          className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-xl bg-zinc-950 border border-zinc-700/80 rounded-2xl shadow-2xl p-6 text-white space-y-4"
+          >
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <Info className="w-5 h-5 text-red-500 shrink-0" />
+                <h3 className="font-black text-base sm:text-lg">{title}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSynopsisModal(false)}
+                className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="max-h-72 overflow-y-auto pr-2 space-y-2 select-text">
+              <span className="text-[11px] font-black uppercase tracking-wider text-red-400 block">
+                Sinopse Completa
+              </span>
+              <p className="text-sm sm:text-base leading-relaxed text-zinc-200">
+                {info}
+              </p>
+            </div>
+            <div className="pt-2 flex justify-end border-t border-zinc-800/80">
+              <button
+                type="button"
+                onClick={() => setShowSynopsisModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-colors cursor-pointer"
+              >
+                Fechar
+              </button>
             </div>
           </div>
         </div>

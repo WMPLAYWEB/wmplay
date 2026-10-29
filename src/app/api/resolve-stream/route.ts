@@ -362,6 +362,12 @@ export async function GET(req: NextRequest) {
             type: 'video',
             isDubbed: true
           });
+          servers.push({
+            name: `Transmissão Acelerada Anti-Travamento T${season}E${episode}`,
+            url: `/api/proxy-stream?url=${encodeURIComponent(finalUrl)}`,
+            type: 'video',
+            isDubbed: true
+          });
         }
       } catch (err) {
         console.error('Erro ao extrair resolver2_episodes:', err);
@@ -387,6 +393,12 @@ export async function GET(req: NextRequest) {
                 servers.push({
                   name: `Transmissão Direta Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
                   url: finalUrl,
+                  type: 'video',
+                  isDubbed: true
+                });
+                servers.push({
+                  name: `Transmissão Acelerada Anti-Travamento T${season}E${episode}`,
+                  url: `/api/proxy-stream?url=${encodeURIComponent(finalUrl)}`,
                   type: 'video',
                   isDubbed: true
                 });
@@ -469,6 +481,12 @@ export async function GET(req: NextRequest) {
               type: 'video',
               isDubbed: true
             });
+            servers.push({
+              name: 'Transmissão Acelerada Anti-Travamento (Proxy Seguro)',
+              url: `/api/proxy-stream?url=${encodeURIComponent(finalUrl)}`,
+              type: 'video',
+              isDubbed: true
+            });
           }
         }
       } catch (err) {
@@ -500,6 +518,12 @@ export async function GET(req: NextRequest) {
                 servers.push({
                   name: 'Transmissão Direta Full HD Dublado (Sem Anúncios)',
                   url: finalUrl,
+                  type: 'video',
+                  isDubbed: true
+                });
+                servers.push({
+                  name: 'Transmissão Acelerada Anti-Travamento (Proxy Seguro)',
+                  url: `/api/proxy-stream?url=${encodeURIComponent(finalUrl)}`,
                   type: 'video',
                   isDubbed: true
                 });
@@ -758,6 +782,22 @@ export async function GET(req: NextRequest) {
     // 8. REDE UNIVERSAL DE SERVIDORES DE BACKUP HD DUBLADO (GARANTIA 100%)
     // =========================================================================
     let targetTmdbId = tmdbId;
+    let targetSeason = season;
+    let targetEpisode = episode;
+
+    if (!targetTmdbId && link.includes('tmdb_ep=')) {
+      const match = link.match(/tmdb_ep=(\d+)/);
+      if (match) targetTmdbId = match[1];
+      const sMatch = link.match(/season=(\d+)/);
+      if (sMatch) targetSeason = sMatch[1];
+      const eMatch = link.match(/episode=(\d+)/);
+      if (eMatch) targetEpisode = eMatch[1];
+    }
+    if (!targetTmdbId && link.includes('tmdb=')) {
+      const match = link.match(/tmdb=(\d+)/);
+      if (match) targetTmdbId = match[1];
+    }
+
     if (!targetTmdbId && title) {
       try {
         const cleanTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -770,34 +810,29 @@ export async function GET(req: NextRequest) {
     }
 
     if (targetTmdbId) {
-      if (mediaType === 'tv') {
+      const isSeries = mediaType === 'tv' || link.includes('tmdb_ep=') || link.includes('season=') || link.includes('resolver2_tvshows=') || link.includes('serie3=');
+      if (isSeries) {
         servers.push({
-          name: `VidLink Pro Full HD 1080p (Alta Velocidade T${season}E${episode})`,
-          url: `https://vidlink.pro/tv/${targetTmdbId}/${season}/${episode}?primaryColor=e50914&secondaryColor=ffffff`,
+          name: `VidLink Pro Full HD 1080p (Alta Velocidade T${targetSeason}E${targetEpisode})`,
+          url: `https://vidlink.pro/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}?primaryColor=e50914&secondaryColor=ffffff`,
           type: 'embed',
           isDubbed: true,
         });
         servers.push({
-          name: `VidSrc CDN Full HD (T${season}E${episode})`,
-          url: `https://vidsrc.to/embed/tv/${targetTmdbId}/${season}/${episode}`,
+          name: `MultiEmbed Multi-Stream Full HD (T${targetSeason}E${targetEpisode})`,
+          url: `https://multiembed.mov/?video_id=${targetTmdbId}&tmdb=1&s=${targetSeason}&e=${targetEpisode}`,
           type: 'embed',
           isDubbed: true,
         });
         servers.push({
-          name: `VidSrc Multi-Áudio Full HD (T${season}E${episode})`,
-          url: `https://vidsrc.sh/embed/tv?tmdb=${targetTmdbId}&season=${season}&episode=${episode}`,
+          name: `VidSrc Prime Full HD (T${targetSeason}E${targetEpisode})`,
+          url: `https://vidsrc.pm/embed/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}`,
           type: 'embed',
           isDubbed: true,
         });
         servers.push({
-          name: `Embedder Multi-Áudio (T${season}E${episode})`,
-          url: `https://embedder.net/e/series?tmdb=${targetTmdbId}&sea=${season}&epi=${episode}`,
-          type: 'embed',
-          isDubbed: true,
-        });
-        servers.push({
-          name: `SuperFlix Backup (T${season}E${episode})`,
-          url: `https://superflixapi.top/serie/${targetTmdbId}/${season}/${episode}`,
+          name: `2Embed CDN Full HD (T${targetSeason}E${targetEpisode})`,
+          url: `https://www.2embed.cc/embedtv/${targetTmdbId}&s=${targetSeason}&e=${targetEpisode}`,
           type: 'embed',
           isDubbed: true,
         });
@@ -809,26 +844,20 @@ export async function GET(req: NextRequest) {
           isDubbed: true,
         });
         servers.push({
-          name: 'VidSrc CDN Full HD (1080p)',
-          url: `https://vidsrc.to/embed/movie/${targetTmdbId}`,
+          name: 'MultiEmbed Multi-Stream Full HD (Player Universal)',
+          url: `https://multiembed.mov/?video_id=${targetTmdbId}&tmdb=1`,
           type: 'embed',
           isDubbed: true,
         });
         servers.push({
-          name: 'VidSrc Multi-Áudio Full HD',
-          url: `https://vidsrc.sh/embed/movie?tmdb=${targetTmdbId}`,
+          name: 'VidSrc Prime Full HD (1080p)',
+          url: `https://vidsrc.pm/embed/movie/${targetTmdbId}`,
           type: 'embed',
           isDubbed: true,
         });
         servers.push({
-          name: 'Embedder Multi-Áudio Full HD',
-          url: `https://embedder.net/e/movie?tmdb=${targetTmdbId}`,
-          type: 'embed',
-          isDubbed: true,
-        });
-        servers.push({
-          name: 'SuperFlix Backup HD Dublado',
-          url: `https://superflixapi.top/filme/${targetTmdbId}`,
+          name: '2Embed CDN Full HD (Ultra Rápido)',
+          url: `https://www.2embed.cc/embed/${targetTmdbId}`,
           type: 'embed',
           isDubbed: true,
         });
