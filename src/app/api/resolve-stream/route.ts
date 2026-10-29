@@ -15,7 +15,8 @@ function getDb(): DatabaseSync {
 
 const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXNvbHZlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc5MDk4OTczfQ.WzQBuOqMai96Afleh9g-i7NXo6h-YsjPUbOgxlUqVsU';
 const HOSTS = ['api.geekantenado.online', 'geekantenado.fly.dev'];
-const OVERFLIX_HOST = 'www.overflix.win';
+const OVERFLIX_HOSTS = ['www.overflix.download', 'www.overflix.asia', 'www.overflix.win'];
+const OVERFLIX_HOST = OVERFLIX_HOSTS[0];
 
 export interface StreamServer {
   name: string;
@@ -27,7 +28,7 @@ export interface StreamServer {
 async function fetchOverflix(pathOrUrl: string, referer: string): Promise<any> {
   const initialUrl = pathOrUrl.startsWith('http') ? pathOrUrl : `https://${OVERFLIX_HOST}${pathOrUrl}`;
   return new Promise((resolve) => {
-    const doFetch = (targetUrl: string, depth = 0) => {
+    const doFetch = (targetUrl: string, depth = 0, hostIdx = 0) => {
       if (depth > 3) return resolve(null);
       try {
         const u = new URL(targetUrl);
@@ -45,7 +46,7 @@ async function fetchOverflix(pathOrUrl: string, referer: string): Promise<any> {
             const nextLoc = res.headers.location.startsWith('http')
               ? res.headers.location
               : `https://${u.hostname}${res.headers.location}`;
-            return doFetch(nextLoc, depth + 1);
+            return doFetch(nextLoc, depth + 1, hostIdx);
           }
           let data = '';
           res.on('data', chunk => data += chunk);
@@ -53,19 +54,27 @@ async function fetchOverflix(pathOrUrl: string, referer: string): Promise<any> {
             try {
               const json = JSON.parse(data);
               if (json && json.redirect && typeof json.redirect === 'string') {
-                return doFetch(json.redirect, depth + 1);
+                return doFetch(json.redirect, depth + 1, hostIdx);
               }
               resolve(json);
             } catch {
+              if (hostIdx + 1 < OVERFLIX_HOSTS.length && !targetUrl.startsWith('http')) {
+                return doFetch(`https://${OVERFLIX_HOSTS[hostIdx + 1]}${pathOrUrl}`, depth, hostIdx + 1);
+              }
               resolve(null);
             }
           });
-        }).on('error', () => resolve(null));
+        }).on('error', () => {
+          if (hostIdx + 1 < OVERFLIX_HOSTS.length && !targetUrl.startsWith('http')) {
+            return doFetch(`https://${OVERFLIX_HOSTS[hostIdx + 1]}${pathOrUrl}`, depth, hostIdx + 1);
+          }
+          resolve(null);
+        });
       } catch {
         resolve(null);
       }
     };
-    doFetch(initialUrl);
+    doFetch(initialUrl, 0, 0);
   });
 }
 
@@ -199,7 +208,7 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
         tapeValid = true;
         const finalMp4 = await getRedirectLocation(directTape);
         servers.push({
-          name: `Transmissão Direta Full HD Dublado (Sem Anúncios)`,
+          name: `Servidor StreamTape Full HD Dublado (CDN Rápida)`,
           url: finalMp4,
           type: 'video',
           isDubbed: true
@@ -217,7 +226,7 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
       if (directMix) {
         const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
         servers.push({
-          name: servers.length === 0 ? `Transmissão Direta Full HD Dublado (Sem Anúncios)` : `Servidor 2 Full HD Direto (Sem Anúncios)`,
+          name: `Servidor MixDrop Full HD Dublado (Anti-Buffer)`,
           url: proxiedUrl,
           type: 'video',
           isDubbed: true
@@ -393,7 +402,7 @@ export async function GET(req: NextRequest) {
     // =========================================================================
     // 2. REPRODUÇÃO DIRETA DO RESOLVER 3 EPISODES OU TVSHOWS (Wasabi S3 MP4 Sem Anúncios)
     // =========================================================================
-    if (servers.length === 0 && (link.includes('resolver3_episodes=') || link.includes('resolver3_tvshows=') || link.includes('animes2='))) {
+    if (link.includes('resolver3_episodes=') || link.includes('resolver3_tvshows=') || link.includes('animes2=')) {
       try {
         let epSlug = '';
         if (link.includes('resolver3_episodes=')) {
@@ -418,8 +427,14 @@ export async function GET(req: NextRequest) {
         }
         if (directWasabi && directWasabi.startsWith('http')) {
           servers.push({
-            name: `Transmissão Wasabi Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
+            name: `Servidor 1: Transmissão Wasabi Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
             url: directWasabi,
+            type: 'video',
+            isDubbed: true
+          });
+          servers.push({
+            name: `Servidor 2: Wasabi Acelerado (Buffer Anti-Travamento)`,
+            url: `/api/proxy-stream?url=${encodeURIComponent(directWasabi)}`,
             type: 'video',
             isDubbed: true
           });
@@ -527,7 +542,9 @@ export async function GET(req: NextRequest) {
       } catch (err) {
         console.error('Erro ao resolver serie3_ep:', err);
       }
-    } else if (mediaType === 'tv' && link.includes('serie3=')) {
+    }
+    
+    if (link.includes('serie3=')) {
       try {
         const match = link.match(/serie3=([a-zA-Z0-9_\-]+)/);
         if (match && match[1]) {

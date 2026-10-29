@@ -14,7 +14,8 @@ function getDb(): DatabaseSync {
 
 const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXNvbHZlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc5MDk4OTczfQ.WzQBuOqMai96Afleh9g-i7NXo6h-YsjPUbOgxlUqVsU';
 const HOSTS = ['api.geekantenado.online', 'geekantenado.fly.dev'];
-const OVERFLIX_HOST = 'www.overflix.asia';
+const OVERFLIX_HOSTS = ['www.overflix.download', 'www.overflix.asia', 'www.overflix.win'];
+const OVERFLIX_HOST = OVERFLIX_HOSTS[0];
 const TMDB_KEY = '4e44d9029b1270a757cddc766a1bcb63';
 
 // In-memory cache for ultra-fast response
@@ -70,30 +71,49 @@ async function callResolver(resolverNum: number, requestStr: string): Promise<an
 
 async function fetchOverflixEpisodes(seriesId: string, season: number, referer: string): Promise<any[]> {
   const fetchAudio = (audio: string) => new Promise<any[]>((resolve) => {
-    const url = `https://${OVERFLIX_HOST}/index.php?app=videobox&module=video&controller=view&do=episodesList&id=${seriesId}&season=${season}&audio=${audio}`;
-    https.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Referer': referer
-      },
-      timeout: 5000
-    }, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed && Array.isArray(parsed.episodes)) {
-            resolve(parsed.episodes);
-          } else {
-            resolve([]);
+    const doFetch = (hostIndex = 0, targetUrl?: string) => {
+      if (hostIndex >= OVERFLIX_HOSTS.length && !targetUrl) return resolve([]);
+      const currentHost = OVERFLIX_HOSTS[hostIndex] || 'www.overflix.download';
+      const url = targetUrl || `https://${currentHost}/index.php?app=videobox&module=video&controller=view&do=episodesList&id=${seriesId}&season=${season}&audio=${audio}`;
+      
+      try {
+        const u = new URL(url);
+        https.get({
+          hostname: u.hostname,
+          path: u.pathname + u.search,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Referer': referer
+          },
+          timeout: 5000
+        }, (res) => {
+          if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+            const nextLoc = res.headers.location.startsWith('http') ? res.headers.location : `https://${u.hostname}${res.headers.location}`;
+            return doFetch(hostIndex, nextLoc);
           }
-        } catch {
-          resolve([]);
-        }
-      });
-    }).on('error', () => resolve([]));
+          let data = '';
+          res.on('data', chunk => data += chunk);
+          res.on('end', () => {
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed && parsed.redirect && typeof parsed.redirect === 'string') {
+                return doFetch(hostIndex, parsed.redirect);
+              }
+              if (parsed && Array.isArray(parsed.episodes)) {
+                return resolve(parsed.episodes);
+              }
+              doFetch(hostIndex + 1);
+            } catch {
+              doFetch(hostIndex + 1);
+            }
+          });
+        }).on('error', () => doFetch(hostIndex + 1));
+      } catch {
+        doFetch(hostIndex + 1);
+      }
+    };
+    doFetch(0);
   });
 
   let eps = await fetchAudio('Dublado');

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Hls from "hls.js";
 import WmplayLogo from "@/components/WmplayLogo";
 import Ps1Button from "@/components/Ps1Button";
@@ -126,6 +126,71 @@ export default function KodiVideoPlayer({
   useEffect(() => {
     if (currentSeason) setDrawerSeasonTab(currentSeason);
   }, [currentSeason]);
+
+  // Notificação visual ao pular resumo
+  const [skipFeedback, setSkipFeedback] = useState<string | null>(null);
+
+  // Cálculo inteligente de próximo episódio (suporta mudança de temporada)
+  const localNextEpisode = useMemo(() => {
+    if (!seriesSeasons || seriesSeasons.length === 0 || !currentSeason || !currentEpisode) {
+      return null;
+    }
+    const thisSeason = seriesSeasons.find(s => s.seasonNumber === currentSeason);
+    if (thisSeason) {
+      const nextInSame = thisSeason.episodes.find(e => e.number === currentEpisode + 1);
+      if (nextInSame) {
+        return {
+          seasonNum: currentSeason,
+          epNum: nextInSame.number,
+          title: nextInSame.title,
+          link: nextInSame.link || nextInSame.streamUrl
+        };
+      }
+    }
+    const nextSeason = seriesSeasons.find(s => s.seasonNumber === currentSeason + 1);
+    if (nextSeason && nextSeason.episodes && nextSeason.episodes.length > 0) {
+      const firstEp = nextSeason.episodes[0];
+      return {
+        seasonNum: nextSeason.seasonNumber,
+        epNum: firstEp.number,
+        title: firstEp.title,
+        link: firstEp.link || firstEp.streamUrl
+      };
+    }
+    return null;
+  }, [seriesSeasons, currentSeason, currentEpisode]);
+
+  const canGoNextEpisode = Boolean(hasNextEpisode || localNextEpisode);
+
+  const triggerNextEpisode = () => {
+    if (onNextEpisode) {
+      onNextEpisode();
+      return;
+    }
+    if (localNextEpisode && onSelectEpisode) {
+      onSelectEpisode(
+        localNextEpisode.seasonNum,
+        localNextEpisode.epNum,
+        localNextEpisode.title,
+        localNextEpisode.link
+      );
+    }
+  };
+
+  const handleSkipRecap = () => {
+    if (videoRef.current) {
+      const dur = videoRef.current.duration || 999999;
+      videoRef.current.currentTime = Math.min(dur - 10, videoRef.current.currentTime + 85);
+      setSkipFeedback("Resumo Pulado (+85s)");
+      setTimeout(() => setSkipFeedback(null), 2000);
+    }
+  };
+
+  const isSeries = Boolean(
+    currentEpisode ||
+    (seriesSeasons && seriesSeasons.length > 0) ||
+    (title && (title.includes(" - T") || title.includes("Episódio")))
+  );
 
   // Transmissão Direta para Smart TV (WMPLAY Connect / Chromecast / AirPlay)
   const [isCastModalOpen, setIsCastModalOpen] = useState(false);
@@ -748,6 +813,28 @@ export default function KodiVideoPlayer({
         }
       }
 
+      // Pular Resumo / Abertura (Tecla R)
+      if (e.key === "r" || e.key === "R") {
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag !== "input" && tag !== "textarea") {
+          e.preventDefault();
+          handleSkipRecap();
+          return;
+        }
+      }
+
+      // Próximo Episódio (Tecla N)
+      if (e.key === "n" || e.key === "N") {
+        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+        if (tag !== "input" && tag !== "textarea") {
+          e.preventDefault();
+          if (canGoNextEpisode) {
+            triggerNextEpisode();
+          }
+          return;
+        }
+      }
+
       // Ajustar Volume nas Setas Cima / Baixo (passo de 10%)
       if (e.key === "ArrowUp") {
         const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
@@ -1009,6 +1096,28 @@ export default function KodiVideoPlayer({
           setIsLoading(false);
           setIsPlaying(true);
           setHasStartedPlaying(true);
+          if (video && video.playbackRate !== 1.0) {
+            video.playbackRate = 1.0;
+          }
+        };
+
+        let stallCount = 0;
+        let lastStallTime = 0;
+        const handleWaiting = () => {
+          setIsLoading(true);
+          const now = Date.now();
+          if (now - lastStallTime < 15000) {
+            stallCount++;
+          } else {
+            stallCount = 1;
+          }
+          lastStallTime = now;
+
+          // Se travar repetidamente e tiver servidor reserva ou proxy anti-buffer, alternar automaticamente
+          if (stallCount >= 3 && servers.length > 1 && activeServerIndex + 1 < servers.length) {
+            console.warn(`[WMPLAY] Travamento de buffer detectado no servidor ${activeServerIndex + 1}, alternando para o servidor reserva: ${servers[activeServerIndex + 1]?.name}`);
+            onSelectServer(activeServerIndex + 1);
+          }
         };
 
         const handleError = () => {
@@ -1029,6 +1138,7 @@ export default function KodiVideoPlayer({
         video.addEventListener("loadedmetadata", handleInitialReady);
         video.addEventListener("canplay", handleInitialReady);
         video.addEventListener("playing", handlePlaying);
+        video.addEventListener("waiting", handleWaiting);
         video.addEventListener("error", handleError);
 
         // Timer de segurança: libera os controles após 1.5s para garantir que o player nunca trave
@@ -1041,6 +1151,7 @@ export default function KodiVideoPlayer({
           video.removeEventListener("loadedmetadata", handleInitialReady);
           video.removeEventListener("canplay", handleInitialReady);
           video.removeEventListener("playing", handlePlaying);
+          video.removeEventListener("waiting", handleWaiting);
           video.removeEventListener("error", handleError);
         };
       }
@@ -1233,15 +1344,15 @@ export default function KodiVideoPlayer({
               )}
 
               {/* Botão Próximo Episódio (Séries) */}
-              {hasNextEpisode && onNextEpisode && (
+              {canGoNextEpisode && (
                 <button
                   type="button"
-                  onClick={onNextEpisode}
-                  className="flex items-center gap-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl !bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 !text-white text-xs font-black shadow-lg shadow-red-600/30 transition-all cursor-pointer"
-                  title="Assistir Próximo Episódio"
+                  onClick={triggerNextEpisode}
+                  className="flex items-center gap-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl !bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 !text-white text-xs font-black shadow-lg shadow-red-600/30 transition-all cursor-pointer hover:scale-105"
+                  title="Assistir Próximo Episódio (Tecla N)"
                 >
                   <SkipForward className="w-3.5 h-3.5 sm:w-4 sm:h-4 !text-white" />
-                  <span className="hidden md:inline !text-white font-bold">Próximo</span>
+                  <span className="inline !text-white font-bold">Próx.</span>
                 </button>
               )}
 
@@ -1628,7 +1739,7 @@ export default function KodiVideoPlayer({
             )}
 
             {/* Prompt de Próximo Episódio */}
-            {showNextPrompt && hasNextEpisode && onNextEpisode && !isMiniPlayer && (
+            {showNextPrompt && canGoNextEpisode && !isMiniPlayer && (
               <div className="absolute bottom-20 right-4 sm:right-6 z-30 flex items-center gap-3 p-3 sm:p-4 rounded-2xl bg-zinc-950/95 backdrop-blur-md border border-red-500/50 shadow-2xl animate-in slide-in-from-right-4 duration-300">
                 <div className="w-9 h-9 rounded-xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
                   <SkipForward className="w-5 h-5" />
@@ -1641,12 +1752,52 @@ export default function KodiVideoPlayer({
                   type="button"
                   onClick={() => {
                     setShowNextPrompt(false);
-                    onNextEpisode();
+                    triggerNextEpisode();
                   }}
                   className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black shadow-lg shadow-red-600/30 transition-all cursor-pointer whitespace-nowrap"
                 >
                   Assistir Agora
                 </button>
+              </div>
+            )}
+
+            {/* Botões Flutuantes de Ação Rápida (Pular Resumo Invisível / Próximo Episódio) */}
+            {!isMiniPlayer && !showNextPrompt && isSeries && (
+              <div className="absolute bottom-24 right-4 sm:right-8 z-30 flex items-center gap-2 pointer-events-auto">
+                {/* Botão de Pular Resumo (Design semi-transparente que não tampa o vídeo) */}
+                <button
+                  type="button"
+                  onClick={handleSkipRecap}
+                  className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-2xl bg-black/25 hover:bg-black/85 backdrop-blur-sm border border-white/15 hover:border-white/40 text-white/70 hover:text-white shadow-xl transition-all duration-200 cursor-pointer hover:scale-105 active:scale-95 select-none"
+                  title="Pular Resumo (+85s) - Tecla R"
+                >
+                  <FastForward className="w-3.5 h-3.5 text-amber-400/90" />
+                  <span className="text-xs font-bold tracking-wide">Pular Resumo</span>
+                  <span className="text-[10px] font-mono opacity-60 hidden sm:inline">+85s</span>
+                </button>
+
+                {/* Botão Flutuante de Próximo Episódio */}
+                {canGoNextEpisode && (
+                  <button
+                    type="button"
+                    onClick={triggerNextEpisode}
+                    className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-xl shadow-red-600/30 transition-all duration-200 cursor-pointer hover:scale-105 active:scale-95 select-none text-xs font-black"
+                    title="Assistir Próximo Episódio - Tecla N"
+                  >
+                    <SkipForward className="w-3.5 h-3.5 fill-white text-white" />
+                    <span>Próximo Episódio</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Feedback Visual de Pular Resumo */}
+            {skipFeedback && !isMiniPlayer && (
+              <div className="absolute top-16 sm:top-20 z-30 pointer-events-none flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-black/85 backdrop-blur-md border border-amber-500/50 text-white shadow-2xl animate-in zoom-in-75 duration-150">
+                <FastForward className="w-5 h-5 text-amber-400 fill-amber-400" />
+                <span className="text-xs sm:text-sm font-black text-amber-300">
+                  {skipFeedback}
+                </span>
               </div>
             )}
 
@@ -1745,13 +1896,19 @@ export default function KodiVideoPlayer({
                 const v = e.currentTarget;
                 const ct = v.currentTime;
                 const dur = v.duration;
+
+                // Previne lentidão / desync do vídeo ("imagem lenta") garantindo sincronismo
+                if (v.playbackRate !== playbackSpeed) {
+                  v.playbackRate = playbackSpeed;
+                }
+
                 if (dur > 0 && Math.abs(ct - lastProgressReportRef.current) >= 3) {
                   lastProgressReportRef.current = ct;
                   if (onProgressUpdate) {
                     onProgressUpdate(ct, dur);
                   }
                 }
-                if (hasNextEpisode && dur > 60 && dur - ct <= 25 && dur - ct > 1) {
+                if (canGoNextEpisode && dur > 60 && dur - ct <= 25 && dur - ct > 1) {
                   setShowNextPrompt(true);
                   setCountdownNext(Math.max(0, Math.ceil(dur - ct)));
                 } else if (showNextPrompt && dur - ct > 25) {
@@ -1762,14 +1919,17 @@ export default function KodiVideoPlayer({
                 if (videoRef.current && onProgressUpdate) {
                   onProgressUpdate(videoRef.current.duration, videoRef.current.duration);
                 }
-                if (hasNextEpisode && onNextEpisode) {
-                  onNextEpisode();
+                if (canGoNextEpisode) {
+                  triggerNextEpisode();
                 }
               }}
               onPlay={() => {
                 setIsPlaying(true);
                 setIsLoading(false);
                 setHasStartedPlaying(true);
+                if (videoRef.current && videoRef.current.playbackRate !== playbackSpeed) {
+                  videoRef.current.playbackRate = playbackSpeed;
+                }
               }}
               onPause={() => {
                 lastNativePauseTimeRef.current = Date.now();
@@ -1780,10 +1940,16 @@ export default function KodiVideoPlayer({
                   setIsLoading(true);
                 }
               }}
+              onCanPlay={() => {
+                setIsLoading(false);
+              }}
               onPlaying={() => {
                 setIsPlaying(true);
                 setIsLoading(false);
                 setHasStartedPlaying(true);
+                if (videoRef.current && videoRef.current.playbackRate !== playbackSpeed) {
+                  videoRef.current.playbackRate = playbackSpeed;
+                }
               }}
             />
 

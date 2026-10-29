@@ -679,6 +679,17 @@ export default function KodiApp() {
       initialResumeTime,
     });
 
+    if (isTv && directUrl) {
+      fetch(`/api/episodes?link=${encodeURIComponent(directUrl)}&tmdbId=${encodeURIComponent(tmdbId || '')}&title=${encodeURIComponent(title || '')}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && Array.isArray(data.seasons) && data.seasons.length > 0) {
+            setSeriesSeasons(data.seasons);
+          }
+        })
+        .catch(() => {});
+    }
+
     const params = new URLSearchParams({
       link: directUrl || "",
       title: title || "",
@@ -784,25 +795,56 @@ export default function KodiApp() {
     return seriesSeasons.find((s) => s.seasonNumber === playingMedia.seasonNum) || null;
   }, [playingMedia?.isTv, playingMedia?.seasonNum, seriesSeasons]);
 
-  const nextEpisodeObj = React.useMemo(() => {
-    if (!currentSeason || !playingMedia?.epNum) return null;
-    return currentSeason.episodes.find((ep) => ep.number === playingMedia.epNum! + 1) || null;
-  }, [currentSeason, playingMedia?.epNum]);
+  const nextEpisodeInfo = React.useMemo(() => {
+    if (!playingMedia?.isTv || !playingMedia.seasonNum || !playingMedia.epNum || seriesSeasons.length === 0) {
+      return null;
+    }
+    const thisSeason = seriesSeasons.find((s) => s.seasonNumber === playingMedia.seasonNum);
+    if (thisSeason) {
+      const nextInSame = thisSeason.episodes.find((ep) => ep.number === playingMedia.epNum! + 1);
+      if (nextInSame) {
+        return {
+          seasonNum: playingMedia.seasonNum,
+          epNum: nextInSame.number,
+          title: nextInSame.title,
+          link: nextInSame.link || nextInSame.streamUrl,
+        };
+      }
+    }
+    // Verificar se existe a próxima temporada (Ex: Fim da Temp 1 -> Início da Temp 2)
+    const nextSeason = seriesSeasons.find((s) => s.seasonNumber === playingMedia.seasonNum! + 1);
+    if (nextSeason && nextSeason.episodes && nextSeason.episodes.length > 0) {
+      const firstEp = nextSeason.episodes[0];
+      return {
+        seasonNum: nextSeason.seasonNumber,
+        epNum: firstEp.number,
+        title: firstEp.title,
+        link: firstEp.link || firstEp.streamUrl,
+      };
+    }
+    return null;
+  }, [playingMedia?.isTv, playingMedia?.seasonNum, playingMedia?.epNum, seriesSeasons]);
 
-  const hasNextEpisode = Boolean(nextEpisodeObj && selectedSeriesItem);
+  const hasNextEpisode = Boolean(nextEpisodeInfo);
 
   const handleNextEpisode = useCallback(() => {
-    if (!nextEpisodeObj || !selectedSeriesItem || !playingMedia?.seasonNum) return;
+    if (!nextEpisodeInfo) return;
+    const baseTitle = selectedSeriesItem?.title || playingMedia?.title.split(" - T")[0] || "Série";
+    const synopsis = selectedSeriesItem?.synopsis || playingMedia?.info;
+    const thumbnail = selectedSeriesItem?.thumbnail || playingMedia?.poster;
+    const tmdbId = selectedSeriesItem?.tmdb_id || playingMedia?.tmdbId;
+    const link = nextEpisodeInfo.link || selectedSeriesItem?.link || playingMedia?.directUrl;
+
     handlePlayMedia(
-      `${selectedSeriesItem.title} - T${playingMedia.seasonNum}E${nextEpisodeObj.number}: ${nextEpisodeObj.title}`,
-      selectedSeriesItem.synopsis,
-      selectedSeriesItem.thumbnail,
-      selectedSeriesItem.tmdb_id,
-      nextEpisodeObj.link || selectedSeriesItem.link || nextEpisodeObj.streamUrl,
-      playingMedia.seasonNum,
-      nextEpisodeObj.number
+      `${baseTitle} - T${nextEpisodeInfo.seasonNum}E${nextEpisodeInfo.epNum}: ${nextEpisodeInfo.title}`,
+      synopsis || "",
+      thumbnail || "",
+      tmdbId || "",
+      link || "",
+      nextEpisodeInfo.seasonNum,
+      nextEpisodeInfo.epNum
     );
-  }, [nextEpisodeObj, selectedSeriesItem, playingMedia?.seasonNum, handlePlayMedia]);
+  }, [nextEpisodeInfo, selectedSeriesItem, playingMedia, handlePlayMedia]);
 
   const handleSelectEpisodeInPlayer = useCallback(
     (seasonNum: number, epNum: number, episodeTitle: string, episodeLink?: string) => {
