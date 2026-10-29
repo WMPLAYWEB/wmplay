@@ -1174,11 +1174,7 @@ export default function KodiVideoPlayer({
         };
       }
     } else {
-      // Embed iframe loading timer
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-      }, 1500);
-      return () => clearTimeout(timer);
+      setIsLoading(false);
     }
 
     return () => {
@@ -1673,8 +1669,8 @@ export default function KodiVideoPlayer({
             : "w-full h-full relative bg-black flex items-center justify-center overflow-hidden"
         }
       >
-        {/* Indicador de Carregamento */}
-        {isLoading && (
+        {/* Indicador de Carregamento (Apenas no Player Nativo Direto) */}
+        {isLoading && currentServer?.type === "video" && (
           <div className="absolute inset-0 z-10 bg-black/85 flex flex-col items-center justify-center gap-3 backdrop-blur-sm pointer-events-none">
             <Loader2 className={isMiniPlayer ? "w-7 h-7 text-red-500 animate-spin" : "w-12 h-12 text-red-500 animate-spin"} />
             {!isMiniPlayer && (
@@ -1690,8 +1686,8 @@ export default function KodiVideoPlayer({
           </div>
         )}
 
-        {/* Fallback de Erro */}
-        {hasError && (
+        {/* Fallback de Erro (Apenas no Player Nativo Direto) */}
+        {hasError && currentServer?.type === "video" && (
           <div className="absolute inset-0 z-10 bg-black/95 flex flex-col items-center justify-center gap-3 p-4 text-center">
             <div className="w-12 h-12 rounded-2xl bg-red-950/80 border border-red-500/40 flex items-center justify-center text-red-400">
               <AlertCircle className="w-6 h-6" />
@@ -2098,6 +2094,7 @@ export default function KodiVideoPlayer({
         ) : (
           <div className="w-full h-full relative flex flex-col items-center justify-center bg-black">
             <iframe
+              key={currentServer?.url}
               src={currentServer?.url}
               className="w-full h-full border-0"
               referrerPolicy="no-referrer"

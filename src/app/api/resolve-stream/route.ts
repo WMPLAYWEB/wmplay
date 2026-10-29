@@ -834,14 +834,14 @@ export async function GET(req: NextRequest) {
       const isSeries = mediaType === 'tv' || link.includes('tmdb_ep=') || link.includes('season=') || link.includes('resolver2_tvshows=') || link.includes('serie3=');
       if (isSeries) {
         servers.push({
-          name: `VidSrc Prime Full HD (T${targetSeason}E${targetEpisode})`,
-          url: `https://vidsrc.pm/embed/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}`,
+          name: `VidSrc VIP Global Full HD (Multi-Áudio T${targetSeason}E${targetEpisode})`,
+          url: `https://vidsrc.sh/embed/tv?tmdb=${targetTmdbId}&season=${targetSeason}&episode=${targetEpisode}`,
           type: 'embed',
           isDubbed: true,
         });
         servers.push({
-          name: `VidSrc VIP Global Full HD (Multi-Áudio T${targetSeason}E${targetEpisode})`,
-          url: `https://vidsrc.me/embed/tv?tmdb=${targetTmdbId}&season=${targetSeason}&episode=${targetEpisode}`,
+          name: `VidSrc Prime Full HD (T${targetSeason}E${targetEpisode})`,
+          url: `https://vidsrc.pm/embed/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}`,
           type: 'embed',
           isDubbed: true,
         });
@@ -853,14 +853,14 @@ export async function GET(req: NextRequest) {
         });
       } else {
         servers.push({
-          name: 'VidSrc Prime Full HD (1080p)',
-          url: `https://vidsrc.pm/embed/movie/${targetTmdbId}`,
+          name: 'VidSrc VIP Global Full HD (Multi-Áudio)',
+          url: `https://vidsrc.sh/embed/movie?tmdb=${targetTmdbId}`,
           type: 'embed',
           isDubbed: true,
         });
         servers.push({
-          name: 'VidSrc VIP Global Full HD (Multi-Áudio)',
-          url: `https://vidsrc.me/embed/movie?tmdb=${targetTmdbId}`,
+          name: 'VidSrc Prime Full HD (1080p)',
+          url: `https://vidsrc.pm/embed/movie/${targetTmdbId}`,
           type: 'embed',
           isDubbed: true,
         });
