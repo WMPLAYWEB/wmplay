@@ -37,7 +37,8 @@ import {
   ChevronDown,
   Settings,
   ArrowLeft,
-  Server
+  Server,
+  RefreshCw
 } from "lucide-react";
 
 export interface ServerOption {
@@ -348,12 +349,16 @@ export default function KodiVideoPlayer({
   // Formatador curto de nomes de servidor para o botão
   const getShortServerName = (srvName?: string, index = 0) => {
     if (!srvName) return `Servidor ${index + 1}`;
-    if (srvName.includes("Wasabi")) return "Wasabi Full HD";
-    if (srvName.includes("VidLink Pro")) return "VidLink 1080p";
-    if (srvName.includes("VidSrc CDN")) return "VidSrc CDN";
-    if (srvName.includes("VidSrc Multi-Áudio")) return "VidSrc Dublado";
-    if (srvName.includes("Embedder")) return "Embedder HD";
-    if (srvName.includes("SuperFlix")) return "SuperFlix";
+    if (srvName.includes("MultiEmbed")) return "MultiEmbed";
+    if (srvName.includes("VidSrc Prime")) return "VidSrc Prime";
+    if (srvName.includes("VidSrc VIP")) return "VidSrc VIP";
+    if (srvName.includes("VidSrc")) return "VidSrc HD";
+    if (srvName.includes("VidLink Pro") || srvName.includes("VidLink")) return "VidLink 1080p";
+    if (srvName.includes("2Embed")) return "2Embed VIP";
+    if (srvName.includes("MixDrop")) return "MixDrop HD";
+    if (srvName.includes("StreamTape")) return "StreamTape HD";
+    if (srvName.includes("Wasabi")) return "Wasabi HD";
+    if (srvName.includes("Acelerada") || srvName.includes("Proxy")) return "Acelerado HD";
     if (srvName.includes("Direta") || srvName.includes("MP4")) return "Direto Full HD";
     if (srvName.includes("Globo")) return "Rede Globo";
     if (srvName.length > 18) return `Servidor ${index + 1}`;
@@ -1341,6 +1346,25 @@ export default function KodiVideoPlayer({
                 </div>
               )}
 
+              {/* Botão de Troca Rápida de Servidor */}
+              {servers && servers.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextIdx = (activeServerIndex + 1) % servers.length;
+                    onSelectServer(nextIdx);
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl !bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 !text-black text-xs font-black shadow-lg shadow-amber-500/20 transition-all cursor-pointer hover:scale-105 active:scale-95"
+                  title="Não carregou o vídeo? Clique para alternar para o próximo servidor"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 text-black" />
+                  <span className="hidden md:inline text-black font-black">Trocar Servidor</span>
+                  <span className="text-[10px] bg-black/25 text-black px-1.5 py-0.5 rounded-full font-mono font-bold">
+                    {activeServerIndex + 1}/{servers.length}
+                  </span>
+                </button>
+              )}
+
               {/* Botão Gaveta de Episódios (Séries) */}
               {isTv && seriesSeasons && seriesSeasons.length > 0 && (
                 <button
@@ -2068,6 +2092,58 @@ export default function KodiVideoPlayer({
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
               allowFullScreen
             />
+
+            {/* Quick Switch Server Bar (Pills para troca instantânea de servidor no modo Embed) */}
+            {servers && servers.length > 1 && !isMiniPlayer && (
+              <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 max-w-[96vw] overflow-x-auto no-scrollbar py-1 px-2.5 flex items-center gap-1.5 bg-black/85 backdrop-blur-xl border border-zinc-700/80 rounded-2xl shadow-2xl">
+                <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1 shrink-0 pl-1">
+                  <Server className="w-3 h-3 text-amber-400" /> Servidores:
+                </span>
+                <div className="flex items-center gap-1">
+                  {servers.map((srv, idx) => {
+                    const isCurrent = activeServerIndex === idx;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectServer(idx);
+                        }}
+                        className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                          isCurrent
+                            ? "!bg-red-600 !text-white shadow-md shadow-red-600/50 scale-105"
+                            : "!bg-zinc-800/90 hover:!bg-zinc-700 !text-zinc-200 hover:!text-white border border-zinc-700/50"
+                        }`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${isCurrent ? "bg-white animate-pulse" : "bg-zinc-400"}`} />
+                        <span>{getShortServerName(srv.name, idx)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectServer((activeServerIndex + 1) % servers.length);
+                  }}
+                  className="ml-1 px-2.5 py-1 rounded-xl text-[11px] font-black bg-amber-500 hover:bg-amber-400 text-black flex items-center gap-1 shrink-0 cursor-pointer shadow transition-all hover:scale-105"
+                  title="Vídeo não abriu? Clique para testar o próximo servidor"
+                >
+                  <RefreshCw className="w-3 h-3 text-black" />
+                  <span>Próximo</span>
+                </button>
+              </div>
+            )}
+
+            {/* Aviso/Dica de segurança para o usuário saber o que fazer */}
+            {servers && servers.length > 1 && !isMiniPlayer && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-3.5 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-zinc-700/60 text-zinc-300 text-[11px] font-medium flex items-center gap-2 shadow-2xl select-none max-w-[90vw] text-center">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
+                <span>Vídeo não iniciou ou deu &quot;Not Available&quot;? Clique em <strong>Próximo</strong> ou selecione outro servidor na barra acima.</span>
+              </div>
+            )}
           </div>
         )}
 

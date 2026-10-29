@@ -354,7 +354,7 @@ export async function GET(req: NextRequest) {
         if (epUrl.includes('&season=')) {
           epUrl = epUrl.split('&season=')[0];
         }
-        if (epUrl && epUrl.startsWith('http')) {
+        if (epUrl && epUrl.startsWith('http') && !epUrl.includes('source.apperror404.com')) {
           const finalUrl = await getRedirectLocation(epUrl);
           servers.push({
             name: `Transmissão Direta Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
@@ -388,7 +388,7 @@ export async function GET(req: NextRequest) {
             if (Array.isArray(seasons)) {
               const targetSeason = seasons.find((s: any) => String(s.season_number) === String(season)) || seasons[0];
               const targetEp = targetSeason?.episodes?.find((e: any) => String(e.episode_number) === String(episode));
-              if (targetEp?.link && targetEp.link.startsWith('http')) {
+              if (targetEp?.link && targetEp.link.startsWith('http') && !targetEp.link.includes('source.apperror404.com')) {
                 const finalUrl = await getRedirectLocation(targetEp.link);
                 servers.push({
                   name: `Transmissão Direta Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
@@ -471,7 +471,7 @@ export async function GET(req: NextRequest) {
           if (!directStream) {
             directStream = await callResolver(1, `mvshows=${slug}`);
           }
-          if (directStream && directStream.startsWith('http')) {
+          if (directStream && directStream.startsWith('http') && !directStream.includes('source.apperror404.com')) {
             const finalUrl = directStream.includes('source.apperror404.com')
               ? await getRedirectLocation(directStream)
               : directStream;
@@ -511,7 +511,7 @@ export async function GET(req: NextRequest) {
               if (!directStream) {
                 directStream = await callResolver(3, `mvshows=${baseSlug}`);
               }
-              if (directStream && directStream.startsWith('http')) {
+              if (directStream && directStream.startsWith('http') && !directStream.includes('source.apperror404.com')) {
                 const finalUrl = directStream.includes('source.apperror404.com')
                   ? await getRedirectLocation(directStream)
                   : directStream;
@@ -634,20 +634,11 @@ export async function GET(req: NextRequest) {
     // =========================================================================
     // 6. STREAMS DIRETOS (HLS .m3u8 ou MP4 nativo)
     // =========================================================================
-    if (servers.length === 0 && link.startsWith('http') && (link.includes('.m3u8') || link.includes('.mp4'))) {
-      if (link.includes('source.apperror404.com')) {
-        const finalUrl = await getRedirectLocation(link);
-        servers.push({
-          name: `Transmissão Direta Full HD Dublado (Sem Anúncios)`,
-          url: finalUrl,
-          type: 'video',
-          isDubbed: true
-        });
-      } else {
-        const isHttp = link.startsWith('http://');
-        const mainUrl = isHttp ? `/api/proxy-stream?url=${encodeURIComponent(link)}` : link;
-        servers.push({
-          name: link.includes('.m3u8') ? 'Sinal Direto HD (Sem Anúncios)' : 'Transmissão Direta MP4 Dublado (Sem Anúncios)',
+    if (servers.length === 0 && link.startsWith('http') && (link.includes('.m3u8') || link.includes('.mp4')) && !link.includes('source.apperror404.com')) {
+      const isHttp = link.startsWith('http://');
+      const mainUrl = isHttp ? `/api/proxy-stream?url=${encodeURIComponent(link)}` : link;
+      servers.push({
+        name: link.includes('.m3u8') ? 'Sinal Direto HD (Sem Anúncios)' : 'Transmissão Direta MP4 Dublado (Sem Anúncios)',
           url: mainUrl,
           type: 'video',
           isDubbed: true
@@ -661,7 +652,6 @@ export async function GET(req: NextRequest) {
           });
         }
       }
-    }
 
     // =========================================================================
     // 7. BUSCA AUTOMÁTICA DE SERVIDOR ALTERNATIVO NO CATÁLOGO POR TÍTULO
@@ -691,7 +681,7 @@ export async function GET(req: NextRequest) {
                   if (Array.isArray(seasons)) {
                     const targetSeason = seasons.find((s: any) => String(s.season_number) === String(season)) || seasons[0];
                     const targetEp = targetSeason?.episodes?.find((e: any) => String(e.episode_number) === String(episode));
-                    if (targetEp?.link && targetEp.link.startsWith('http')) {
+                    if (targetEp?.link && targetEp.link.startsWith('http') && !targetEp.link.includes('source.apperror404.com')) {
                       const finalUrl = await getRedirectLocation(targetEp.link);
                       servers.push({
                         name: `Transmissão Direta Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
@@ -813,13 +803,7 @@ export async function GET(req: NextRequest) {
       const isSeries = mediaType === 'tv' || link.includes('tmdb_ep=') || link.includes('season=') || link.includes('resolver2_tvshows=') || link.includes('serie3=');
       if (isSeries) {
         servers.push({
-          name: `VidLink Pro Full HD 1080p (Alta Velocidade T${targetSeason}E${targetEpisode})`,
-          url: `https://vidlink.pro/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}?primaryColor=e50914&secondaryColor=ffffff`,
-          type: 'embed',
-          isDubbed: true,
-        });
-        servers.push({
-          name: `MultiEmbed Multi-Stream Full HD (T${targetSeason}E${targetEpisode})`,
+          name: `MultiEmbed Multi-Stream Full HD (Multi-Servidores T${targetSeason}E${targetEpisode})`,
           url: `https://multiembed.mov/?video_id=${targetTmdbId}&tmdb=1&s=${targetSeason}&e=${targetEpisode}`,
           type: 'embed',
           isDubbed: true,
@@ -831,18 +815,24 @@ export async function GET(req: NextRequest) {
           isDubbed: true,
         });
         servers.push({
+          name: `VidSrc VIP Global Full HD (T${targetSeason}E${targetEpisode})`,
+          url: `https://vidsrc.me/embed/tv?tmdb=${targetTmdbId}&season=${targetSeason}&episode=${targetEpisode}`,
+          type: 'embed',
+          isDubbed: true,
+        });
+        servers.push({
+          name: `VidLink Pro Full HD 1080p (Alta Velocidade T${targetSeason}E${targetEpisode})`,
+          url: `https://vidlink.pro/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}?primaryColor=e50914&secondaryColor=ffffff`,
+          type: 'embed',
+          isDubbed: true,
+        });
+        servers.push({
           name: `2Embed CDN Full HD (T${targetSeason}E${targetEpisode})`,
           url: `https://www.2embed.cc/embedtv/${targetTmdbId}&s=${targetSeason}&e=${targetEpisode}`,
           type: 'embed',
           isDubbed: true,
         });
       } else {
-        servers.push({
-          name: 'VidLink Pro Full HD 1080p (Alta Velocidade / Sem Travamentos)',
-          url: `https://vidlink.pro/movie/${targetTmdbId}?primaryColor=e50914&secondaryColor=ffffff`,
-          type: 'embed',
-          isDubbed: true,
-        });
         servers.push({
           name: 'MultiEmbed Multi-Stream Full HD (Player Universal)',
           url: `https://multiembed.mov/?video_id=${targetTmdbId}&tmdb=1`,
@@ -852,6 +842,18 @@ export async function GET(req: NextRequest) {
         servers.push({
           name: 'VidSrc Prime Full HD (1080p)',
           url: `https://vidsrc.pm/embed/movie/${targetTmdbId}`,
+          type: 'embed',
+          isDubbed: true,
+        });
+        servers.push({
+          name: 'VidSrc VIP Global Full HD (Multi-Áudio)',
+          url: `https://vidsrc.me/embed/movie?tmdb=${targetTmdbId}`,
+          type: 'embed',
+          isDubbed: true,
+        });
+        servers.push({
+          name: 'VidLink Pro Full HD 1080p (Alta Velocidade)',
+          url: `https://vidlink.pro/movie/${targetTmdbId}?primaryColor=e50914&secondaryColor=ffffff`,
           type: 'embed',
           isDubbed: true,
         });
