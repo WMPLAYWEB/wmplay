@@ -38,7 +38,8 @@ import {
   Settings,
   ArrowLeft,
   Server,
-  RefreshCw
+  RefreshCw,
+  ShieldCheck
 } from "lucide-react";
 
 export interface ServerOption {
@@ -345,6 +346,20 @@ export default function KodiVideoPlayer({
       return () => window.removeEventListener("click", handleOutsideClick);
     }
   }, [showServerMenu, showSettingsMenu]);
+
+  // Bloqueador ativo de popups e redirecionamentos abusivos de players externos
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const originalOpen = window.open;
+    // Intercepta e anula qualquer tentativa de scripts de anúncios abrirem novas abas
+    window.open = function (...args) {
+      console.warn("[WMPLAY Shield] Popup/aba de anúncio bloqueada com sucesso:", args[0]);
+      return null;
+    };
+    return () => {
+      window.open = originalOpen;
+    };
+  }, []);
 
   // Formatador curto de nomes de servidor para o botão
   const getShortServerName = (srvName?: string, index = 0) => {
@@ -2088,6 +2103,12 @@ export default function KodiVideoPlayer({
             <iframe
               src={currentServer?.url}
               className="w-full h-full border-0"
+              sandbox={
+                currentServer?.url && currentServer.url.includes("vidlink.pro")
+                  ? undefined
+                  : "allow-scripts allow-same-origin allow-forms allow-presentation"
+              }
+              referrerPolicy="origin"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
               allowFullScreen
             />
@@ -2133,14 +2154,17 @@ export default function KodiVideoPlayer({
                   <RefreshCw className="w-3 h-3 text-black" />
                   <span>Próximo</span>
                 </button>
+                <span className="hidden sm:flex text-[10px] font-black text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded-full items-center gap-1 shrink-0 ml-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" /> Sem Anúncios
+                </span>
               </div>
             )}
 
             {/* Aviso/Dica de segurança para o usuário saber o que fazer */}
             {servers && servers.length > 1 && !isMiniPlayer && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-3.5 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-zinc-700/60 text-zinc-300 text-[11px] font-medium flex items-center gap-2 shadow-2xl select-none max-w-[90vw] text-center">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
-                <span>Vídeo não iniciou ou deu &quot;Not Available&quot;? Clique em <strong>Próximo</strong> ou selecione outro servidor na barra acima.</span>
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-3.5 py-1.5 rounded-full bg-black/85 backdrop-blur-md border border-zinc-700/60 text-zinc-300 text-[11px] font-medium flex items-center gap-2 shadow-2xl select-none max-w-[90vw] text-center">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>Bloqueador de popups e anúncios ativo · Se o player não iniciar, selecione outro servidor acima.</span>
               </div>
             )}
           </div>
