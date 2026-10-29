@@ -140,6 +140,18 @@ async function getRedirectLocation(videoUrl: string): Promise<string> {
   });
 }
 
+// Verifica se um stream direto realmente responde e não dá 403 Forbidden
+async function isStreamReachable(url: string): Promise<boolean> {
+  if (!url || !url.startsWith('http')) return false;
+  if (url.includes('source.apperror404.com')) return false;
+  try {
+    const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(1800) });
+    return res.status === 200 || res.status === 206 || (res.status >= 300 && res.status < 400);
+  } catch {
+    return !url.includes('wasabisys.com');
+  }
+}
+
 // Extrai o link direto de vídeo MP4 do MixDrop (Padrão Kodi ResolveURL - Sem Anúncios)
 async function resolveMixdrop(mediaId: string): Promise<string | null> {
   const domains = ['https://mxdrop.click', 'https://mxdrop.to'];
@@ -438,18 +450,21 @@ export async function GET(req: NextRequest) {
           directWasabi = await callResolver(3, `episodes=${slug}#${s}#${e}`);
         }
         if (directWasabi && directWasabi.startsWith('http')) {
-          servers.push({
-            name: `Servidor 1: Transmissão Wasabi Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
-            url: directWasabi,
-            type: 'video',
-            isDubbed: true
-          });
-          servers.push({
-            name: `Servidor 2: Wasabi Acelerado (Buffer Anti-Travamento)`,
-            url: `/api/proxy-stream?url=${encodeURIComponent(directWasabi)}`,
-            type: 'video',
-            isDubbed: true
-          });
+          const isReachable = await isStreamReachable(directWasabi);
+          if (isReachable) {
+            servers.push({
+              name: `Servidor 1: Transmissão Wasabi Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
+              url: directWasabi,
+              type: 'video',
+              isDubbed: true
+            });
+            servers.push({
+              name: `Servidor 2: Wasabi Acelerado (Buffer Anti-Travamento)`,
+              url: `/api/proxy-stream?url=${encodeURIComponent(directWasabi)}`,
+              type: 'video',
+              isDubbed: true
+            });
+          }
         }
       } catch (err) {
         console.error('Erro ao resolver resolver3_episodes:', err);
@@ -475,18 +490,21 @@ export async function GET(req: NextRequest) {
             const finalUrl = directStream.includes('source.apperror404.com')
               ? await getRedirectLocation(directStream)
               : directStream;
-            servers.push({
-              name: 'Transmissão Direta Full HD Dublado (Sem Anúncios)',
-              url: finalUrl,
-              type: 'video',
-              isDubbed: true
-            });
-            servers.push({
-              name: 'Transmissão Acelerada Anti-Travamento (Proxy Seguro)',
-              url: `/api/proxy-stream?url=${encodeURIComponent(finalUrl)}`,
-              type: 'video',
-              isDubbed: true
-            });
+            const isReachable = await isStreamReachable(finalUrl);
+            if (isReachable) {
+              servers.push({
+                name: 'Transmissão Direta Full HD Dublado (Sem Anúncios)',
+                url: finalUrl,
+                type: 'video',
+                isDubbed: true
+              });
+              servers.push({
+                name: 'Transmissão Acelerada Anti-Travamento (Proxy Seguro)',
+                url: `/api/proxy-stream?url=${encodeURIComponent(finalUrl)}`,
+                type: 'video',
+                isDubbed: true
+              });
+            }
           }
         }
       } catch (err) {
@@ -515,18 +533,21 @@ export async function GET(req: NextRequest) {
                 const finalUrl = directStream.includes('source.apperror404.com')
                   ? await getRedirectLocation(directStream)
                   : directStream;
-                servers.push({
-                  name: 'Transmissão Direta Full HD Dublado (Sem Anúncios)',
-                  url: finalUrl,
-                  type: 'video',
-                  isDubbed: true
-                });
-                servers.push({
-                  name: 'Transmissão Acelerada Anti-Travamento (Proxy Seguro)',
-                  url: `/api/proxy-stream?url=${encodeURIComponent(finalUrl)}`,
-                  type: 'video',
-                  isDubbed: true
-                });
+                const isReachable = await isStreamReachable(finalUrl);
+                if (isReachable) {
+                  servers.push({
+                    name: 'Transmissão Direta Full HD Dublado (Sem Anúncios)',
+                    url: finalUrl,
+                    type: 'video',
+                    isDubbed: true
+                  });
+                  servers.push({
+                    name: 'Transmissão Acelerada Anti-Travamento (Proxy Seguro)',
+                    url: `/api/proxy-stream?url=${encodeURIComponent(finalUrl)}`,
+                    type: 'video',
+                    isDubbed: true
+                  });
+                }
               }
             } catch (err) {
               console.error('Erro ao resolver stream direto do movie2:', err);
@@ -803,8 +824,8 @@ export async function GET(req: NextRequest) {
       const isSeries = mediaType === 'tv' || link.includes('tmdb_ep=') || link.includes('season=') || link.includes('resolver2_tvshows=') || link.includes('serie3=');
       if (isSeries) {
         servers.push({
-          name: `MultiEmbed Multi-Stream Full HD (Multi-Servidores T${targetSeason}E${targetEpisode})`,
-          url: `https://multiembed.mov/?video_id=${targetTmdbId}&tmdb=1&s=${targetSeason}&e=${targetEpisode}`,
+          name: `VidLink Pro Full HD 1080p (Alta Velocidade T${targetSeason}E${targetEpisode})`,
+          url: `https://vidlink.pro/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}?primaryColor=e50914&secondaryColor=ffffff`,
           type: 'embed',
           isDubbed: true,
         });
@@ -821,12 +842,6 @@ export async function GET(req: NextRequest) {
           isDubbed: true,
         });
         servers.push({
-          name: `VidLink Pro Full HD 1080p (Alta Velocidade T${targetSeason}E${targetEpisode})`,
-          url: `https://vidlink.pro/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}?primaryColor=e50914&secondaryColor=ffffff`,
-          type: 'embed',
-          isDubbed: true,
-        });
-        servers.push({
           name: `2Embed CDN Full HD (T${targetSeason}E${targetEpisode})`,
           url: `https://www.2embed.cc/embedtv/${targetTmdbId}&s=${targetSeason}&e=${targetEpisode}`,
           type: 'embed',
@@ -834,8 +849,8 @@ export async function GET(req: NextRequest) {
         });
       } else {
         servers.push({
-          name: 'MultiEmbed Multi-Stream Full HD (Player Universal)',
-          url: `https://multiembed.mov/?video_id=${targetTmdbId}&tmdb=1`,
+          name: 'VidLink Pro Full HD 1080p (Alta Velocidade)',
+          url: `https://vidlink.pro/movie/${targetTmdbId}?primaryColor=e50914&secondaryColor=ffffff`,
           type: 'embed',
           isDubbed: true,
         });
@@ -848,12 +863,6 @@ export async function GET(req: NextRequest) {
         servers.push({
           name: 'VidSrc VIP Global Full HD (Multi-Áudio)',
           url: `https://vidsrc.me/embed/movie?tmdb=${targetTmdbId}`,
-          type: 'embed',
-          isDubbed: true,
-        });
-        servers.push({
-          name: 'VidLink Pro Full HD 1080p (Alta Velocidade)',
-          url: `https://vidlink.pro/movie/${targetTmdbId}?primaryColor=e50914&secondaryColor=ffffff`,
           type: 'embed',
           isDubbed: true,
         });

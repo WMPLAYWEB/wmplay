@@ -349,7 +349,6 @@ export default function KodiVideoPlayer({
   // Formatador curto de nomes de servidor para o botão
   const getShortServerName = (srvName?: string, index = 0) => {
     if (!srvName) return `Servidor ${index + 1}`;
-    if (srvName.includes("MultiEmbed")) return "MultiEmbed";
     if (srvName.includes("VidSrc Prime")) return "VidSrc Prime";
     if (srvName.includes("VidSrc VIP")) return "VidSrc VIP";
     if (srvName.includes("VidSrc")) return "VidSrc HD";
