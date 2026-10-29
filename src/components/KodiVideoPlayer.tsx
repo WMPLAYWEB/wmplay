@@ -347,19 +347,6 @@ export default function KodiVideoPlayer({
     }
   }, [showServerMenu, showSettingsMenu]);
 
-  // Bloqueador ativo de popups e redirecionamentos abusivos de players externos
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const originalOpen = window.open;
-    // Intercepta e anula qualquer tentativa de scripts de anúncios abrirem novas abas
-    window.open = function (...args) {
-      console.warn("[WMPLAY Shield] Popup/aba de anúncio bloqueada com sucesso:", args[0]);
-      return null;
-    };
-    return () => {
-      window.open = originalOpen;
-    };
-  }, []);
 
   // Formatador curto de nomes de servidor para o botão
   const getShortServerName = (srvName?: string, index = 0) => {
@@ -718,10 +705,21 @@ export default function KodiVideoPlayer({
       }
     };
 
+    // Previne desvio de foco para popunder quando um iframe externo tenta desfocar a janela
+    const handleWindowBlur = () => {
+      setTimeout(() => {
+        if (!document.hidden && document.activeElement && document.activeElement.tagName === 'IFRAME') {
+          window.focus();
+        }
+      }, 100);
+    };
+
     window.addEventListener('click', handleGlobalClick, true);
+    window.addEventListener('blur', handleWindowBlur);
     return () => {
       window.open = originalOpen;
       window.removeEventListener('click', handleGlobalClick, true);
+      window.removeEventListener('blur', handleWindowBlur);
     };
   }, []);
 
@@ -2102,7 +2100,6 @@ export default function KodiVideoPlayer({
             <iframe
               src={currentServer?.url}
               className="w-full h-full border-0"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
               referrerPolicy="no-referrer"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
               allowFullScreen

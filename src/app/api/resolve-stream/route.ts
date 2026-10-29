@@ -145,10 +145,20 @@ async function isStreamReachable(url: string): Promise<boolean> {
   if (!url || !url.startsWith('http')) return false;
   if (url.includes('source.apperror404.com')) return false;
   try {
-    const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(1800) });
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Range': 'bytes=0-100'
+      },
+      signal: AbortSignal.timeout(2500)
+    });
+    if (res.body && typeof res.body.cancel === 'function') {
+      try { res.body.cancel(); } catch {}
+    }
     return res.status === 200 || res.status === 206 || (res.status >= 300 && res.status < 400);
   } catch {
-    return !url.includes('wasabisys.com');
+    return url.includes('wasabisys.com');
   }
 }
 
