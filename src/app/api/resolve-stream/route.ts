@@ -899,12 +899,6 @@ export async function GET(req: NextRequest) {
       const isSeries = mediaType === 'tv' || link.includes('tmdb_ep=') || link.includes('season=') || link.includes('resolver2_tvshows=') || link.includes('serie3=');
       if (isSeries) {
         servers.push({
-          name: `Servidor Backup Internacional (Áudio Original T${targetSeason}E${targetEpisode})`,
-          url: `https://vidsrc.sh/embed/tv?tmdb=${targetTmdbId}&season=${targetSeason}&episode=${targetEpisode}`,
-          type: 'embed',
-          isDubbed: false,
-        });
-        servers.push({
           name: `VidSrc To Backup (T${targetSeason}E${targetEpisode})`,
           url: `https://vidsrc.to/embed/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}`,
           type: 'embed',
@@ -917,12 +911,6 @@ export async function GET(req: NextRequest) {
           isDubbed: false,
         });
       } else {
-        servers.push({
-          name: 'Servidor Backup Internacional (Áudio Original)',
-          url: `https://vidsrc.sh/embed/movie?tmdb=${targetTmdbId}`,
-          type: 'embed',
-          isDubbed: false,
-        });
         servers.push({
           name: 'VidSrc To Backup (Áudio Original)',
           url: `https://vidsrc.to/embed/movie/${targetTmdbId}`,
