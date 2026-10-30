@@ -489,9 +489,9 @@ export async function GET(req: NextRequest) {
         const match = link.match(/resolver[23]_mv=([a-zA-Z0-9_\-]+)/);
         if (match && match[1]) {
           const slug = match[1];
-          let directStream = await callResolver(2, `mvshows=${slug}`);
+          let directStream = await callResolver(3, `mvshows=${slug}`);
           if (!directStream) {
-            directStream = await callResolver(3, `mvshows=${slug}`);
+            directStream = await callResolver(2, `mvshows=${slug}`);
           }
           if (!directStream) {
             directStream = await callResolver(1, `mvshows=${slug}`);
@@ -535,9 +535,9 @@ export async function GET(req: NextRequest) {
           // Se ainda não encontrou servidor direto, tentar via Resolver 2 / 3 com o baseSlug
           if (servers.length === 0 && baseSlug) {
             try {
-              let directStream = await callResolver(2, `mvshows=${baseSlug}`);
+              let directStream = await callResolver(3, `mvshows=${baseSlug}`);
               if (!directStream) {
-                directStream = await callResolver(3, `mvshows=${baseSlug}`);
+                directStream = await callResolver(2, `mvshows=${baseSlug}`);
               }
               if (directStream && directStream.startsWith('http') && !directStream.includes('source.apperror404.com')) {
                 const finalUrl = directStream.includes('source.apperror404.com')

@@ -897,7 +897,7 @@ export default function KodiVideoPlayer({
       if (currentServer.url === "ERROR_UNAVAILABLE") {
         setIsLoading(false);
         setHasError(true);
-        setErrorMessage("Este título está temporariamente fora de sinal no servidor principal do Brazuca Play.");
+        setErrorMessage("Este título está temporariamente fora de sinal no acervo Dublado PT-BR.");
         return;
       }
       setIsLoading(true);
@@ -905,7 +905,7 @@ export default function KodiVideoPlayer({
         setIsLoading(false);
         setHasError(true);
         setErrorMessage("Não foi possível sincronizar o sinal deste título no momento. Tente outro servidor.");
-      }, 5000);
+      }, 8000);
       return () => clearTimeout(timeoutId);
     }
 
@@ -1662,38 +1662,46 @@ export default function KodiVideoPlayer({
         }
       >
         {/* Indicador de Carregamento (Apenas no Player Nativo Direto) */}
-        {isLoading && currentServer?.type === "video" && (
+        {isLoading && currentServer?.type === "video" && currentServer?.url !== "ERROR_UNAVAILABLE" && !hasError && (
           <div className="absolute inset-0 z-10 bg-black/85 flex flex-col items-center justify-center gap-3 backdrop-blur-sm pointer-events-none">
             <Loader2 className={isMiniPlayer ? "w-7 h-7 text-red-500 animate-spin" : "w-12 h-12 text-red-500 animate-spin"} />
             {!isMiniPlayer && (
               <>
                 <p className="text-sm font-bold text-slate-200">
-                  Conectando ao stream ({currentServer?.name || "Carregando"})...
+                  {!currentServer?.url
+                    ? "Localizando melhor transmissão Full HD Dublado..."
+                    : `Sintonizando áudio Dublado PT-BR (${currentServer?.name || "Alta Qualidade"})...`}
                 </p>
                 <p className="text-xs text-zinc-400">
-                  Aguarde enquanto o sinal é sincronizado.
+                  Aguarde um instante sem anúncios ou popups.
                 </p>
               </>
             )}
           </div>
         )}
 
-        {/* Fallback de Erro (Apenas no Player Nativo Direto) */}
-        {hasError && currentServer?.type === "video" && (
+        {/* Fallback de Erro ou Sinal Fora do Ar */}
+        {(hasError || currentServer?.url === "ERROR_UNAVAILABLE") && currentServer?.type === "video" && (
           <div className="absolute inset-0 z-10 bg-black/95 flex flex-col items-center justify-center gap-3 p-4 text-center">
             <div className="w-12 h-12 rounded-2xl bg-red-950/80 border border-red-500/40 flex items-center justify-center text-red-400">
               <AlertCircle className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-bold text-white">Falha ao reproduzir este servidor</h3>
+              <h3 className="text-sm sm:text-base font-bold text-white">
+                {currentServer?.url === "ERROR_UNAVAILABLE"
+                  ? "Sinal Temporariamente Fora do Ar"
+                  : "Falha ao reproduzir este sinal"}
+              </h3>
               {!isMiniPlayer && (
                 <p className="text-xs text-zinc-400 mt-1 max-w-md">
-                  {errorMessage || "O sinal deste servidor pode estar instável ou bloqueado pelo navegador."}
+                  {currentServer?.url === "ERROR_UNAVAILABLE"
+                    ? "Este título ainda não possui link direto ativo no acervo Dublado PT-BR. Nossos robôs atualizam os títulos periodicamente."
+                    : (errorMessage || "O sinal deste servidor pode estar instável ou bloqueado pelo navegador.")}
                 </p>
               )}
             </div>
             <div className="flex items-center gap-2 pt-1">
-              {servers.length > 1 && (
+              {servers.filter(s => s.url && s.url !== "ERROR_UNAVAILABLE").length > 1 && (
                 <button
                   onClick={() => {
                     const next = (activeServerIndex + 1) % servers.length;
@@ -1705,18 +1713,28 @@ export default function KodiVideoPlayer({
                   <span>Alternar Servidor</span>
                 </button>
               )}
-              {!isMiniPlayer && (
+              {currentServer?.url === "ERROR_UNAVAILABLE" ? (
                 <button
-                  onClick={() => {
-                    setIsLoading(true);
-                    setHasError(false);
-                    onSelectServer(activeServerIndex);
-                  }}
-                  className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-800 flex items-center gap-1.5 cursor-pointer"
+                  onClick={onClose}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-lg shadow-red-600/30 flex items-center gap-2 cursor-pointer transition-all"
                 >
-                  <RotateCw className="w-3.5 h-3.5 text-red-400" />
-                  <span>Tentar Novamente</span>
+                  <X className="w-4 h-4" />
+                  <span>Voltar ao Catálogo</span>
                 </button>
+              ) : (
+                !isMiniPlayer && (
+                  <button
+                    onClick={() => {
+                      setIsLoading(true);
+                      setHasError(false);
+                      onSelectServer(activeServerIndex);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-800 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <RotateCw className="w-3.5 h-3.5 text-red-400" />
+                    <span>Tentar Novamente</span>
+                  </button>
+                )
               )}
             </div>
           </div>
