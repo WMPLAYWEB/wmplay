@@ -14,7 +14,7 @@ function getDb(): DatabaseSync {
 
 const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXNvbHZlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc5MDk4OTczfQ.WzQBuOqMai96Afleh9g-i7NXo6h-YsjPUbOgxlUqVsU';
 const HOSTS = ['api.geekantenado.online', 'geekantenado.fly.dev'];
-const OVERFLIX_HOSTS = ['www.overflix.download', 'www.overflix.asia', 'overflix.net', 'overflix.vip'];
+const OVERFLIX_HOSTS = ['www.overflix.download', 'www.overflix.fit', 'www.overflix.asia'];
 const OVERFLIX_HOST = OVERFLIX_HOSTS[0];
 const TMDB_KEY = '4e44d9029b1270a757cddc766a1bcb63';
 

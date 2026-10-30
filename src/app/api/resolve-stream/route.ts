@@ -15,7 +15,7 @@ function getDb(): DatabaseSync {
 
 const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXNvbHZlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc5MDk4OTczfQ.WzQBuOqMai96Afleh9g-i7NXo6h-YsjPUbOgxlUqVsU';
 const HOSTS = ['api.geekantenado.online', 'geekantenado.fly.dev'];
-const OVERFLIX_HOSTS = ['www.overflix.download', 'www.overflix.asia', 'overflix.net', 'overflix.vip'];
+const OVERFLIX_HOSTS = ['www.overflix.download', 'www.overflix.fit', 'www.overflix.asia'];
 const OVERFLIX_HOST = OVERFLIX_HOSTS[0];
 
 export interface StreamServer {
@@ -694,21 +694,23 @@ export async function GET(req: NextRequest) {
 
         if (mediaType === 'tv') {
           // Fallback para Séries, Animes, Doramas, Desenhos e Novelas
-          let altRow: { link: string; tmdb_id?: string } | undefined;
+          let altRows: { link: string; tmdb_id?: string }[] = [];
           if (tmdbId) {
-            altRow = db.prepare(
-              `SELECT link, tmdb_id FROM items WHERE tmdb_id = ? AND type IN ('series', 'animes', 'doramas', 'desenhos', 'novelas') AND (link LIKE '%resolver3_tvshows=%' OR link LIKE '%serie3=%' OR link LIKE '%resolver2_tvshows=%') AND link != ? LIMIT 1`
-            ).get(tmdbId, link) as { link: string; tmdb_id?: string } | undefined;
+            altRows = db.prepare(
+              `SELECT link, tmdb_id FROM items WHERE tmdb_id = ? AND type IN ('series', 'animes', 'doramas', 'desenhos', 'novelas') AND link != ? LIMIT 6`
+            ).all(tmdbId, link) as { link: string; tmdb_id?: string }[];
           }
-          if (!altRow && title) {
+          if (altRows.length === 0 && title) {
             const normTitle = title.toLowerCase().trim();
             const cleanTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
-            altRow = db.prepare(
-              `SELECT link, tmdb_id FROM items WHERE (clean_title = ? OR lower(title) = ? OR title = ?) AND type IN ('series', 'animes', 'doramas', 'desenhos', 'novelas') AND (link LIKE '%resolver3_tvshows=%' OR link LIKE '%serie3=%' OR link LIKE '%resolver2_tvshows=%') AND link != ? LIMIT 1`
-            ).get(cleanTitle, normTitle, title, link) as { link: string; tmdb_id?: string } | undefined;
+            altRows = db.prepare(
+              `SELECT link, tmdb_id FROM items WHERE (clean_title = ? OR lower(title) = ? OR title = ?) AND type IN ('series', 'animes', 'doramas', 'desenhos', 'novelas') AND link != ? LIMIT 6`
+            ).all(cleanTitle, normTitle, title, link) as { link: string; tmdb_id?: string }[];
           }
 
-          if (altRow && altRow.link) {
+          for (const altRow of altRows) {
+            if (servers.length > 0) break;
+            if (!altRow.link || altRow.link === link) continue;
             const altLink = altRow.link;
 
             // 1. Tentar resolver3_tvshows na rota alternativa (Wasabi S3 Dublado)
@@ -793,21 +795,23 @@ export async function GET(req: NextRequest) {
           }
         } else {
           // Fallback para Filmes por TMDB_ID ou Título Exato
-          let altRow: { link: string; tmdb_id?: string } | undefined;
+          let altRows: { link: string; tmdb_id?: string }[] = [];
           if (tmdbId) {
-            altRow = db.prepare(
-              `SELECT link, tmdb_id FROM items WHERE tmdb_id = ? AND type IN ('filmes', 'lancamentos') AND (link LIKE '%resolver3_mv=%' OR link LIKE '%movie2=%') AND link != ? LIMIT 1`
-            ).get(tmdbId, link) as { link: string; tmdb_id?: string } | undefined;
+            altRows = db.prepare(
+              `SELECT link, tmdb_id FROM items WHERE tmdb_id = ? AND type IN ('filmes', 'lancamentos') AND link != ? LIMIT 6`
+            ).all(tmdbId, link) as { link: string; tmdb_id?: string }[];
           }
-          if (!altRow && title) {
+          if (altRows.length === 0 && title) {
             const normTitle = title.toLowerCase().trim();
             const cleanTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
-            altRow = db.prepare(
-              `SELECT link, tmdb_id FROM items WHERE (clean_title = ? OR lower(title) = ? OR title = ?) AND type IN ('filmes', 'lancamentos') AND (link LIKE '%resolver3_mv=%' OR link LIKE '%movie2=%') AND link != ? LIMIT 1`
-            ).get(cleanTitle, normTitle, title, link) as { link: string; tmdb_id?: string } | undefined;
+            altRows = db.prepare(
+              `SELECT link, tmdb_id FROM items WHERE (clean_title = ? OR lower(title) = ? OR title = ?) AND type IN ('filmes', 'lancamentos') AND link != ? LIMIT 6`
+            ).all(cleanTitle, normTitle, title, link) as { link: string; tmdb_id?: string }[];
           }
 
-          if (altRow && altRow.link && altRow.link !== link) {
+          for (const altRow of altRows) {
+            if (servers.length > 0) break;
+            if (!altRow.link || altRow.link === link) continue;
             const altLink = altRow.link;
 
             // 1. Tentar resolver3_mv na linha alternativa (Wasabi S3 Dublado)
