@@ -2090,6 +2090,7 @@ export default function KodiVideoPlayer({
               src={currentServer?.url}
               className="w-full h-full border-0"
               referrerPolicy="no-referrer-when-downgrade"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
               allowFullScreen
             />

@@ -15,7 +15,7 @@ function getDb(): DatabaseSync {
 
 const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXNvbHZlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc5MDk4OTczfQ.WzQBuOqMai96Afleh9g-i7NXo6h-YsjPUbOgxlUqVsU';
 const HOSTS = ['api.geekantenado.online', 'geekantenado.fly.dev'];
-const OVERFLIX_HOSTS = ['www.overflix.download', 'www.overflix.asia', 'www.overflix.win'];
+const OVERFLIX_HOSTS = ['www.overflix.download', 'www.overflix.asia', 'overflix.net', 'overflix.vip'];
 const OVERFLIX_HOST = OVERFLIX_HOSTS[0];
 
 export interface StreamServer {
@@ -685,48 +685,61 @@ export async function GET(req: NextRequest) {
       }
 
     // =========================================================================
-    // 7. BUSCA AUTOMÁTICA DE SERVIDOR ALTERNATIVO NO CATÁLOGO POR TÍTULO
+    // 7. BUSCA AUTOMÁTICA DE SERVIDOR ALTERNATIVO NO CATÁLOGO POR TMDB_ID OU TÍTULO EXATO
+    // (Correspondência 100% exata - NUNCA usa LIKE amplo para não misturar conteúdos)
     // =========================================================================
-    if (servers.length === 0 && title) {
+    if (servers.length === 0 && (tmdbId || title)) {
       try {
-        const baseTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
         const db = getDb();
 
         if (mediaType === 'tv') {
           // Fallback para Séries, Animes, Doramas, Desenhos e Novelas
-          const altRow = db.prepare(
-            `SELECT link FROM items WHERE type IN ('series', 'animes', 'doramas', 'desenhos', 'novelas') AND (title LIKE ? OR title LIKE ?) AND (link LIKE '%resolver2_tvshows=%' OR link LIKE '%serie3=%' OR link LIKE '%#series_list=%' OR link LIKE '%resolver3_tvshows=%') AND link != ? LIMIT 1`
-          ).get(`%${baseTitle}%`, `%${title}%`, link) as { link: string } | undefined;
+          let altRow: { link: string; tmdb_id?: string } | undefined;
+          if (tmdbId) {
+            altRow = db.prepare(
+              `SELECT link, tmdb_id FROM items WHERE tmdb_id = ? AND type IN ('series', 'animes', 'doramas', 'desenhos', 'novelas') AND (link LIKE '%resolver3_tvshows=%' OR link LIKE '%serie3=%' OR link LIKE '%resolver2_tvshows=%') AND link != ? LIMIT 1`
+            ).get(tmdbId, link) as { link: string; tmdb_id?: string } | undefined;
+          }
+          if (!altRow && title) {
+            const normTitle = title.toLowerCase().trim();
+            const cleanTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+            altRow = db.prepare(
+              `SELECT link, tmdb_id FROM items WHERE (clean_title = ? OR lower(title) = ? OR title = ?) AND type IN ('series', 'animes', 'doramas', 'desenhos', 'novelas') AND (link LIKE '%resolver3_tvshows=%' OR link LIKE '%serie3=%' OR link LIKE '%resolver2_tvshows=%') AND link != ? LIMIT 1`
+            ).get(cleanTitle, normTitle, title, link) as { link: string; tmdb_id?: string } | undefined;
+          }
 
           if (altRow && altRow.link) {
             const altLink = altRow.link;
 
-            // 1. Tentar resolver2_tvshows na rota alternativa
-            if (altLink.includes('resolver2_tvshows=')) {
-              let sSlug = altLink.split('resolver2_tvshows=')[1].split('|')[0].split('&')[0];
-              if (!sSlug.includes('#')) sSlug = 'series#' + sSlug;
-              const resData = await callResolver(2, `tvshows=${sSlug}`);
-              if (resData) {
-                try {
-                  const seasons = typeof resData === 'string' ? JSON.parse(resData) : resData;
-                  if (Array.isArray(seasons)) {
-                    const targetSeason = seasons.find((s: any) => String(s.season_number) === String(season)) || seasons[0];
-                    const targetEp = targetSeason?.episodes?.find((e: any) => String(e.episode_number) === String(episode));
-                    if (targetEp?.link && targetEp.link.startsWith('http') && !targetEp.link.includes('source.apperror404.com')) {
-                      const finalUrl = await getRedirectLocation(targetEp.link);
-                      servers.push({
-                        name: `Transmissão Direta Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
-                        url: finalUrl,
-                        type: 'video',
-                        isDubbed: true
-                      });
-                    }
+            // 1. Tentar resolver3_tvshows na rota alternativa (Wasabi S3 Dublado)
+            if (altLink.includes('resolver3_tvshows=')) {
+              const sSlug = altLink.split('resolver3_tvshows=')[1].split('|')[0].split('&')[0];
+              if (sSlug && !/^\d+$/.test(sSlug)) {
+                let directWasabi = await callResolver(3, `episodes=${sSlug}#${season}#${episode}#Dublado`);
+                if (!directWasabi) {
+                  directWasabi = await callResolver(3, `episodes=${sSlug}#${season}#${episode}#Legendado`);
+                }
+                if (directWasabi && directWasabi.startsWith('http')) {
+                  const isReachable = await isStreamReachable(directWasabi);
+                  if (isReachable) {
+                    servers.push({
+                      name: `Transmissão Wasabi Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
+                      url: directWasabi,
+                      type: 'video',
+                      isDubbed: true
+                    });
+                    servers.push({
+                      name: `Wasabi Acelerado Anti-Buffer T${season}E${episode}`,
+                      url: `/api/proxy-stream?url=${encodeURIComponent(directWasabi)}`,
+                      type: 'video',
+                      isDubbed: true
+                    });
                   }
-                } catch {}
+                }
               }
             }
 
-            // 2. Tentar serie3 na rota alternativa
+            // 2. Tentar serie3 na rota alternativa (Overflix: StreamTape / MixDrop Dublado)
             if (servers.length === 0 && altLink.includes('serie3=')) {
               const match = altLink.match(/serie3=([a-zA-Z0-9_\-]+)/);
               if (match && match[1]) {
@@ -753,32 +766,81 @@ export async function GET(req: NextRequest) {
               }
             }
 
-            // 3. Tentar resolver3_tvshows na rota alternativa
-            if (servers.length === 0 && altLink.includes('resolver3_tvshows=')) {
-              const sSlug = altLink.split('resolver3_tvshows=')[1].split('|')[0].split('&')[0];
-              let directWasabi = await callResolver(3, `episodes=${sSlug}#${season}#${episode}#Dublado`);
-              if (!directWasabi) {
-                directWasabi = await callResolver(3, `episodes=${sSlug}#${season}#${episode}#Legendado`);
-              }
-              if (directWasabi && directWasabi.startsWith('http')) {
-                servers.push({
-                  name: `Transmissão Wasabi Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
-                  url: directWasabi,
-                  type: 'video',
-                  isDubbed: true
-                });
+            // 3. Tentar resolver2_tvshows na rota alternativa
+            if (servers.length === 0 && altLink.includes('resolver2_tvshows=')) {
+              let sSlug = altLink.split('resolver2_tvshows=')[1].split('|')[0].split('&')[0];
+              if (!sSlug.includes('#')) sSlug = 'series#' + sSlug;
+              const resData = await callResolver(2, `tvshows=${sSlug}`);
+              if (resData) {
+                try {
+                  const seasons = typeof resData === 'string' ? JSON.parse(resData) : resData;
+                  if (Array.isArray(seasons)) {
+                    const targetSeason = seasons.find((s: any) => String(s.season_number) === String(season)) || seasons[0];
+                    const targetEp = targetSeason?.episodes?.find((e: any) => String(e.episode_number) === String(episode));
+                    if (targetEp?.link && targetEp.link.startsWith('http') && !targetEp.link.includes('source.apperror404.com')) {
+                      const finalUrl = await getRedirectLocation(targetEp.link);
+                      servers.push({
+                        name: `Transmissão Direta Full HD Dublado T${season}E${episode} (Sem Anúncios)`,
+                        url: finalUrl,
+                        type: 'video',
+                        isDubbed: true
+                      });
+                    }
+                  }
+                } catch {}
               }
             }
           }
         } else {
-          // Fallback para Filmes
-          const altRow = db.prepare(
-            'SELECT link FROM items WHERE type = ? AND (title LIKE ? OR title LIKE ?) AND (link LIKE ? OR link LIKE ?) LIMIT 1'
-          ).get('filmes', `%${baseTitle}%`, `%${title}%`, '%movie2=%', '%#movies_list=%') as { link: string } | undefined;
+          // Fallback para Filmes por TMDB_ID ou Título Exato
+          let altRow: { link: string; tmdb_id?: string } | undefined;
+          if (tmdbId) {
+            altRow = db.prepare(
+              `SELECT link, tmdb_id FROM items WHERE tmdb_id = ? AND type IN ('filmes', 'lancamentos') AND (link LIKE '%resolver3_mv=%' OR link LIKE '%movie2=%') AND link != ? LIMIT 1`
+            ).get(tmdbId, link) as { link: string; tmdb_id?: string } | undefined;
+          }
+          if (!altRow && title) {
+            const normTitle = title.toLowerCase().trim();
+            const cleanTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+            altRow = db.prepare(
+              `SELECT link, tmdb_id FROM items WHERE (clean_title = ? OR lower(title) = ? OR title = ?) AND type IN ('filmes', 'lancamentos') AND (link LIKE '%resolver3_mv=%' OR link LIKE '%movie2=%') AND link != ? LIMIT 1`
+            ).get(cleanTitle, normTitle, title, link) as { link: string; tmdb_id?: string } | undefined;
+          }
 
           if (altRow && altRow.link && altRow.link !== link) {
             const altLink = altRow.link;
-            if (altLink.includes('movie2=')) {
+
+            // 1. Tentar resolver3_mv na linha alternativa (Wasabi S3 Dublado)
+            if (altLink.includes('resolver3_mv=')) {
+              const match = altLink.match(/resolver3_mv=([a-zA-Z0-9_\-]+)/);
+              if (match && match[1]) {
+                const slug = match[1];
+                let directStream = await callResolver(3, `mvshows=${slug}`);
+                if (!directStream) {
+                  directStream = await callResolver(2, `mvshows=${slug}`);
+                }
+                if (directStream && directStream.startsWith('http') && !directStream.includes('source.apperror404.com')) {
+                  const isReachable = await isStreamReachable(directStream);
+                  if (isReachable) {
+                    servers.push({
+                      name: 'Transmissão Direta Full HD Dublado (Sem Anúncios)',
+                      url: directStream,
+                      type: 'video',
+                      isDubbed: true
+                    });
+                    servers.push({
+                      name: 'Transmissão Acelerada Anti-Travamento (Proxy Seguro)',
+                      url: `/api/proxy-stream?url=${encodeURIComponent(directStream)}`,
+                      type: 'video',
+                      isDubbed: true
+                    });
+                  }
+                }
+              }
+            }
+
+            // 2. Se ainda sem servidores, tentar movie2 (Overflix: StreamTape / MixDrop Dublado)
+            if (servers.length === 0 && altLink.includes('movie2=')) {
               const match = altLink.match(/movie2=([a-zA-Z0-9_\-]+)/);
               if (match && match[1]) {
                 const slug = match[1];
@@ -800,7 +862,7 @@ export async function GET(req: NextRequest) {
     }
 
     // =========================================================================
-    // 8. REDE UNIVERSAL DE SERVIDORES DE BACKUP HD DUBLADO (GARANTIA 100%)
+    // 8. REDE UNIVERSAL DE SERVIDORES DE BACKUP INTERNACIONAL (EMERGÊNCIA)
     // =========================================================================
     let targetTmdbId = tmdbId;
     let targetSeason = season;
@@ -821,9 +883,12 @@ export async function GET(req: NextRequest) {
 
     if (!targetTmdbId && title) {
       try {
+        const normTitle = title.toLowerCase().trim();
         const cleanTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
         const db = getDb();
-        const row = db.prepare('SELECT tmdb_id FROM items WHERE (clean_title LIKE ? OR title LIKE ?) AND tmdb_id IS NOT NULL AND tmdb_id != "" LIMIT 1').get(`%${cleanTitle}%`, `%${title}%`) as { tmdb_id?: string } | undefined;
+        const row = db.prepare(
+          'SELECT tmdb_id FROM items WHERE (clean_title = ? OR lower(title) = ? OR title = ?) AND tmdb_id IS NOT NULL AND tmdb_id != "" LIMIT 1'
+        ).get(cleanTitle, normTitle, title) as { tmdb_id?: string } | undefined;
         if (row && row.tmdb_id) {
           targetTmdbId = row.tmdb_id;
         }
@@ -834,53 +899,41 @@ export async function GET(req: NextRequest) {
       const isSeries = mediaType === 'tv' || link.includes('tmdb_ep=') || link.includes('season=') || link.includes('resolver2_tvshows=') || link.includes('serie3=');
       if (isSeries) {
         servers.push({
-          name: `VidSrc VIP Global Full HD (Multi-Áudio T${targetSeason}E${targetEpisode})`,
+          name: `Servidor Backup Internacional (Áudio Original T${targetSeason}E${targetEpisode})`,
           url: `https://vidsrc.sh/embed/tv?tmdb=${targetTmdbId}&season=${targetSeason}&episode=${targetEpisode}`,
           type: 'embed',
-          isDubbed: true,
+          isDubbed: false,
         });
         servers.push({
-          name: `VidSrc To Full HD (T${targetSeason}E${targetEpisode})`,
+          name: `VidSrc To Backup (T${targetSeason}E${targetEpisode})`,
           url: `https://vidsrc.to/embed/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}`,
           type: 'embed',
-          isDubbed: true,
+          isDubbed: false,
         });
         servers.push({
-          name: `VidSrc Prime Full HD (T${targetSeason}E${targetEpisode})`,
+          name: `VidSrc Prime Backup (T${targetSeason}E${targetEpisode})`,
           url: `https://vidsrc.pm/embed/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}`,
           type: 'embed',
-          isDubbed: true,
-        });
-        servers.push({
-          name: `2Embed CDN Full HD (T${targetSeason}E${targetEpisode})`,
-          url: `https://www.2embed.cc/embedtv/${targetTmdbId}&s=${targetSeason}&e=${targetEpisode}`,
-          type: 'embed',
-          isDubbed: true,
+          isDubbed: false,
         });
       } else {
         servers.push({
-          name: 'VidSrc VIP Global Full HD (Multi-Áudio)',
+          name: 'Servidor Backup Internacional (Áudio Original)',
           url: `https://vidsrc.sh/embed/movie?tmdb=${targetTmdbId}`,
           type: 'embed',
-          isDubbed: true,
+          isDubbed: false,
         });
         servers.push({
-          name: 'VidSrc To Full HD (Ultra Rápido)',
+          name: 'VidSrc To Backup (Áudio Original)',
           url: `https://vidsrc.to/embed/movie/${targetTmdbId}`,
           type: 'embed',
-          isDubbed: true,
+          isDubbed: false,
         });
         servers.push({
-          name: 'VidSrc Prime Full HD (1080p)',
+          name: 'VidSrc Prime Backup (Áudio Original)',
           url: `https://vidsrc.pm/embed/movie/${targetTmdbId}`,
           type: 'embed',
-          isDubbed: true,
-        });
-        servers.push({
-          name: '2Embed CDN Full HD (Ultra Rápido)',
-          url: `https://www.2embed.cc/embed/${targetTmdbId}`,
-          type: 'embed',
-          isDubbed: true,
+          isDubbed: false,
         });
       }
     }

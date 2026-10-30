@@ -14,7 +14,7 @@ function getDb(): DatabaseSync {
 
 const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXNvbHZlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc5MDk4OTczfQ.WzQBuOqMai96Afleh9g-i7NXo6h-YsjPUbOgxlUqVsU';
 const HOSTS = ['api.geekantenado.online', 'geekantenado.fly.dev'];
-const OVERFLIX_HOSTS = ['www.overflix.download', 'www.overflix.asia', 'www.overflix.win'];
+const OVERFLIX_HOSTS = ['www.overflix.download', 'www.overflix.asia', 'overflix.net', 'overflix.vip'];
 const OVERFLIX_HOST = OVERFLIX_HOSTS[0];
 const TMDB_KEY = '4e44d9029b1270a757cddc766a1bcb63';
 
@@ -209,13 +209,15 @@ export async function GET(req: NextRequest) {
       if (match && match[1]) tmdbId = match[1];
     }
 
-    // Se o link for de novela ou não tiver tmdbId, buscar no banco
-    if (!tmdbId && (link.includes('novelas=') || title)) {
+    // Se não tiver tmdbId, buscar no banco com correspondência exata (evita trocar de série)
+    if (!tmdbId && (link.includes('novelas=') || (title && title !== 'Série'))) {
       try {
         const db = getDb();
+        const normTitle = title.toLowerCase().trim();
+        const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
         const row = db.prepare(
-          'SELECT tmdb_id FROM items WHERE link = ? OR link LIKE ? OR title = ? OR title LIKE ? LIMIT 1'
-        ).get(link, `%${link}%`, title, `%${title}%`) as { tmdb_id?: string } | undefined;
+          `SELECT tmdb_id FROM items WHERE (link = ? OR clean_title = ? OR lower(title) = ? OR title = ?) AND tmdb_id IS NOT NULL AND tmdb_id != '' LIMIT 1`
+        ).get(link, cleanTitle, normTitle, title) as { tmdb_id?: string } | undefined;
         if (row && row.tmdb_id) {
           tmdbId = row.tmdb_id;
         }
@@ -319,18 +321,20 @@ export async function GET(req: NextRequest) {
     // =========================================================================
     // 3. PRIORIDADE 3: BRAZUCA PLAY RESOLVER 3 (Wasabi S3)
     // =========================================================================
-    if (Object.keys(seasonsMap).length === 0 && (link.includes('resolver3_tvshows=') || link.includes('animes2=') || link.includes('doramas_resolver1='))) {
+    if (Object.keys(seasonsMap).length === 0 && (link.includes('resolver3_tvshows=') || link.includes('resolver3_episodes=') || link.includes('animes2=') || link.includes('doramas_resolver1='))) {
       try {
         let slug = '';
         let isDorama = false;
-        if (link.includes('resolver3_tvshows=')) {
-          slug = link.split('resolver3_tvshows=')[1].split('|')[0];
-          // Evitar resolver3 com slugs puramente numéricos (animes trocados como no caso de 3%)
+        if (link.includes('resolver3_episodes=')) {
+          slug = link.split('resolver3_episodes=')[1].split('&')[0].split(/[#/]/)[0];
+        } else if (link.includes('resolver3_tvshows=')) {
+          slug = link.split('resolver3_tvshows=')[1].split('|')[0].split('&')[0];
+          // Evitar resolver3 com slugs puramente numéricos (animes trocados)
           if (/^\d+$/.test(slug)) {
             slug = '';
           }
         } else if (link.includes('animes2=')) {
-          slug = link.split('animes2=')[1].split('|')[0];
+          slug = link.split('animes2=')[1].split('|')[0].split('&')[0];
         } else {
           slug = link.split('doramas_resolver1=')[1].split('|')[0].split('&')[0];
           isDorama = true;
@@ -368,20 +372,62 @@ export async function GET(req: NextRequest) {
     }
 
     // =========================================================================
-    // 3.5 BUSCA AUTOMÁTICA DE SÉRIE ALTERNATIVA NO CATÁLOGO POR TÍTULO
+    // 3.5 BUSCA AUTOMÁTICA DE SÉRIE ALTERNATIVA NO CATÁLOGO POR TMDB_ID OU TÍTULO EXATO
+    // (Correspondência 100% exata - NUNCA usa LIKE amplo para não trocar de série)
     // =========================================================================
-    if (Object.keys(seasonsMap).length === 0 && title && title !== 'Série') {
+    if (Object.keys(seasonsMap).length === 0 && (tmdbId || (title && title !== 'Série'))) {
       try {
-        const cleanTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
         const db = getDb();
-        const altRow = db.prepare(
-          `SELECT link FROM items WHERE type IN ('series', 'animes', 'doramas', 'desenhos', 'novelas') AND (title LIKE ? OR title LIKE ?) AND (link LIKE '%resolver2_tvshows=%' OR link LIKE '%serie3=%' OR link LIKE '%#series_list=%') AND link != ? LIMIT 1`
-        ).get(`%${cleanTitle}%`, `%${title}%`, link) as { link: string } | undefined;
+        let altRow: { link: string; tmdb_id?: string } | undefined;
+
+        // 1. Prioridade absoluta: buscar exatamente pelo TMDB ID
+        if (tmdbId) {
+          altRow = db.prepare(
+            `SELECT link, tmdb_id FROM items WHERE tmdb_id = ? AND type IN ('series', 'animes', 'doramas', 'desenhos', 'novelas') AND (link LIKE '%resolver3_tvshows=%' OR link LIKE '%serie3=%' OR link LIKE '%resolver2_tvshows=%') AND link != ? LIMIT 1`
+          ).get(tmdbId, link) as { link: string; tmdb_id?: string } | undefined;
+        }
+
+        // 2. Se não encontrou por TMDB ID, buscar por título EXATO (sem wildcards %...%)
+        if (!altRow && title && title !== 'Série') {
+          const normTitle = title.toLowerCase().trim();
+          const cleanTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+          altRow = db.prepare(
+            `SELECT link, tmdb_id FROM items WHERE (clean_title = ? OR lower(title) = ? OR title = ?) AND type IN ('series', 'animes', 'doramas', 'desenhos', 'novelas') AND (link LIKE '%resolver3_tvshows=%' OR link LIKE '%serie3=%' OR link LIKE '%resolver2_tvshows=%') AND link != ? LIMIT 1`
+          ).get(cleanTitle, normTitle, title, link) as { link: string; tmdb_id?: string } | undefined;
+        }
 
         if (altRow && altRow.link) {
           const altLink = altRow.link;
-          // Tentar resolver2 na linha alternativa
-          if (altLink.includes('resolver2_tvshows=')) {
+          if (altRow.tmdb_id && !tmdbId) tmdbId = altRow.tmdb_id;
+
+          // 1. Tentar resolver3_tvshows na rota alternativa (Wasabi S3 Dublado)
+          if (altLink.includes('resolver3_tvshows=')) {
+            let slug = altLink.split('resolver3_tvshows=')[1].split('|')[0].split('&')[0];
+            if (slug && !/^\d+$/.test(slug)) {
+              const resData = await callResolver(3, `tvshows=${slug}`);
+              if (resData && typeof resData === 'object' && !resData.result) {
+                for (const [seasonKey, seasonVal] of Object.entries(resData)) {
+                  const sNum = parseInt(seasonKey, 10) || 1;
+                  seasonsMap[sNum] = seasonsMap[sNum] || [];
+                  const eps = (seasonVal as any)?.episodes || {};
+                  for (const [epKey, epVal] of Object.entries(eps)) {
+                    const epNum = parseInt(epKey, 10) || 1;
+                    const epTitle = (epVal as any)?.title || `Episódio ${epNum}`;
+                    seasonsMap[sNum].push({
+                      number: epNum,
+                      title: epTitle,
+                      duration: '45m',
+                      link: `resolver3_episodes=${slug}#${sNum}#${epNum}#Dublado&season=${sNum}&episode=${epNum}`,
+                      streamUrl: ''
+                    });
+                  }
+                }
+              }
+            }
+          }
+
+          // 2. Se ainda vazio, tentar resolver2 na rota alternativa
+          if (Object.keys(seasonsMap).length === 0 && altLink.includes('resolver2_tvshows=')) {
             let sSlug = altLink.split('resolver2_tvshows=')[1].split('|')[0].split('&')[0];
             if (!sSlug.includes('#')) sSlug = 'series#' + sSlug;
             const resData = await callResolver(2, `tvshows=${sSlug}`);
@@ -405,7 +451,7 @@ export async function GET(req: NextRequest) {
             }
           }
 
-          // Se ainda vazio, tentar serie3 na linha alternativa
+          // 3. Se ainda vazio, tentar serie3 na rota alternativa
           if (Object.keys(seasonsMap).length === 0 && altLink.includes('serie3=')) {
             const match = altLink.match(/serie3=([a-zA-Z0-9_\-]+)/);
             if (match && match[1]) {
