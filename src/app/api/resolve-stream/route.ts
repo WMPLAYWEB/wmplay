@@ -895,42 +895,11 @@ export async function GET(req: NextRequest) {
       } catch {}
     }
 
-    if (targetTmdbId) {
-      const isSeries = mediaType === 'tv' || link.includes('tmdb_ep=') || link.includes('season=') || link.includes('resolver2_tvshows=') || link.includes('serie3=');
-      if (isSeries) {
-        servers.push({
-          name: `VidSrc To Backup (T${targetSeason}E${targetEpisode})`,
-          url: `https://vidsrc.to/embed/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}`,
-          type: 'embed',
-          isDubbed: false,
-        });
-        servers.push({
-          name: `VidSrc Prime Backup (T${targetSeason}E${targetEpisode})`,
-          url: `https://vidsrc.pm/embed/tv/${targetTmdbId}/${targetSeason}/${targetEpisode}`,
-          type: 'embed',
-          isDubbed: false,
-        });
-      } else {
-        servers.push({
-          name: 'VidSrc To Backup (Áudio Original)',
-          url: `https://vidsrc.to/embed/movie/${targetTmdbId}`,
-          type: 'embed',
-          isDubbed: false,
-        });
-        servers.push({
-          name: 'VidSrc Prime Backup (Áudio Original)',
-          url: `https://vidsrc.pm/embed/movie/${targetTmdbId}`,
-          type: 'embed',
-          isDubbed: false,
-        });
-      }
-    }
-
     return NextResponse.json({
       success: servers.length > 0,
       servers,
       totalServers: servers.length,
-      error: servers.length === 0 ? 'Sinal temporariamente indisponível no servidor principal do Brazuca Play.' : undefined
+      error: servers.length === 0 ? 'Sinal temporariamente indisponível no acervo do Brazuca Play / Overflix. Por favor, escolha outro título do catálogo.' : undefined
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message, servers: [] }, { status: 500 });
