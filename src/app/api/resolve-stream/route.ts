@@ -1007,28 +1007,37 @@ export async function GET(req: NextRequest) {
     // =========================================================================
     // 9. REPOSITÓRIO OFICIAL ONEPLAY (FENIXFLIX + BUGOUVORTEX HLS/MP4 DUBLADO)
     // =========================================================================
-    if (servers.length === 0) {
-      try {
-        const onePlayServers = await resolveOnePlaySources({
-          title,
-          mediaType: mediaType === 'tv' || mediaType === 'series' ? 'series' : 'movie',
-          tmdbId: targetTmdbId || tmdbId,
-          season: targetSeason,
-          episode: targetEpisode
-        });
-        if (onePlayServers && onePlayServers.length > 0) {
-          servers.push(...onePlayServers);
-        }
-      } catch (err) {
-        console.error('Erro ao resolver provedores OnePlay:', err);
+    try {
+      const onePlayServers = await resolveOnePlaySources({
+        title,
+        mediaType: mediaType === 'tv' || mediaType === 'series' ? 'series' : 'movie',
+        tmdbId: targetTmdbId || tmdbId,
+        season: targetSeason,
+        episode: targetEpisode
+      });
+      if (onePlayServers && onePlayServers.length > 0) {
+        // Colocar servidores CDN HLS de ultra-alta velocidade do OnePlay como prioridade máxima
+        servers.unshift(...onePlayServers);
       }
+    } catch (err) {
+      console.error('Erro ao resolver provedores OnePlay:', err);
+    }
+
+    // Deduplicação de servidores por URL para garantir lista limpa
+    const seenServerUrls = new Set<string>();
+    const finalServers: StreamServer[] = [];
+    for (const s of servers) {
+      if (!s || !s.url) continue;
+      if (seenServerUrls.has(s.url)) continue;
+      seenServerUrls.add(s.url);
+      finalServers.push(s);
     }
 
     return NextResponse.json({
-      success: servers.length > 0,
-      servers,
-      totalServers: servers.length,
-      error: servers.length === 0 ? 'Sinal temporariamente indisponível no acervo do Brazuca Play / Overflix. Por favor, escolha outro título do catálogo.' : undefined
+      success: finalServers.length > 0,
+      servers: finalServers,
+      totalServers: finalServers.length,
+      error: finalServers.length === 0 ? 'Sinal temporariamente indisponível no acervo do Brazuca Play / Overflix. Por favor, escolha outro título do catálogo.' : undefined
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message, servers: [] }, { status: 500 });

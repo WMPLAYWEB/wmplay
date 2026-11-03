@@ -82,7 +82,7 @@ export async function resolveFenixFlix(
 
         for (const s of data.streams) {
           if (!s || !s.url || typeof s.url !== 'string') continue;
-          if (s.url.includes('koyeb.app') || seenUrls.has(s.url)) continue;
+          if (seenUrls.has(s.url)) continue;
           seenUrls.add(s.url);
 
           const rawTitle = (s.title || '').replace(/\n/g, ' ');

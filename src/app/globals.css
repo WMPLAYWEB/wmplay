@@ -611,3 +611,35 @@ body {
   -webkit-backdrop-filter: none !important;
 }
 
+/* ============================================================== */
+/* MODAIS DO PLAYER DE VÍDEO (SEMPRE ESCUROS COM CONTRASTE MÁXIMO)*/
+/* ============================================================== */
+.kodi-cinema-modal,
+.theme-offwhite .kodi-cinema-modal {
+  background-color: #09090b !important;
+  color: #ffffff !important;
+  border-color: #27272a !important;
+}
+
+.kodi-cinema-modal p,
+.theme-offwhite .kodi-cinema-modal p {
+  color: #f4f4f5 !important;
+}
+
+.kodi-cinema-modal span,
+.theme-offwhite .kodi-cinema-modal span {
+  color: #ef4444 !important;
+}
+
+.kodi-cinema-modal h3,
+.theme-offwhite .kodi-cinema-modal h3 {
+  color: #ffffff !important;
+}
+
+/* Prevenção global contra texto claro em fundo claro */
+.theme-offwhite .text-zinc-100,
+.theme-offwhite .text-zinc-200 {
+  color: #0f172a !important;
+}
+
+

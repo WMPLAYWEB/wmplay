@@ -1102,15 +1102,7 @@ export default function KodiVideoPlayer({
           }
         };
 
-        const handlePlaying = () => {
-          setIsLoading(false);
-          setIsPlaying(true);
-          setHasStartedPlaying(true);
-          if (video && video.playbackRate !== 1.0) {
-            video.playbackRate = 1.0;
-          }
-        };
-
+        let waitingTimer: any = null;
         let stallCount = 0;
         let lastStallTime = 0;
         const handleWaiting = () => {
@@ -1123,14 +1115,34 @@ export default function KodiVideoPlayer({
           }
           lastStallTime = now;
 
-          // Se travar repetidamente e tiver servidor reserva ou proxy anti-buffer, alternar automaticamente
-          if (stallCount >= 3 && servers.length > 1 && activeServerIndex + 1 < servers.length) {
-            console.warn(`[WMPLAY] Travamento de buffer detectado no servidor ${activeServerIndex + 1}, alternando para o servidor reserva: ${servers[activeServerIndex + 1]?.name}`);
+          // Watchdog ativo: se o servidor ficar congelado por mais de 4.5s em buffer, avança para o próximo
+          if (waitingTimer) clearTimeout(waitingTimer);
+          waitingTimer = setTimeout(() => {
+            if (servers.length > 1 && activeServerIndex + 1 < servers.length) {
+              console.warn(`[WMPLAY Watchdog] Buffer sem resposta por 4.5s no servidor ${activeServerIndex + 1}, alternando automaticamente para: ${servers[activeServerIndex + 1]?.name}`);
+              onSelectServer(activeServerIndex + 1);
+            }
+          }, 4500);
+
+          // Se travar repetidamente e tiver servidor reserva ou proxy anti-buffer, alternar imediatamente
+          if (stallCount >= 2 && servers.length > 1 && activeServerIndex + 1 < servers.length) {
+            console.warn(`[WMPLAY] Travamento repetido detectado no servidor ${activeServerIndex + 1}, alternando para o servidor reserva: ${servers[activeServerIndex + 1]?.name}`);
             onSelectServer(activeServerIndex + 1);
           }
         };
 
+        const handlePlaying = () => {
+          if (waitingTimer) clearTimeout(waitingTimer);
+          setIsLoading(false);
+          setIsPlaying(true);
+          setHasStartedPlaying(true);
+          if (video && video.playbackRate !== 1.0) {
+            video.playbackRate = 1.0;
+          }
+        };
+
         const handleError = () => {
+          if (waitingTimer) clearTimeout(waitingTimer);
           if (servers.length > 1 && activeServerIndex + 1 < servers.length) {
             console.warn(
               `[WMPLAY] Falha no servidor ${activeServerIndex + 1}, alternando automaticamente para o servidor reserva: ${
@@ -1156,8 +1168,18 @@ export default function KodiVideoPlayer({
           setIsLoading(false);
         }, 1500);
 
+        // Watchdog de conexão inicial: se o vídeo não iniciar reprodução em 5s e houver servidor alternativo, avança
+        const initialWatchdog = setTimeout(() => {
+          if (video && !video.currentTime && !video.readyState && servers.length > 1 && activeServerIndex + 1 < servers.length) {
+            console.warn(`[WMPLAY Watchdog] Servidor ${activeServerIndex + 1} sem resposta inicial em 5s, alternando para o próximo: ${servers[activeServerIndex + 1]?.name}`);
+            onSelectServer(activeServerIndex + 1);
+          }
+        }, 5000);
+
         return () => {
           clearTimeout(fallbackTimer);
+          clearTimeout(initialWatchdog);
+          if (waitingTimer) clearTimeout(waitingTimer);
           video.removeEventListener("loadedmetadata", handleInitialReady);
           video.removeEventListener("canplay", handleInitialReady);
           video.removeEventListener("playing", handlePlaying);
@@ -2346,45 +2368,50 @@ export default function KodiVideoPlayer({
         </div>
       )}
 
-      {/* MODAL DE SINOPSE COMPLETA */}
+      {/* MODAL DE SINOPSE COMPLETA (SEMPRE ESCURO COM ALTO CONTRASTE E NITIDEZ) */}
       {showSynopsisModal && info && (
         <div
           onClick={(e) => {
             e.stopPropagation();
             setShowSynopsisModal(false);
           }}
-          className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+          className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-xl bg-zinc-950 border border-zinc-700/80 rounded-2xl shadow-2xl p-6 text-white space-y-4"
+            className="kodi-cinema-modal w-full max-w-xl bg-zinc-950 border border-zinc-700/80 rounded-2xl shadow-2xl p-6 text-white space-y-4"
+            style={{ backgroundColor: '#09090b', color: '#ffffff', borderColor: '#27272a' }}
           >
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3" style={{ borderColor: '#27272a' }}>
               <div className="flex items-center gap-2.5">
                 <Info className="w-5 h-5 text-red-500 shrink-0" />
-                <h3 className="font-black text-base sm:text-lg">{title}</h3>
+                <h3 className="font-black text-base sm:text-lg" style={{ color: '#ffffff' }}>{title}</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowSynopsisModal(false)}
-                className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors"
+                className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                style={{ backgroundColor: '#18181b', color: '#ffffff' }}
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="max-h-72 overflow-y-auto pr-2 space-y-2 select-text">
-              <span className="text-[11px] font-black uppercase tracking-wider text-red-400 block">
+              <span className="text-[11px] font-black uppercase tracking-wider text-red-500 block">
                 Sinopse Completa
               </span>
-              <p className="text-sm sm:text-base leading-relaxed text-zinc-200">
+              <p
+                className="text-sm sm:text-base leading-relaxed text-zinc-100 font-medium"
+                style={{ color: '#f4f4f5' }}
+              >
                 {info}
               </p>
             </div>
-            <div className="pt-2 flex justify-end border-t border-zinc-800/80">
+            <div className="pt-2 flex justify-end border-t border-zinc-800/80" style={{ borderColor: '#27272a' }}>
               <button
                 type="button"
                 onClick={() => setShowSynopsisModal(false)}
-                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-colors cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-colors cursor-pointer shadow-lg shadow-red-600/30"
               >
                 Fechar
               </button>
