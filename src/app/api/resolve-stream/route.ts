@@ -228,9 +228,10 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
       const directTape = await resolveStreamTape(dub.streamtape);
       if (directTape) {
         const finalMp4 = await getRedirectLocation(directTape);
+        const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
         servers.push({
           name: `Servidor StreamTape Full HD Dublado (CDN Rápida)`,
-          url: finalMp4,
+          url: proxiedUrl,
           type: 'video',
           isDubbed: true
         });
@@ -265,9 +266,10 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
         const directTape = await resolveStreamTape(leg.streamtape);
         if (directTape) {
           const finalMp4 = await getRedirectLocation(directTape);
+          const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
           servers.push({
             name: `Servidor StreamTape Full HD Legendado PT-BR`,
-            url: finalMp4,
+            url: proxiedUrl,
             type: 'video',
             isDubbed: false
           });

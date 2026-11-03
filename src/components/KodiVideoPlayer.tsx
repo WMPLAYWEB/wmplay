@@ -2102,65 +2102,21 @@ export default function KodiVideoPlayer({
             )}
           </div>
         ) : (
-          <div className="w-full h-full relative flex flex-col items-center justify-center bg-black">
-            <iframe
-              key={currentServer?.url}
-              src={currentServer?.url}
-              className="w-full h-full border-0"
-              referrerPolicy="no-referrer-when-downgrade"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-              allowFullScreen
-            />
-
-            {/* Quick Switch Server Bar (Pills para troca instantânea de servidor no modo Embed) */}
-            {servers && servers.length > 1 && !isMiniPlayer && (
-              <div className={`absolute top-16 left-1/2 -translate-x-1/2 z-40 max-w-[96vw] overflow-x-auto no-scrollbar py-1 px-2.5 flex items-center gap-1.5 bg-black/85 backdrop-blur-xl border border-zinc-700/80 rounded-2xl shadow-2xl transition-all duration-300 ${
-                isControlsVisible ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
-              }`}>
-                <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1 shrink-0 pl-1">
-                  <Server className="w-3 h-3 text-amber-400" /> Servidores:
-                </span>
-                <div className="flex items-center gap-1">
-                  {servers.map((srv, idx) => {
-                    const isCurrent = activeServerIndex === idx;
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelectServer(idx);
-                        }}
-                        className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
-                          isCurrent
-                            ? "!bg-red-600 !text-white shadow-md shadow-red-600/50 scale-105"
-                            : "!bg-zinc-800/90 hover:!bg-zinc-700 !text-zinc-200 hover:!text-white border border-zinc-700/50"
-                        }`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${isCurrent ? "bg-white animate-pulse" : "bg-zinc-400"}`} />
-                        <span>{getShortServerName(srv.name, idx)}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelectServer((activeServerIndex + 1) % servers.length);
-                  }}
-                  className="ml-1 px-2.5 py-1 rounded-xl text-[11px] font-black bg-amber-500 hover:bg-amber-400 text-black flex items-center gap-1 shrink-0 cursor-pointer shadow transition-all hover:scale-105"
-                  title="Vídeo não abriu? Clique para testar o próximo servidor"
-                >
-                  <RefreshCw className="w-3 h-3 text-black" />
-                  <span>Próximo</span>
-                </button>
-                <span className="hidden sm:flex text-[10px] font-black text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded-full items-center gap-1 shrink-0 ml-1">
-                  <ShieldCheck className="w-3 h-3 text-emerald-400" /> Sem Anúncios
-                </span>
-              </div>
-            )}
+          <div className="w-full h-full relative flex flex-col items-center justify-center bg-zinc-950 p-6 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-500 mb-4 animate-pulse">
+              <Tv className="w-8 h-8" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">Transmissão Direta Indisponível</h3>
+            <p className="text-sm text-zinc-400 max-w-md mb-6 leading-relaxed">
+              Este título ainda não possui link direto 100% dublado e sem anúncios ativo no acervo. Para garantir sua segurança contra anúncios, selecione outro filme ou série no catálogo.
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow-lg shadow-red-600/30 transition-all hover:scale-105 cursor-pointer"
+            >
+              Voltar ao Catálogo
+            </button>
           </div>
         )}
 
