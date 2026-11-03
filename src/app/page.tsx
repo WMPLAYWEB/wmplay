@@ -563,6 +563,72 @@ export default function KodiApp() {
     }
   };
 
+  // Resolução Direta de Streams FenixFlix pelo Navegador do Usuário (IP Residencial Sem Bloqueios)
+  const resolveClientFenixStreams = async (
+    targetTmdbId?: string,
+    isTvSeries?: boolean,
+    season?: number,
+    episode?: number
+  ): Promise<{ name: string; url: string; type: "video" | "embed" }[]> => {
+    if (!targetTmdbId) return [];
+    try {
+      const tmdbKey = "92c1507cc18d85290e7a0b96abb37316";
+      let imdbId = "";
+      try {
+        const extRes = await fetch(
+          `https://api.themoviedb.org/3/${isTvSeries ? "tv" : "movie"}/${targetTmdbId}/external_ids?api_key=${tmdbKey}`,
+          { signal: AbortSignal.timeout(2000) }
+        );
+        if (extRes.ok) {
+          const extData = await extRes.json();
+          imdbId = extData.imdb_id || "";
+        }
+      } catch {}
+
+      const queryIds = imdbId ? [imdbId, `tmdb:${targetTmdbId}`] : [`tmdb:${targetTmdbId}`];
+      const clientServers: { name: string; url: string; type: "video" | "embed" }[] = [];
+      const seenUrls = new Set<string>();
+
+      for (const qId of queryIds) {
+        const streamPath = isTvSeries
+          ? `series/${qId}:${season || 1}:${episode || 1}.json`
+          : `movie/${qId}.json`;
+        const url = `https://fenixflix.fenixhub.online/qualities=4k,1080p,720p,sd,cam%7Caudio=dublado,legendado%7Ccatalogs=populares_movie,populares_series,recentes_movie,recentes_series/stream/${streamPath}`;
+
+        try {
+          const res = await fetch(url, { signal: AbortSignal.timeout(3500) });
+          if (!res.ok) continue;
+          const data = await res.json();
+          if (data && Array.isArray(data.streams)) {
+            for (const s of data.streams) {
+              if (!s || !s.url || seenUrls.has(s.url)) continue;
+              seenUrls.add(s.url);
+              const rawTitle = (s.title || "").replace(/\n/g, " ");
+              const isDub =
+                rawTitle.toLowerCase().includes("dub") ||
+                (s.name || "").toLowerCase().includes("dub") ||
+                !rawTitle.toLowerCase().includes("leg");
+              const quality = s.name || "Full HD";
+              const cleanLabel = `OnePlay Fenix (${quality}${isDub ? " Dublado PT-BR" : " Legendado"})`;
+
+              // O proxy-stream reescreve os manifestos HLS garantindo reprodução contínua e sem bloqueio CORS
+              clientServers.push({
+                name: `${cleanLabel} - Acelerado HLS`,
+                url: `/api/proxy-stream?url=${encodeURIComponent(s.url)}`,
+                type: "video",
+              });
+            }
+          }
+          if (clientServers.length > 0) break;
+        } catch {}
+      }
+
+      return clientServers;
+    } catch {
+      return [];
+    }
+  };
+
   // Start Playback for a Movie or Episode with Multi-Server Redundancy
   const handlePlayMedia = (
     title: string,
@@ -702,55 +768,44 @@ export default function KodiApp() {
       episode: String(epNum || 1),
     });
 
-    fetch(`/api/resolve-stream?${params.toString()}`)
+    const resolveBackendPromise = fetch(`/api/resolve-stream?${params.toString()}`)
       .then((res) => res.json())
-      .then((data) => {
-        const validDirectServers = (data.success && Array.isArray(data.servers))
-          ? data.servers.filter((s: any) => (s.type === "video" || s.type === "embed") && s.url && s.url !== "ERROR_UNAVAILABLE")
-          : [];
+      .catch(() => ({ success: false, servers: [] }));
 
-        // Priorizar streams diretos de vídeo no topo, seguidos de embeds de backup
-        validDirectServers.sort((a: any, b: any) => {
-          if (a.type === "video" && b.type !== "video") return -1;
-          if (a.type !== "video" && b.type === "video") return 1;
-          return 0;
+    const resolveClientPromise = resolveClientFenixStreams(tmdbId, isTv, seasonNum, epNum)
+      .catch(() => []);
+
+    Promise.all([resolveBackendPromise, resolveClientPromise]).then(([backendData, clientFenixServers]) => {
+      const backendServers = (backendData.success && Array.isArray(backendData.servers))
+        ? backendData.servers.filter((s: any) => (s.type === "video" || s.type === "embed") && s.url && s.url !== "ERROR_UNAVAILABLE")
+        : [];
+
+      // Prioridade máxima: FenixFlix 1080p Dublado HLS resolvido diretamente no cliente, seguido do backend
+      const combined = [...clientFenixServers, ...backendServers];
+      const seenUrls = new Set<string>();
+      const finalServers = combined.filter((s) => {
+        if (!s || !s.url || seenUrls.has(s.url)) return false;
+        seenUrls.add(s.url);
+        return true;
+      });
+
+      if (finalServers.length > 0) {
+        setPlayingMedia((prev) => {
+          if (!prev || prev.title !== title) return prev;
+          return {
+            ...prev,
+            servers: finalServers,
+            activeServerIndex: 0,
+          };
         });
-
-        if (validDirectServers.length > 0) {
-          setPlayingMedia((prev) => {
-            if (!prev || prev.title !== title) return prev;
-            return {
-              ...prev,
-              servers: validDirectServers,
-              activeServerIndex: 0,
-            };
-          });
-        } else {
-          setPlayingMedia((prev) => {
-            if (!prev || prev.title !== title) return prev;
-            return {
-              ...prev,
-              servers: [
-                {
-                  name: "Sinal Temporariamente Fora do Ar (Brazuca Play)",
-                  url: "ERROR_UNAVAILABLE",
-                  type: "video",
-                },
-              ],
-              activeServerIndex: 0,
-            };
-          });
-        }
-      })
-      .catch((err) => {
-        console.error("Erro ao resolver servidores Brazuca Play:", err);
+      } else {
         setPlayingMedia((prev) => {
           if (!prev || prev.title !== title) return prev;
           return {
             ...prev,
             servers: [
               {
-                name: "Falha de Conexão com o Repositório Brazuca Play",
+                name: "Sinal Temporariamente Fora do Ar (Brazuca Play)",
                 url: "ERROR_UNAVAILABLE",
                 type: "video",
               },
@@ -758,7 +813,24 @@ export default function KodiApp() {
             activeServerIndex: 0,
           };
         });
+      }
+    }).catch((err) => {
+      console.error("Erro ao resolver servidores Brazuca Play / OnePlay:", err);
+      setPlayingMedia((prev) => {
+        if (!prev || prev.title !== title) return prev;
+        return {
+          ...prev,
+          servers: [
+            {
+              name: "Falha de Conexão com o Repositório Brazuca Play",
+              url: "ERROR_UNAVAILABLE",
+              type: "video",
+            },
+          ],
+          activeServerIndex: 0,
+        };
       });
+    });
   };
 
   // Retomada e Próximo Episódio

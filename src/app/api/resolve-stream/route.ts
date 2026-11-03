@@ -351,7 +351,18 @@ export async function GET(req: NextRequest) {
     const link = searchParams.get('link') || '';
     const title = searchParams.get('title') || '';
     const tmdbId = searchParams.get('tmdbId') || searchParams.get('tmdb_id') || '';
-    const mediaType = searchParams.get('type') || searchParams.get('mediaType') || 'movie'; // movie or tv
+    const rawType = searchParams.get('type') || searchParams.get('mediaType');
+    const isTvOrSeries =
+      rawType === 'tv' ||
+      rawType === 'series' ||
+      link.includes('serie') ||
+      link.includes('season=') ||
+      link.includes('tmdb_ep=') ||
+      link.includes('resolver3_tvshows') ||
+      link.includes('resolver2_tvshows') ||
+      link.includes('resolver3_episodes') ||
+      Boolean(searchParams.get('season') && searchParams.get('episode'));
+    const mediaType = isTvOrSeries ? 'tv' : (rawType || 'movie');
     const season = searchParams.get('season') || '1';
     const episode = searchParams.get('episode') || '1';
 

@@ -120,7 +120,9 @@ export async function resolveFenixFlix(
  */
 export async function resolveBugouMods(
   title: string,
-  mediaType: 'movie' | 'tv' | 'series' = 'movie'
+  mediaType: 'movie' | 'tv' | 'series' = 'movie',
+  season: string | number = 1,
+  episode: string | number = 1
 ): Promise<OnePlayStream[]> {
   try {
     const clean = title.replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -132,7 +134,7 @@ export async function resolveBugouMods(
 
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Referer': 'https://embed.bugoumods.com/'
       },
       signal: controller.signal
@@ -141,10 +143,10 @@ export async function resolveBugouMods(
 
     if (!res.ok) return [];
     const data = await res.json();
-
     const streams: OnePlayStream[] = [];
+    const cleanLower = clean.toLowerCase();
+
     if (mediaType === 'movie' && Array.isArray(data.vod) && data.vod.length > 0) {
-      const cleanLower = clean.toLowerCase();
       const match = data.vod.find((v: any) => {
         const n = (v.name || '').toLowerCase();
         return n.includes(cleanLower) || cleanLower.includes(n);
@@ -154,7 +156,7 @@ export async function resolveBugouMods(
         const mp4Url = `https://teco.bugoumods.com/movie/BugouVortex/BugouVortex/${match.stream_id}.mp4?domain_auth=embed.bugoumods.com`;
         const matchName = (match.name || clean).replace(/^\[L\]O?\s*/, '').replace(/\s*\[L\]$/, '');
         streams.push({
-          name: `OnePlay Cine HD (${matchName} - Dublado MP4)`,
+          name: `OnePlay Cine HD (${matchName} - Dublado MP4) - Acelerado`,
           url: `/api/proxy-stream?url=${encodeURIComponent(mp4Url)}`,
           type: 'video',
           isDubbed: true
@@ -165,6 +167,51 @@ export async function resolveBugouMods(
           type: 'video',
           isDubbed: true
         });
+      }
+    } else if ((mediaType === 'series' || mediaType === 'tv') && Array.isArray(data.series) && data.series.length > 0) {
+      const exactMatch = data.series.find((s: any) => (s.name || '').toLowerCase() === cleanLower);
+      const match = exactMatch || data.series.find((s: any) => {
+        const n = (s.name || '').toLowerCase();
+        return n.includes(cleanLower) || cleanLower.includes(n);
+      }) || data.series[0];
+
+      if (match && match.series_id) {
+        try {
+          const infoRes = await fetch(`https://embed.bugoumods.com/index.php?ajax=1&type=series_info&series_id=${match.series_id}`, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+              'Referer': 'https://embed.bugoumods.com/'
+            },
+            signal: AbortSignal.timeout(4000)
+          });
+          if (infoRes.ok) {
+            const infoData = await infoRes.json();
+            if (infoData && infoData.episodes && typeof infoData.episodes === 'object') {
+              const targetSeasonKey = String(season);
+              const epList = infoData.episodes[targetSeasonKey] || infoData.episodes['1'];
+              if (Array.isArray(epList)) {
+                const targetEp = epList.find((e: any) => String(e.episode_num) === String(episode)) || epList[0];
+                if (targetEp && targetEp.id) {
+                  const mp4Url = `https://teco.bugoumods.com/series/BugouVortex/BugouVortex/${targetEp.id}.mp4?domain_auth=embed.bugoumods.com`;
+                  const sNum = targetEp.season || season;
+                  const eNum = targetEp.episode_num || episode;
+                  streams.push({
+                    name: `OnePlay Série HD (T${sNum}E${eNum} Dublado MP4) - Acelerado`,
+                    url: `/api/proxy-stream?url=${encodeURIComponent(mp4Url)}`,
+                    type: 'video',
+                    isDubbed: true
+                  });
+                  streams.push({
+                    name: `OnePlay Série HD (T${sNum}E${eNum} Sinal Direto MP4)`,
+                    url: mp4Url,
+                    type: 'video',
+                    isDubbed: true
+                  });
+                }
+              }
+            }
+          }
+        } catch {}
       }
     }
 
@@ -195,7 +242,7 @@ export async function resolveOnePlaySources(params: {
   }
 
   if (title) {
-    promises.push(resolveBugouMods(title, mediaType));
+    promises.push(resolveBugouMods(title, mediaType, season, episode));
   }
 
   try {

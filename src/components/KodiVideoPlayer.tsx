@@ -1115,16 +1115,20 @@ export default function KodiVideoPlayer({
           }
           lastStallTime = now;
 
-          // Watchdog ativo: se o servidor ficar congelado por mais de 4.5s em buffer, avança para o próximo
+          // Watchdog ativo: se o servidor ficar congelado por mais de 5s em buffer, avança para o próximo ou sinaliza
           if (waitingTimer) clearTimeout(waitingTimer);
           waitingTimer = setTimeout(() => {
             if (servers.length > 1 && activeServerIndex + 1 < servers.length) {
-              console.warn(`[WMPLAY Watchdog] Buffer sem resposta por 4.5s no servidor ${activeServerIndex + 1}, alternando automaticamente para: ${servers[activeServerIndex + 1]?.name}`);
+              console.warn(`[WMPLAY Watchdog] Buffer sem resposta por 5s no servidor ${activeServerIndex + 1}, alternando automaticamente para: ${servers[activeServerIndex + 1]?.name}`);
               onSelectServer(activeServerIndex + 1);
+            } else if (servers.length <= 1 || activeServerIndex + 1 >= servers.length) {
+              setIsLoading(false);
+              setHasError(true);
+              setErrorMessage("O sinal deste servidor demorou para responder. Clique abaixo para tentar novamente ou selecione outro episódio.");
             }
-          }, 4500);
+          }, 5000);
 
-          // Se travar repetidamente e tiver servidor reserva ou proxy anti-buffer, alternar imediatamente
+          // Se travar repetidamente e tiver servidor reserva, alternar imediatamente
           if (stallCount >= 2 && servers.length > 1 && activeServerIndex + 1 < servers.length) {
             console.warn(`[WMPLAY] Travamento repetido detectado no servidor ${activeServerIndex + 1}, alternando para o servidor reserva: ${servers[activeServerIndex + 1]?.name}`);
             onSelectServer(activeServerIndex + 1);
@@ -1168,13 +1172,19 @@ export default function KodiVideoPlayer({
           setIsLoading(false);
         }, 1500);
 
-        // Watchdog de conexão inicial: se o vídeo não iniciar reprodução em 5s e houver servidor alternativo, avança
+        // Watchdog de conexão inicial: se o vídeo não iniciar reprodução em 6s, avança para o próximo ou sinaliza
         const initialWatchdog = setTimeout(() => {
-          if (video && !video.currentTime && !video.readyState && servers.length > 1 && activeServerIndex + 1 < servers.length) {
-            console.warn(`[WMPLAY Watchdog] Servidor ${activeServerIndex + 1} sem resposta inicial em 5s, alternando para o próximo: ${servers[activeServerIndex + 1]?.name}`);
-            onSelectServer(activeServerIndex + 1);
+          if (video && !video.currentTime && !video.readyState) {
+            if (servers.length > 1 && activeServerIndex + 1 < servers.length) {
+              console.warn(`[WMPLAY Watchdog] Servidor ${activeServerIndex + 1} sem resposta inicial em 6s, alternando para o próximo: ${servers[activeServerIndex + 1]?.name}`);
+              onSelectServer(activeServerIndex + 1);
+            } else if (servers.length <= 1 || activeServerIndex + 1 >= servers.length) {
+              setIsLoading(false);
+              setHasError(true);
+              setErrorMessage("O sinal deste servidor demorou para carregar. Tente novamente ou selecione outro episódio/servidor.");
+            }
           }
-        }, 5000);
+        }, 6000);
 
         return () => {
           clearTimeout(fallbackTimer);
