@@ -28,7 +28,13 @@ export async function GET(req: NextRequest) {
     const parsed = new URL(targetUrl);
     const mod = parsed.protocol === 'https:' ? https : http;
 
-    const referer = customReferer || (targetUrl.includes('mxcontent.net') ? 'https://mxdrop.click/' : parsed.origin + '/');
+    const referer = customReferer || (
+      targetUrl.includes('mxcontent.net') ? 'https://mxdrop.click/' :
+      targetUrl.includes('bugoumods.com') ? 'https://embed.bugoumods.com/' :
+      targetUrl.includes('fenix') ? 'https://fenixflix.fenixhub.online/' :
+      targetUrl.includes('zunderflix') ? 'https://zunderflix.lat/' :
+      parsed.origin + '/'
+    );
     const rangeHeader = req.headers.get('range');
 
     const reqHeaders: Record<string, string> = {

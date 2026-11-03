@@ -11,7 +11,7 @@ export interface BrazucaChannel {
   id: string;
   name: string;
   logo: string;
-  category: "aberta" | "esportes" | "filmes_series" | "infantil" | "noticias_docs" | "variedades";
+  category: "aberta" | "esportes" | "filmes_series" | "infantil" | "noticias_docs" | "variedades" | "24horas";
   epg?: string;
   streamUrl: string;
 }

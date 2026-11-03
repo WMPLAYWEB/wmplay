@@ -62,6 +62,9 @@ import {
   BrazucaCategoryNode,
   BrazucaChannel
 } from "@/data/brazuca_full";
+import { ONEPLAY_CHANNELS } from "@/data/oneplay_channels";
+
+const ALL_CHANNELS: BrazucaChannel[] = [...BRAZUCA_CHANNELS, ...ONEPLAY_CHANNELS];
 import KodiVideoPlayer from "@/components/KodiVideoPlayer";
 import WmplayLogo from "@/components/WmplayLogo";
 import Ps1Button from "@/components/Ps1Button";
@@ -82,7 +85,7 @@ const MENU_ITEMS: MenuItem[] = [
   { id: "releases", label: "Lançamentos (1.1k+)", icon: Sparkles },
   { id: "novelas", label: "Novelas (450+)", icon: Heart },
   { id: "music", label: "Música", icon: Music },
-  { id: "live", label: "TV ao Vivo (156 ch)", icon: Radio },
+  { id: "live", label: "TV ao Vivo (1.3k+ ch)", icon: Radio },
   { id: "addons", label: "Add-ons (Brazuca Play)", icon: Grid },
 ];
 
@@ -932,8 +935,8 @@ export default function KodiApp() {
     return true;
   });
 
-  // Canais filtrados dentro do Brazuca Play e TV Ao Vivo
-  const filteredBrazucaChannels = BRAZUCA_CHANNELS.filter((ch) => {
+  // Canais filtrados dentro do Brazuca Play e TV Ao Vivo (1.345+ Canais)
+  const filteredBrazucaChannels = ALL_CHANNELS.filter((ch) => {
     const matchesFilter =
       channelSubFilter === "todos"
         ? true
@@ -2173,13 +2176,14 @@ export default function KodiApp() {
                       isLight ? "bg-white border-zinc-300 shadow-sm" : "bg-zinc-950/90 border-zinc-800"
                     }`}>
                       {[
-                        { id: "todos", label: `Todos (${BRAZUCA_CHANNELS.length})` },
+                        { id: "todos", label: `Todos (${ALL_CHANNELS.length})` },
                         { id: "favoritos", label: `⭐ Favoritos (${favoriteChannels.length})` },
                         { id: "aberta", label: "TV Aberta" },
-                        { id: "esportes", label: "Esportes" },
+                        { id: "esportes", label: "Esportes / Premiere" },
                         { id: "filmes_series", label: "Filmes & Séries" },
                         { id: "infantil", label: "Infantil" },
-                        { id: "noticias_docs", label: "Notícias" },
+                        { id: "24horas", label: "24 Horas" },
+                        { id: "noticias_docs", label: "Notícias & Docs" },
                         { id: "variedades", label: "Variedades" },
                       ].map((tab) => (
                         <button
@@ -2839,13 +2843,14 @@ export default function KodiApp() {
                   isLight ? "bg-white border-zinc-300 shadow-sm" : "bg-zinc-950/90 border-zinc-800"
                 }`}>
                   {[
-                    { id: "todos", label: `Todos (${BRAZUCA_CHANNELS.length})` },
+                    { id: "todos", label: `Todos (${ALL_CHANNELS.length})` },
                     { id: "favoritos", label: `⭐ Favoritos (${favoriteChannels.length})` },
                     { id: "aberta", label: "TV Aberta" },
-                    { id: "esportes", label: "Esportes" },
+                    { id: "esportes", label: "Esportes / Premiere" },
                     { id: "filmes_series", label: "Filmes & Séries" },
                     { id: "infantil", label: "Infantil" },
-                    { id: "noticias_docs", label: "Notícias" },
+                    { id: "24horas", label: "24 Horas" },
+                    { id: "noticias_docs", label: "Notícias & Docs" },
                     { id: "variedades", label: "Variedades" },
                   ].map((tab) => (
                     <button

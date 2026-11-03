@@ -3,6 +3,7 @@ import https from 'https';
 import vm from 'node:vm';
 import path from 'path';
 import { DatabaseSync } from 'node:sqlite';
+import { resolveOnePlaySources } from '@/lib/oneplay-resolver';
 
 let dbInstance: DatabaseSync | null = null;
 function getDb(): DatabaseSync {
@@ -355,6 +356,72 @@ export async function GET(req: NextRequest) {
     const episode = searchParams.get('episode') || '1';
 
     const servers: StreamServer[] = [];
+
+    // =========================================================================
+    // 00. REPRODUÇÃO DIRETA DE LINKS ONEPLAY (BugouMods MP4 / HLS)
+    // =========================================================================
+    if (link.includes('oneplay=')) {
+      if (link.includes('bugou:movie:')) {
+        const streamId = link.split('bugou:movie:')[1].split('&')[0];
+        const mp4Url = `https://teco.bugoumods.com/movie/BugouVortex/BugouVortex/${streamId}.mp4?domain_auth=embed.bugoumods.com`;
+        servers.push(
+          {
+            name: 'OnePlay Cine HD (Dublado MP4) - Acelerado',
+            url: `/api/proxy-stream?url=${encodeURIComponent(mp4Url)}`,
+            type: 'video',
+            isDubbed: true
+          },
+          {
+            name: 'OnePlay Cine HD (Sinal Direto MP4)',
+            url: mp4Url,
+            type: 'video',
+            isDubbed: true
+          }
+        );
+      } else if (link.includes('bugou:series_ep:')) {
+        const epId = link.split('bugou:series_ep:')[1].split('&')[0];
+        const mp4Url = `https://teco.bugoumods.com/series/BugouVortex/BugouVortex/${epId}.mp4?domain_auth=embed.bugoumods.com`;
+        servers.push(
+          {
+            name: `OnePlay Série HD (T${season}E${episode} Dublado MP4) - Acelerado`,
+            url: `/api/proxy-stream?url=${encodeURIComponent(mp4Url)}`,
+            type: 'video',
+            isDubbed: true
+          },
+          {
+            name: `OnePlay Série HD (T${season}E${episode} Sinal Direto MP4)`,
+            url: mp4Url,
+            type: 'video',
+            isDubbed: true
+          }
+        );
+      } else if (link.includes('bugou:live:')) {
+        const liveId = link.split('bugou:live:')[1].split('&')[0];
+        const m3u8Url = `https://teco.bugoumods.com/live/BugouVortex/BugouVortex/${liveId}.m3u8?domain_auth=embed.bugoumods.com`;
+        servers.push(
+          {
+            name: 'OnePlay TV Ao Vivo (Sinal Acelerado HLS)',
+            url: `/api/proxy-stream?url=${encodeURIComponent(m3u8Url)}`,
+            type: 'video',
+            isDubbed: true
+          },
+          {
+            name: 'OnePlay TV Ao Vivo (Sinal Direto HLS)',
+            url: m3u8Url,
+            type: 'video',
+            isDubbed: true
+          }
+        );
+      }
+
+      if (servers.length > 0) {
+        return NextResponse.json({
+          success: true,
+          servers,
+          totalServers: servers.length
+        });
+      }
+    }
 
     // =========================================================================
     // 0. CANAIS ESPECIAIS AO VIVO (REDE GLOBO, GLOBONEWS, ETC.)
@@ -935,6 +1002,26 @@ export async function GET(req: NextRequest) {
           targetTmdbId = row.tmdb_id;
         }
       } catch {}
+    }
+
+    // =========================================================================
+    // 9. REPOSITÓRIO OFICIAL ONEPLAY (FENIXFLIX + BUGOUVORTEX HLS/MP4 DUBLADO)
+    // =========================================================================
+    if (servers.length === 0) {
+      try {
+        const onePlayServers = await resolveOnePlaySources({
+          title,
+          mediaType: mediaType === 'tv' || mediaType === 'series' ? 'series' : 'movie',
+          tmdbId: targetTmdbId || tmdbId,
+          season: targetSeason,
+          episode: targetEpisode
+        });
+        if (onePlayServers && onePlayServers.length > 0) {
+          servers.push(...onePlayServers);
+        }
+      } catch (err) {
+        console.error('Erro ao resolver provedores OnePlay:', err);
+      }
     }
 
     return NextResponse.json({
