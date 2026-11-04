@@ -4,7 +4,7 @@ import https from 'https';
 import vm from 'node:vm';
 import path from 'path';
 import { DatabaseSync } from 'node:sqlite';
-import { resolveOnePlaySources } from '@/lib/oneplay-resolver';
+import { resolveOnePlaySources, isStreamPlayable } from '@/lib/oneplay-resolver';
 
 let dbInstance: DatabaseSync | null = null;
 function getDb(): DatabaseSync {
@@ -142,57 +142,13 @@ async function getRedirectLocation(videoUrl: string): Promise<string> {
   });
 }
 
-// Verifica se um stream direto realmente responde e não dá 403 Forbidden
-async function isStreamReachable(url: string): Promise<boolean> {
-  if (!url || !url.startsWith('http')) return false;
-  if (url.includes('source.apperror404.com')) return false;
-  try {
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Range': 'bytes=0-100'
-      },
-      signal: AbortSignal.timeout(2500)
-    });
-    if (res.body && typeof res.body.cancel === 'function') {
-      try { res.body.cancel(); } catch {}
-    }
-    return res.status === 200 || res.status === 206 || (res.status >= 300 && res.status < 400);
-  } catch {
-    return url.includes('wasabisys.com');
-  }
+// Verifica se um stream direto realmente responde e não dá 403 Forbidden ou DNS offline
+async function isStreamReachable(url: string, referer: string = ''): Promise<boolean> {
+  return await isStreamPlayable(url, referer);
 }
 
-async function isUrlPlayable(url: string, referer: string): Promise<boolean> {
-  try {
-    const u = new URL(url);
-    const mod = u.protocol === 'https:' ? https : http;
-    return await new Promise<boolean>((resolve) => {
-      const req = mod.request(url, {
-        method: 'HEAD',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Referer': referer
-        },
-        timeout: 2000
-      }, (res: any) => {
-        if (res.statusCode && (res.statusCode < 400 || res.statusCode === 405)) {
-          resolve(true);
-        } else {
-          resolve(false);
-        }
-      });
-      req.on('error', () => resolve(false));
-      req.on('timeout', () => {
-        req.destroy();
-        resolve(false);
-      });
-      req.end();
-    });
-  } catch {
-    return false;
-  }
+async function isUrlPlayable(url: string, referer: string = ''): Promise<boolean> {
+  return await isStreamPlayable(url, referer);
 }
 
 // Extrai o link direto de vídeo MP4 do MixDrop (Padrão Kodi ResolveURL - Sem Anúncios)
@@ -261,13 +217,16 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
       const directTape = await resolveStreamTape(dub.streamtape);
       if (directTape) {
         const finalMp4 = await getRedirectLocation(directTape);
-        const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
-        servers.push({
-          name: `Servidor StreamTape Full HD Dublado (CDN Rápida)`,
-          url: proxiedUrl,
-          type: 'video',
-          isDubbed: true
-        });
+        const playable = await isStreamPlayable(finalMp4, 'https://streamtape.com/');
+        if (playable) {
+          const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
+          servers.push({
+            name: `Servidor StreamTape Full HD Dublado (CDN Rápida)`,
+            url: proxiedUrl,
+            type: 'video',
+            isDubbed: true
+          });
+        }
       }
     } catch (err) {
       console.error('Erro ao resolver StreamTape dublado:', err);
@@ -279,7 +238,7 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
     try {
       const directMix = await resolveMixdrop(dub.mixdrop);
       if (directMix) {
-        const playable = await isUrlPlayable(directMix, 'https://mxdrop.click/');
+        const playable = await isStreamPlayable(directMix, 'https://mxdrop.click/');
         if (playable) {
           const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
           servers.push({
@@ -304,13 +263,16 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
         const directTape = await resolveStreamTape(leg.streamtape);
         if (directTape) {
           const finalMp4 = await getRedirectLocation(directTape);
-          const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
-          servers.push({
-            name: `Servidor StreamTape Full HD Legendado PT-BR`,
-            url: proxiedUrl,
-            type: 'video',
-            isDubbed: false
-          });
+          const playable = await isStreamPlayable(finalMp4, 'https://streamtape.com/');
+          if (playable) {
+            const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
+            servers.push({
+              name: `Servidor StreamTape Full HD Legendado PT-BR`,
+              url: proxiedUrl,
+              type: 'video',
+              isDubbed: false
+            });
+          }
         }
       } catch (err) {
         console.error('Erro ao resolver StreamTape legendado:', err);
@@ -321,7 +283,7 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
       try {
         const directMix = await resolveMixdrop(leg.mixdrop);
         if (directMix) {
-          const playable = await isUrlPlayable(directMix, 'https://mxdrop.click/');
+          const playable = await isStreamPlayable(directMix, 'https://mxdrop.click/');
           if (playable) {
             const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
             servers.push({
@@ -408,71 +370,6 @@ export async function GET(req: NextRequest) {
 
     const servers: StreamServer[] = [];
 
-    // =========================================================================
-    // 00. REPRODUÇÃO DIRETA DE LINKS ONEPLAY (BugouMods MP4 / HLS)
-    // =========================================================================
-    if (link.includes('oneplay=')) {
-      if (link.includes('bugou:movie:')) {
-        const streamId = link.split('bugou:movie:')[1].split('&')[0];
-        const mp4Url = `https://teco.bugoumods.com/movie/BugouVortex/BugouVortex/${streamId}.mp4?domain_auth=embed.bugoumods.com`;
-        servers.push(
-          {
-            name: 'OnePlay Cine HD (Dublado MP4) - Acelerado',
-            url: `/api/proxy-stream?url=${encodeURIComponent(mp4Url)}`,
-            type: 'video',
-            isDubbed: true
-          },
-          {
-            name: 'OnePlay Cine HD (Sinal Direto MP4)',
-            url: mp4Url,
-            type: 'video',
-            isDubbed: true
-          }
-        );
-      } else if (link.includes('bugou:series_ep:')) {
-        const epId = link.split('bugou:series_ep:')[1].split('&')[0];
-        const mp4Url = `https://teco.bugoumods.com/series/BugouVortex/BugouVortex/${epId}.mp4?domain_auth=embed.bugoumods.com`;
-        servers.push(
-          {
-            name: `OnePlay Série HD (T${season}E${episode} Dublado MP4) - Acelerado`,
-            url: `/api/proxy-stream?url=${encodeURIComponent(mp4Url)}`,
-            type: 'video',
-            isDubbed: true
-          },
-          {
-            name: `OnePlay Série HD (T${season}E${episode} Sinal Direto MP4)`,
-            url: mp4Url,
-            type: 'video',
-            isDubbed: true
-          }
-        );
-      } else if (link.includes('bugou:live:')) {
-        const liveId = link.split('bugou:live:')[1].split('&')[0];
-        const m3u8Url = `https://teco.bugoumods.com/live/BugouVortex/BugouVortex/${liveId}.m3u8?domain_auth=embed.bugoumods.com`;
-        servers.push(
-          {
-            name: 'OnePlay TV Ao Vivo (Sinal Acelerado HLS)',
-            url: `/api/proxy-stream?url=${encodeURIComponent(m3u8Url)}`,
-            type: 'video',
-            isDubbed: true
-          },
-          {
-            name: 'OnePlay TV Ao Vivo (Sinal Direto HLS)',
-            url: m3u8Url,
-            type: 'video',
-            isDubbed: true
-          }
-        );
-      }
-
-      if (servers.length > 0) {
-        return NextResponse.json({
-          success: true,
-          servers,
-          totalServers: servers.length
-        });
-      }
-    }
 
     // =========================================================================
     // 0. CANAIS ESPECIAIS AO VIVO (REDE GLOBO, GLOBONEWS, ETC.)
@@ -1083,6 +980,13 @@ export async function GET(req: NextRequest) {
       seenServerUrls.add(s.url);
       finalServers.push(s);
     }
+
+    // Prioridade absoluta: Áudio Dublado PT-BR sempre no topo (índices 0, 1, 2...)
+    finalServers.sort((a, b) => {
+      const aDub = a.isDubbed !== false ? 1 : 0;
+      const bDub = b.isDubbed !== false ? 1 : 0;
+      return bDub - aDub;
+    });
 
     return NextResponse.json({
       success: finalServers.length > 0,

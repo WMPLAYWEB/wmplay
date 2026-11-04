@@ -199,66 +199,6 @@ export async function GET(req: NextRequest) {
     let tmdbId = searchParams.get('tmdbId') || '';
     const title = searchParams.get('title') || 'Série';
 
-    // =========================================================================
-    // 0. SÉRIES/NOVELAS/ANIMES/DESENHOS OFICIAIS DO ONEPLAY (BugouMods Series Info)
-    // =========================================================================
-    if (link.includes('oneplay=bugou:series:')) {
-      try {
-        const seriesId = link.split('oneplay=bugou:series:')[1].split('&')[0];
-        const res = await fetch(`https://embed.bugoumods.com/index.php?ajax=1&type=series_info&series_id=${seriesId}`, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Referer': 'https://embed.bugoumods.com/'
-          }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.episodes && typeof data.episodes === 'object') {
-            const onePlaySeasons: FormattedSeason[] = [];
-            const seasonKeys = Object.keys(data.episodes).map(Number).sort((a, b) => a - b);
-
-            for (const sNum of seasonKeys) {
-              const epList = data.episodes[String(sNum)];
-              if (!Array.isArray(epList)) continue;
-
-              const episodes = epList.map((e: any) => {
-                const epNum = parseInt(e.episode_num) || 1;
-                const epTitle = e.title && !e.title.startsWith('S') ? e.title : `Episódio ${epNum}`;
-                const thumb = e.info?.movie_image || e.info?.cover_big || data.info?.cover;
-                const streamUrl = `https://teco.bugoumods.com/series/BugouVortex/BugouVortex/${e.id}.mp4?domain_auth=embed.bugoumods.com`;
-
-                return {
-                  number: epNum,
-                  title: epTitle,
-                  duration: e.info?.duration || '45m',
-                  thumbnail: thumb,
-                  link: `oneplay=bugou:series_ep:${e.id}&series_id=${seriesId}&season=${sNum}&episode=${epNum}&title=${encodeURIComponent(title)}`,
-                  streamUrl
-                };
-              }).sort((a, b) => a.number - b.number);
-
-              onePlaySeasons.push({
-                seasonNumber: sNum,
-                seasonTitle: `${sNum}ª Temporada`,
-                episodes
-              });
-            }
-
-            if (onePlaySeasons.length > 0) {
-              return NextResponse.json({
-                success: true,
-                title: data.info?.name || title,
-                tmdbId: tmdbId || data.info?.tmdb_id || '',
-                totalSeasons: onePlaySeasons.length,
-                seasons: onePlaySeasons
-              });
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Erro ao buscar episódios OnePlay:', err);
-      }
-    }
 
     // Se o link contiver tmdb= ou tmdb_ep=, extrair diretamente
     if (!tmdbId && link.includes('tmdb=')) {

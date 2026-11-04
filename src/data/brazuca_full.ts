@@ -119,7 +119,7 @@ export const ONEPLAY_ROOT_CATEGORIES: BrazucaCategoryNode[] = [
   {
     id: "oneplay_canais",
     title: "CANAIS DE TV AO VIVO",
-    badge: "1.189 Canais HLS",
+    badge: "276 Canais HD",
     description: "Transmissões ao vivo em alta velocidade: Esportes, Premiere, 24 Horas, Notícias, Infantis e TV Aberta.",
     banner: "https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?w=1200&auto=format&fit=crop&q=80",
     type: "channels",
