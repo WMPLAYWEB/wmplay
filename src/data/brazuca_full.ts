@@ -115,6 +115,73 @@ export const BRAZUCA_ROOT_CATEGORIES: BrazucaCategoryNode[] = [
   },
 ];
 
+export const ONEPLAY_ROOT_CATEGORIES: BrazucaCategoryNode[] = [
+  {
+    id: "oneplay_canais",
+    title: "CANAIS DE TV AO VIVO",
+    badge: "1.189 Canais HLS",
+    description: "Transmissões ao vivo em alta velocidade: Esportes, Premiere, 24 Horas, Notícias, Infantis e TV Aberta.",
+    banner: "https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?w=1200&auto=format&fit=crop&q=80",
+    type: "channels",
+  },
+  {
+    id: "oneplay_filmes",
+    title: "FILMES HD & 4K",
+    badge: "1.406 Filmes",
+    description: "Acervo oficial OnePlay VOD Cine HD com reprodução direta e sem travamentos.",
+    banner: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1200&auto=format&fit=crop&q=80",
+    type: "movies",
+  },
+  {
+    id: "oneplay_series",
+    title: "SÉRIES COMPLETAS",
+    badge: "625 Séries",
+    description: "Séries consagradas, temporadas completas e lançamentos com episódios sincronizados.",
+    banner: "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=1200&auto=format&fit=crop&q=80",
+    type: "series",
+  },
+  {
+    id: "oneplay_novelas",
+    title: "NOVELAS NACIONAIS & TURCAS",
+    badge: "126 Novelas",
+    description: "Grandes sucessos da teledramaturgia brasileira e novelas turcas dubladas.",
+    banner: "https://images.unsplash.com/photo-1518173946687-a4c8a383392e?w=1200&auto=format&fit=crop&q=80",
+    type: "novelas",
+  },
+  {
+    id: "oneplay_desenhos",
+    title: "DESENHOS & INFANTIL",
+    badge: "103 Desenhos",
+    description: "Animações infantis, clássicos da animação e filmes infantis dublados.",
+    banner: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&auto=format&fit=crop&q=80",
+    type: "kids",
+  },
+  {
+    id: "oneplay_animes",
+    title: "ANIMES DUBLADOS",
+    badge: "60 Animes",
+    description: "Animes japoneses dublados em português com alta qualidade.",
+    banner: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=80",
+    type: "animes",
+  },
+  {
+    id: "oneplay_lancamentos",
+    title: "LANÇAMENTOS RECENTES",
+    badge: "69 Títulos",
+    description: "Os filmes e produções mais recentes adicionados ao repositório OnePlay.",
+    banner: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=1200&auto=format&fit=crop&q=80",
+    type: "lancamentos",
+  },
+  {
+    id: "oneplay_doramas",
+    title: "DORAMAS & SÉRIES ASIÁTICAS",
+    badge: "44 Doramas",
+    description: "Doramas coreanos e produções asiáticas dubladas e legendadas.",
+    banner: "https://images.unsplash.com/photo-1514306191717-452ec28c7814?w=1200&auto=format&fit=crop&q=80",
+    type: "doramas",
+  },
+];
+
 export const BRAZUCA_CHANNELS: BrazucaChannel[] = [
   {
     "id": "ch_1hd",

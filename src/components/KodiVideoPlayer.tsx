@@ -1732,42 +1732,39 @@ export default function KodiVideoPlayer({
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-2 pt-1 flex-wrap justify-center">
               {servers.filter(s => s.url && s.url !== "ERROR_UNAVAILABLE").length > 1 && (
                 <button
                   onClick={() => {
                     const next = (activeServerIndex + 1) % servers.length;
                     onSelectServer(next);
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-red-600 to-rose-700 text-white font-bold text-xs shadow-lg shadow-red-600/30 flex items-center gap-1.5 hover:from-red-500 hover:to-rose-600"
+                  className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-red-600 to-rose-700 text-white font-bold text-xs shadow-lg shadow-red-600/30 flex items-center gap-1.5 hover:from-red-500 hover:to-rose-600 cursor-pointer"
                 >
                   <RotateCw className="w-3.5 h-3.5" />
                   <span>Alternar Servidor</span>
                 </button>
               )}
-              {currentServer?.url === "ERROR_UNAVAILABLE" ? (
+              {!isMiniPlayer && (
                 <button
-                  onClick={onClose}
-                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-lg shadow-red-600/30 flex items-center gap-2 cursor-pointer transition-all"
+                  onClick={() => {
+                    setIsLoading(true);
+                    setHasError(false);
+                    onSelectServer(activeServerIndex);
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-800 flex items-center gap-1.5 cursor-pointer"
                 >
-                  <X className="w-4 h-4" />
-                  <span>Voltar ao Catálogo</span>
+                  <RotateCw className="w-3.5 h-3.5 text-red-400" />
+                  <span>Tentar Novamente</span>
                 </button>
-              ) : (
-                !isMiniPlayer && (
-                  <button
-                    onClick={() => {
-                      setIsLoading(true);
-                      setHasError(false);
-                      onSelectServer(activeServerIndex);
-                    }}
-                    className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-800 flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <RotateCw className="w-3.5 h-3.5 text-red-400" />
-                    <span>Tentar Novamente</span>
-                  </button>
-                )
               )}
+              <button
+                onClick={onClose}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-lg shadow-red-600/30 flex items-center gap-2 cursor-pointer transition-all"
+              >
+                <X className="w-4 h-4" />
+                <span>Voltar ao Catálogo</span>
+              </button>
             </div>
           </div>
         )}

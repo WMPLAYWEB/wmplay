@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import http from 'http';
 import https from 'https';
 import vm from 'node:vm';
 import path from 'path';
@@ -163,6 +164,37 @@ async function isStreamReachable(url: string): Promise<boolean> {
   }
 }
 
+async function isUrlPlayable(url: string, referer: string): Promise<boolean> {
+  try {
+    const u = new URL(url);
+    const mod = u.protocol === 'https:' ? https : http;
+    return await new Promise<boolean>((resolve) => {
+      const req = mod.request(url, {
+        method: 'HEAD',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Referer': referer
+        },
+        timeout: 2000
+      }, (res: any) => {
+        if (res.statusCode && (res.statusCode < 400 || res.statusCode === 405)) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      });
+      req.on('error', () => resolve(false));
+      req.on('timeout', () => {
+        req.destroy();
+        resolve(false);
+      });
+      req.end();
+    });
+  } catch {
+    return false;
+  }
+}
+
 // Extrai o link direto de vídeo MP4 do MixDrop (Padrão Kodi ResolveURL - Sem Anúncios)
 async function resolveMixdrop(mediaId: string): Promise<string | null> {
   const domains = ['https://mxdrop.click', 'https://mxdrop.to'];
@@ -247,13 +279,18 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
     try {
       const directMix = await resolveMixdrop(dub.mixdrop);
       if (directMix) {
-        const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
-        servers.push({
-          name: `Servidor MixDrop Full HD Dublado (Anti-Buffer)`,
-          url: proxiedUrl,
-          type: 'video',
-          isDubbed: true
-        });
+        const playable = await isUrlPlayable(directMix, 'https://mxdrop.click/');
+        if (playable) {
+          const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
+          servers.push({
+            name: `Servidor MixDrop Full HD Dublado (Anti-Buffer)`,
+            url: proxiedUrl,
+            type: 'video',
+            isDubbed: true
+          });
+        } else {
+          console.warn('[WMPLAY] Link do MixDrop inválido ou sem resposta DNS, ignorando:', directMix);
+        }
       }
     } catch (err) {
       console.error('Erro ao resolver Mixdrop dublado:', err);
@@ -284,13 +321,16 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
       try {
         const directMix = await resolveMixdrop(leg.mixdrop);
         if (directMix) {
-          const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
-          servers.push({
-            name: `Servidor MixDrop Full HD Legendado PT-BR (Anti-Buffer)`,
-            url: proxiedUrl,
-            type: 'video',
-            isDubbed: false
-          });
+          const playable = await isUrlPlayable(directMix, 'https://mxdrop.click/');
+          if (playable) {
+            const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
+            servers.push({
+              name: `Servidor MixDrop Full HD Legendado PT-BR (Anti-Buffer)`,
+              url: proxiedUrl,
+              type: 'video',
+              isDubbed: false
+            });
+          }
         }
       } catch (err) {
         console.error('Erro ao resolver Mixdrop legendado:', err);

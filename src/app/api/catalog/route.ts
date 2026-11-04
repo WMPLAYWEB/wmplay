@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search')?.trim() || '';
     const genre = searchParams.get('genre')?.trim() || '';
     const platform = searchParams.get('platform')?.trim() || '';
+    const repo = searchParams.get('repo')?.trim() || '';
 
     const db = getDb();
     const offset = (page - 1) * limit;
@@ -50,6 +51,12 @@ export async function GET(req: NextRequest) {
           conditions.push('type = ?');
           params.push(filterType);
         }
+      }
+
+      if (repo === 'oneplay') {
+        conditions.push("link LIKE '%oneplay%'");
+      } else if (repo === 'brazuca') {
+        conditions.push("link NOT LIKE '%oneplay%'");
       }
 
       let cleanSearch = '';
@@ -110,7 +117,7 @@ export async function GET(req: NextRequest) {
 
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-      let orderBy = 'id ASC';
+      let orderBy = (repo === 'oneplay' || filterType === 'lancamentos') ? 'id DESC' : 'id ASC';
       const orderParams: (string | number)[] = [];
       if (cleanSearch) {
         orderBy = `

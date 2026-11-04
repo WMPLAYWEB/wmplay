@@ -15,6 +15,18 @@ export interface Addon {
 
 export const INITIAL_ADDONS: Addon[] = [
   {
+    id: "addon-oneplay",
+    name: "OnePlay HD (Repositório Oficial)",
+    author: "OnePlay Community & FenixHub",
+    version: "3.4.8",
+    icon: "https://oneplayhd.com/oneplay/icon.png",
+    category: "video",
+    description: "Repositório Oficial OnePlay v3.4.8 com acervo completo: 1.189 canais de TV ao vivo em HLS direto, 1.406 filmes HD/4K, 625 séries, 126 novelas, animes e desenhos.",
+    installed: true,
+    type: "repository",
+    repoUrl: "https://oneplayhd.com/oneplay",
+  },
+  {
     id: "addon-brazuca-play",
     name: "Brazuca Play (Repositório Oficial)",
     author: "Brazuca Play Community",

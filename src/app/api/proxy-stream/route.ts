@@ -57,6 +57,11 @@ export async function GET(req: NextRequest) {
           return resolve(NextResponse.redirect(new URL(`/api/proxy-stream?url=${encodeURIComponent(redirectUrl)}&referer=${encodeURIComponent(referer)}`, req.url)));
         }
 
+        // Se o servidor upstream retornou erro (ex: 403, 404, 500), retornar erro imediatamente sem travar o vídeo
+        if (res.statusCode && res.statusCode >= 400) {
+          return resolve(new NextResponse(`Erro upstream ${res.statusCode}`, { status: res.statusCode }));
+        }
+
         const contentType = res.headers['content-type'] || 'application/vnd.apple.mpegurl';
         const isM3U8 = targetUrl.includes('.m3u8') || contentType.includes('mpegurl') || contentType.includes('text/plain');
 

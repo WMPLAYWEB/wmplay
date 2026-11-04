@@ -58,6 +58,7 @@ import { SAMPLE_MEDIA, MediaItem } from "@/data/media";
 import { INITIAL_ADDONS, Addon } from "@/data/addons";
 import {
   BRAZUCA_ROOT_CATEGORIES,
+  ONEPLAY_ROOT_CATEGORIES,
   BRAZUCA_CHANNELS,
   BrazucaCategoryNode,
   BrazucaChannel
@@ -339,6 +340,9 @@ export default function KodiApp() {
   const [catalogPlatform, setCatalogPlatform] = useState<string>("");
   const [catalogSearch, setCatalogSearch] = useState<string>("");
   const [jumpPageInput, setJumpPageInput] = useState<string>("");
+  const [selectedRepo, setSelectedRepo] = useState<"all" | "oneplay" | "brazuca">("all");
+  const selectedRepoRef = useRef<"all" | "oneplay" | "brazuca">("all");
+  selectedRepoRef.current = selectedRepo;
 
   // Smart TV D-Pad Remote Navigation State
   const [tvFocusIndex, setTvFocusIndex] = useState<number | null>(null);
@@ -412,7 +416,7 @@ export default function KodiApp() {
 
   // Determine current active catalog type
   const getCurrentCatalogType = useCallback((): string => {
-    if (activeAddonView === "brazucaplay" && activeBrazucaCategory) {
+    if ((activeAddonView === "brazucaplay" || activeAddonView === "oneplay") && activeBrazucaCategory) {
       if (activeBrazucaCategory.type === "movies") return "filmes";
       if (activeBrazucaCategory.type === "lancamentos") return "lancamentos";
       if (activeBrazucaCategory.type === "series") return "series";
@@ -462,6 +466,8 @@ export default function KodiApp() {
       if (effectiveSearch) params.set("search", effectiveSearch);
       if (effectiveGenre && effectiveGenre !== "Todos" && effectiveGenre !== "favoritos") params.set("genre", effectiveGenre);
       if (effectivePlatform) params.set("platform", effectivePlatform);
+      const effectiveRepo = activeAddonView === "oneplay" ? "oneplay" : (activeAddonView === "brazucaplay" ? "brazuca" : selectedRepoRef.current);
+      if (effectiveRepo && effectiveRepo !== "all") params.set("repo", effectiveRepo);
 
       const res = await fetch(`/api/catalog?${params.toString()}`);
       const data = await res.json();
@@ -501,7 +507,7 @@ export default function KodiApp() {
       activeCategory === "tv" ||
       activeCategory === "releases" ||
       activeCategory === "novelas" ||
-      (activeAddonView === "brazucaplay" &&
+      ((activeAddonView === "brazucaplay" || activeAddonView === "oneplay") &&
         activeBrazucaCategory?.type !== "channels" &&
         activeBrazucaCategory?.type !== "settings");
 
@@ -1007,11 +1013,20 @@ export default function KodiApp() {
     return true;
   });
 
-  // Canais filtrados dentro do Brazuca Play e TV Ao Vivo (1.345+ Canais)
+  // Canais filtrados dentro do Brazuca Play, OnePlay e TV Ao Vivo (1.343+ Canais)
   const filteredBrazucaChannels = ALL_CHANNELS.filter((ch) => {
+    // Se o usuário estiver na tela interna do OnePlay, exibir apenas canais OnePlay
+    if (activeAddonView === "oneplay" && !ch.id.startsWith("oneplay_")) return false;
+    // Se o usuário estiver na tela interna do BrazucaPlay, exibir apenas canais Brazuca
+    if (activeAddonView === "brazucaplay" && ch.id.startsWith("oneplay_")) return false;
+
     const matchesFilter =
       channelSubFilter === "todos"
         ? true
+        : channelSubFilter === "oneplay"
+        ? ch.id.startsWith("oneplay_")
+        : channelSubFilter === "brazuca"
+        ? !ch.id.startsWith("oneplay_")
         : channelSubFilter === "favoritos"
         ? favoriteChannels.includes(ch.id)
         : ch.category === channelSubFilter;
@@ -1125,7 +1140,7 @@ export default function KodiApp() {
   };
 
   const isBrazucaRootSearching =
-    activeAddonView === "brazucaplay" &&
+    (activeAddonView === "brazucaplay" || activeAddonView === "oneplay") &&
     !activeBrazucaCategory &&
     Boolean(catalogSearch.trim());
 
@@ -1135,7 +1150,7 @@ export default function KodiApp() {
     activeCategory === "releases" ||
     activeCategory === "novelas" ||
     isBrazucaRootSearching ||
-    (activeAddonView === "brazucaplay" &&
+    ((activeAddonView === "brazucaplay" || activeAddonView === "oneplay") &&
       activeBrazucaCategory &&
       activeBrazucaCategory.type !== "channels" &&
       activeBrazucaCategory.type !== "settings");
@@ -1542,18 +1557,34 @@ export default function KodiApp() {
             </span>
             <span className="font-mono text-red-600 font-black">{currentTime}</span>
           </div>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-1.5">
             <button
               onClick={() => {
                 setActiveCategory("addons");
                 setActiveAddonView("brazucaplay");
+                setSelectedRepo("brazuca");
                 setActiveBrazucaCategory(null);
                 setSelectedSeriesItem(null);
               }}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-700 to-rose-800 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-bold py-2.5 rounded-lg shadow-md transition-all"
+              className="flex items-center justify-center gap-1 bg-gradient-to-r from-red-700 to-rose-800 hover:from-red-600 hover:to-rose-700 text-white text-[11px] font-bold py-2 rounded-lg shadow-md transition-all hover:scale-[1.02]"
+              title="Abrir Repositório Oficial Brazuca Play"
             >
-              <Flame className="w-3.5 h-3.5" />
-              <span>Brazuca Play</span>
+              <Flame className="w-3.5 h-3.5 text-amber-300" />
+              <span>Brazuca</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveCategory("addons");
+                setActiveAddonView("oneplay");
+                setSelectedRepo("oneplay");
+                setActiveBrazucaCategory(null);
+                setSelectedSeriesItem(null);
+              }}
+              className="flex items-center justify-center gap-1 bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white text-[11px] font-bold py-2 rounded-lg shadow-md transition-all hover:scale-[1.02]"
+              title="Abrir Repositório Oficial OnePlay HD"
+            >
+              <Zap className="w-3.5 h-3.5 text-cyan-200" />
+              <span>OnePlay</span>
             </button>
           </div>
         </div>
@@ -1669,19 +1700,34 @@ export default function KodiApp() {
                 </span>
                 <span className="font-mono text-red-600 font-black">{currentTime}</span>
               </div>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => {
                     setActiveCategory("addons");
                     setActiveAddonView("brazucaplay");
+                    setSelectedRepo("brazuca");
                     setActiveBrazucaCategory(null);
                     setSelectedSeriesItem(null);
                     setIsMobileMenuOpen(false);
                   }}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-700 to-rose-800 hover:from-emerald-500 hover:to-teal-600 text-white text-xs font-bold py-2.5 rounded-xl shadow-md transition-all"
+                  className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-red-700 to-rose-800 hover:from-red-600 hover:to-rose-700 text-white text-xs font-bold py-2 rounded-xl shadow-md transition-all"
                 >
-                  <Flame className="w-3.5 h-3.5" />
-                  <span>Brazuca Play</span>
+                  <Flame className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Brazuca</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveCategory("addons");
+                    setActiveAddonView("oneplay");
+                    setSelectedRepo("oneplay");
+                    setActiveBrazucaCategory(null);
+                    setSelectedSeriesItem(null);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white text-xs font-bold py-2 rounded-xl shadow-md transition-all"
+                >
+                  <Zap className="w-3.5 h-3.5 text-cyan-200" />
+                  <span>OnePlay</span>
                 </button>
               </div>
             </div>
@@ -2631,6 +2677,552 @@ export default function KodiApp() {
                 />
               )}
             </div>
+          ) : activeAddonView === "oneplay" ? (
+            <div className="space-y-6">
+              {/* Header Oficial do OnePlay HD */}
+              <div className={`relative rounded-2xl overflow-hidden border p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl backdrop-blur-md transition-colors ${
+                isLight ? "bg-white border-zinc-300 shadow-sm" : "border-cyan-500/30 bg-zinc-950/90"
+              }`}>
+                <div className="flex items-center gap-5">
+                  <div className="w-20 h-20 rounded-2xl overflow-hidden border border-cyan-500/50 shadow-xl bg-gradient-to-br from-cyan-900 to-blue-950 flex items-center justify-center shrink-0">
+                    <Zap className="w-10 h-10 text-cyan-300 fill-cyan-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <h2 className={`text-2xl font-black ${isLight ? "text-zinc-950" : "text-white"}`}>One<span className="text-cyan-400">Play HD</span></h2>
+                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full font-mono ${
+                        isLight ? "text-cyan-800 bg-cyan-100 border border-cyan-300" : "text-cyan-300 bg-cyan-950/80 border border-cyan-500/50"
+                      }`}>
+                        v3.4.8 OFICIAL
+                      </span>
+                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                        isLight ? "text-emerald-800 bg-emerald-100 border border-emerald-300" : "text-emerald-300 bg-emerald-950/80 border border-emerald-500/50"
+                      }`}>
+                        1.189 Canais + 2.433 VOD
+                      </span>
+                    </div>
+                    <p className={`text-xs mt-1 max-w-xl ${isLight ? "text-zinc-700 font-semibold" : "text-slate-300"}`}>
+                      Repositório oficial OnePlay HD v3.4.8: 1.189 canais ao vivo em HLS direto, 1.406 filmes HD/4K, 625 séries completas, 126 novelas, animes e desenhos com reprodução instantânea!
+                    </p>
+                  </div>
+                </div>
+
+                {activeBrazucaCategory && (
+                  <button
+                    onClick={() => {
+                      setSelectedSeriesItem(null);
+                      setActiveBrazucaCategory(null);
+                    }}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md ${
+                      isLight
+                        ? "bg-zinc-100 hover:bg-cyan-50 border border-zinc-300 text-cyan-700"
+                        : "bg-cyan-600/30 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-600 hover:text-white"
+                    }`}
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Voltar ao Menu OnePlay</span>
+                  </button>
+                )}
+              </div>
+
+              {/* TELA 1: MENU RAIZ DO ONEPLAY OU BUSCA */}
+              {!activeBrazucaCategory ? (
+                catalogSearch.trim() ? (
+                  <CatalogBrowseView
+                    title={`Busca OnePlay: "${catalogSearch}"`}
+                    badge={`${catalogTotalCount.toLocaleString("pt-BR")} títulos`}
+                    catalogLoading={catalogLoading}
+                    catalogItems={catalogItems}
+                    catalogPage={catalogPage}
+                    catalogTotalPages={catalogTotalPages}
+                    catalogTotalCount={catalogTotalCount}
+                    catalogGenre={catalogGenre}
+                    catalogPlatform={catalogPlatform}
+                    platformsList={PLATFORMS_LIST}
+                    onSelectPlatform={(p) => {
+                      const nextPlat = (catalogPlatform === p && p !== "") ? "" : p;
+                      setCatalogPlatform(nextPlat);
+                      setCatalogPage(1);
+                      fetchCatalogData("all", 1, catalogSearch, catalogGenre, undefined, nextPlat);
+                    }}
+                    tvFocusIndex={tvFocusIndex}
+                    isTvModeActive={isTvModeActive}
+                    onToggleTvMode={() => {
+                      setIsTvModeActive((prev) => !prev);
+                      setTvFocusIndex((prev) => (prev === null ? 0 : null));
+                    }}
+                    catalogSearch={catalogSearch}
+                    jumpPageInput={jumpPageInput}
+                    genresList={GENRES_LIST}
+                    isLight={isLight}
+                    isLiteMode={isLiteMode}
+                    favoriteCatalogItems={favoriteCatalogItems}
+                    onToggleFavoriteCatalog={toggleFavoriteCatalog}
+                    onSelectGenre={(g) => {
+                      setCatalogGenre(g);
+                      setCatalogPage(1);
+                      fetchCatalogData("all", 1, catalogSearch, g);
+                    }}
+                    onPageChange={(p) => {
+                      setCatalogPage(p);
+                      fetchCatalogData("all", p, catalogSearch, catalogGenre);
+                    }}
+                    onJumpPageSubmit={(e) => {
+                      e.preventDefault();
+                      const num = parseInt(jumpPageInput, 10);
+                      if (!isNaN(num) && num >= 1 && num <= catalogTotalPages) {
+                        setCatalogPage(num);
+                        fetchCatalogData("all", num, catalogSearch, catalogGenre);
+                        setJumpPageInput("");
+                      }
+                    }}
+                    setJumpPageInput={setJumpPageInput}
+                    onItemClick={(item) => {
+                      if (
+                        item.type === "series" ||
+                        item.type === "animes" ||
+                        item.type === "novelas" ||
+                        item.type === "doramas" ||
+                        item.type === "desenhos"
+                      ) {
+                        handleOpenSeriesEpisodes(item);
+                      } else {
+                        handlePlayMedia(
+                          item.title,
+                          item.synopsis,
+                          item.thumbnail,
+                          item.tmdb_id,
+                          item.link
+                        );
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                    {ONEPLAY_ROOT_CATEGORIES.map((cat) => (
+                      <div
+                        key={cat.id}
+                        onClick={() => {
+                          if (cat.type === "channels") {
+                            setActiveBrazucaCategory(cat);
+                          } else {
+                            setActiveBrazucaCategory(cat);
+                            setCatalogPage(1);
+                            setCatalogSearch("");
+                            setCatalogGenre("Todos");
+                            setCatalogPlatform("");
+                            const targetType =
+                              cat.type === "movies" ? "filmes" :
+                              cat.type === "series" ? "series" :
+                              cat.type === "novelas" ? "novelas" :
+                              cat.type === "kids" ? "desenhos" :
+                              cat.type === "animes" ? "animes" :
+                              cat.type === "lancamentos" ? "lancamentos" :
+                              cat.type === "doramas" ? "doramas" : "filmes";
+                            fetchCatalogData(targetType, 1, "", "Todos");
+                          }
+                        }}
+                        className={`group relative rounded-2xl overflow-hidden border cursor-pointer transition-all duration-300 hover:scale-[1.03] shadow-xl ${
+                          isLight
+                            ? "bg-white border-zinc-200 hover:border-cyan-500 hover:shadow-cyan-500/20"
+                            : "bg-zinc-950 border-zinc-800 hover:border-cyan-500/60 hover:shadow-cyan-500/20"
+                        }`}
+                      >
+                        <div className="aspect-[16/10] w-full overflow-hidden relative">
+                          <img
+                            src={cat.banner}
+                            alt={cat.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                          <div className={`absolute inset-0 bg-gradient-to-t ${
+                            isLight
+                              ? "from-white via-white/80 to-transparent"
+                              : "from-zinc-950 via-zinc-950/70 to-transparent"
+                          }`} />
+                          <div className="absolute top-3 right-3 z-10">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-950/90 text-cyan-300 border border-cyan-500/40 backdrop-blur-md">
+                              {cat.badge}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="p-4 sm:p-5 relative -mt-6">
+                          <h3 className={`text-base sm:text-lg font-black transition-colors ${
+                            isLight ? "text-zinc-950 group-hover:text-cyan-600" : "text-white group-hover:text-cyan-400"
+                          }`}>
+                            {cat.title}
+                          </h3>
+                          <p className={`text-xs mt-1.5 line-clamp-2 leading-relaxed ${
+                            isLight ? "text-zinc-600 font-medium" : "text-zinc-400"
+                          }`}>
+                            {cat.description}
+                          </p>
+                          <div className="mt-4 flex items-center justify-between text-xs font-bold text-cyan-400">
+                            <span>Explorar Categoria</span>
+                            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              ) : activeBrazucaCategory.type === "channels" ? (
+                /* TELA 2: CANAIS ONEPLAY AO VIVO (1.189 CANAIS) */
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <h3 className={`text-lg font-bold flex items-center gap-2 ${isLight ? "text-zinc-950" : "text-white"}`}>
+                      <Zap className="w-5 h-5 text-cyan-400 fill-cyan-400" />
+                      <span>Canais OnePlay HD</span>
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-mono font-bold ${
+                        isLight ? "text-cyan-800 bg-cyan-100 border border-cyan-300" : "text-cyan-300 bg-cyan-950/60 border border-cyan-500/30"
+                      }`}>
+                        {filteredBrazucaChannels.length} canais HLS
+                      </span>
+                    </h3>
+
+                    {/* Subfiltros de Canais */}
+                    <div className={`flex items-center gap-1.5 p-1 rounded-xl border text-xs overflow-x-auto ${
+                      isLight ? "bg-white border-zinc-300 shadow-sm" : "bg-zinc-950/90 border-zinc-800"
+                    }`}>
+                      {[
+                        { id: "todos", label: `Todos (${ONEPLAY_CHANNELS.length})` },
+                        { id: "favoritos", label: `⭐ Favoritos (${favoriteChannels.length})` },
+                        { id: "esportes", label: "Esportes" },
+                        { id: "aberta", label: "TV Aberta" },
+                        { id: "filmes_series", label: "Filmes & Séries" },
+                        { id: "infantil", label: "Infantil" },
+                        { id: "24horas", label: "24 Horas" },
+                        { id: "noticias_docs", label: "Notícias & Docs" },
+                        { id: "variedades", label: "Variedades" },
+                      ].map((tab) => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setChannelSubFilter(tab.id)}
+                          className={`px-3 py-1.5 rounded-lg transition-colors font-bold shrink-0 cursor-pointer ${
+                            channelSubFilter === tab.id
+                              ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/20"
+                              : isLight
+                              ? "text-zinc-950 hover:text-cyan-600 hover:bg-cyan-50 bg-zinc-100/80 border border-zinc-200"
+                              : "text-slate-300 hover:text-white hover:bg-zinc-900"
+                          }`}
+                        >
+                          <span>{tab.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+                    {filteredBrazucaChannels.map((ch) => {
+                      const isFav = favoriteChannels.includes(ch.id);
+                      return (
+                        <div
+                          key={ch.id}
+                          onClick={() =>
+                            handlePlayMedia(
+                              ch.name,
+                              ch.epg || "Transmissão Ao Vivo OnePlay HLS",
+                              ch.logo,
+                              undefined,
+                              ch.streamUrl
+                            )
+                          }
+                          className={`group p-4 rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col justify-between hover:scale-105 shadow-lg relative ${
+                            isLight
+                              ? "border-zinc-300 bg-white hover:bg-cyan-50/40 hover:border-cyan-500 hover:shadow-cyan-500/10"
+                              : "border-cyan-600/15 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-cyan-500 hover:shadow-cyan-600/20"
+                          }`}
+                        >
+                          <div className={`aspect-video w-full rounded-xl border flex items-center justify-center p-3 relative overflow-hidden ${
+                            isLight ? "bg-zinc-100 border-zinc-200" : "bg-black/60 border-zinc-800 group-hover:border-cyan-600/40"
+                          }`}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                toggleFavoriteChannel(ch.id);
+                              }}
+                              className={`absolute top-2 right-2 z-20 p-2 rounded-full backdrop-blur-md transition-all cursor-pointer pointer-events-auto shadow-md ${
+                                isFav
+                                  ? "bg-amber-500 text-white shadow-amber-500/50 scale-105"
+                                  : "bg-black/75 hover:bg-black/95 text-zinc-300 hover:text-amber-400 border border-white/10"
+                              }`}
+                              title={isFav ? "Remover dos Favoritos" : "Favoritar Canal"}
+                            >
+                              <Star className={`w-4 h-4 ${isFav ? "fill-white text-white" : ""}`} />
+                            </button>
+
+                            <img
+                              src={ch.logo || "/wmplay_icon.png"}
+                              alt={ch.name}
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = "/wmplay_icon.png";
+                              }}
+                              className="max-h-full max-w-full object-contain filter drop-shadow group-hover:scale-110 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-cyan-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Play className="w-8 h-8 fill-cyan-400 text-cyan-400 filter drop-shadow" />
+                            </div>
+                          </div>
+
+                          <div className="mt-3">
+                            <h4 className={`font-bold text-sm truncate transition-colors ${
+                              isLight ? "text-zinc-950 group-hover:text-cyan-600" : "text-slate-100 group-hover:text-cyan-400"
+                            }`}>
+                              {ch.name}
+                            </h4>
+                            <p className={`text-[11px] truncate mt-0.5 ${
+                              isLight ? "text-zinc-600 font-semibold" : "text-slate-400"
+                            }`}>
+                              {ch.epg || "Transmissão Ao Vivo OnePlay"}
+                            </p>
+                          </div>
+
+                          <div className={`mt-3 pt-2 border-t flex items-center justify-between text-[11px] ${
+                            isLight ? "border-zinc-200" : "border-zinc-850"
+                          }`}>
+                            <span className="font-mono font-bold flex items-center gap-1 text-cyan-400">
+                              <span className="w-2 h-2 rounded-full animate-ping bg-cyan-500" />
+                              ⚡ OnePlay HLS
+                            </span>
+                            <span className={isLight ? "text-zinc-600 font-semibold" : "text-slate-400"}>
+                              {ch.category.toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : selectedSeriesItem ? (
+                /* VISUALIZAÇÃO DE EPISÓDIOS DE SÉRIE ONEPLAY */
+                <div className="space-y-6 pb-12">
+                  <div className={`relative rounded-2xl overflow-hidden border p-6 md:p-8 flex flex-col md:flex-row gap-6 items-start backdrop-blur-md shadow-2xl ${
+                    isLight ? "bg-white border-zinc-300 shadow-sm" : "border-cyan-500/25 bg-zinc-950/80"
+                  }`}>
+                    <div className="relative w-44 h-64 rounded-xl overflow-hidden shadow-2xl border border-cyan-500/30 shrink-0 bg-black">
+                      <img
+                        src={selectedSeriesItem.thumbnail || "/wmplay_icon.png"}
+                        alt={selectedSeriesItem.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="space-y-3 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap text-xs">
+                        <span className={`font-bold px-2.5 py-0.5 rounded-full border uppercase font-mono ${
+                          isLight ? "bg-cyan-50 text-cyan-700 border-cyan-300" : "bg-cyan-600/20 text-cyan-400 border-cyan-500/30"
+                        }`}>
+                          OnePlay HD
+                        </span>
+                        {selectedSeriesItem.year && (
+                          <span className={`font-mono ${isLight ? "text-zinc-600" : "text-slate-400"}`}>({selectedSeriesItem.year.slice(0, 4)})</span>
+                        )}
+                        {selectedSeriesItem.rating && (
+                          <span className="text-amber-500 font-bold flex items-center gap-1">
+                            <Star className="w-3.5 h-3.5 fill-current" />
+                            {selectedSeriesItem.rating}
+                          </span>
+                        )}
+                        {selectedSeriesItem.genres && (
+                          <span className={`font-semibold ${isLight ? "text-zinc-600" : "text-slate-400"}`}>· {selectedSeriesItem.genres}</span>
+                        )}
+                      </div>
+                      <h2 className={`text-3xl font-black ${isLight ? "text-zinc-950" : "text-white"}`}>{selectedSeriesItem.title}</h2>
+                      <div className={`mt-2 p-3.5 rounded-xl border max-w-4xl max-h-56 overflow-y-auto select-text shadow-inner ${
+                        isLight ? "bg-zinc-50 border-zinc-200" : "bg-black/40 border-zinc-800/80"
+                      }`}>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-[11px] font-black uppercase tracking-wider text-cyan-500">Sinopse Completa</span>
+                          <div className={`h-px flex-1 ${isLight ? "bg-zinc-200" : "bg-zinc-800"}`} />
+                        </div>
+                        <p className={`text-sm sm:text-base leading-relaxed ${isLight ? "text-zinc-800 font-medium" : "text-zinc-200 font-normal"}`}>
+                          {selectedSeriesItem.synopsis || "Sinopse não informada pelo repositório."}
+                        </p>
+                      </div>
+                      <div className="pt-2 flex items-center gap-3 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => toggleFavoriteCatalog(selectedSeriesItem)}
+                          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-sm border ${
+                            favoriteCatalogItems.some((x) => x.id === selectedSeriesItem.id)
+                              ? "bg-amber-500 text-white border-amber-400 shadow-amber-500/30"
+                              : isLight
+                              ? "bg-zinc-100 hover:bg-amber-50 border-zinc-300 text-zinc-800 hover:text-amber-600"
+                              : "bg-slate-800 hover:bg-zinc-800 border-zinc-700 text-slate-300 hover:text-amber-400"
+                          }`}
+                        >
+                          <Star className={`w-4 h-4 ${favoriteCatalogItems.some((x) => x.id === selectedSeriesItem.id) ? "fill-white text-white" : "text-amber-400 fill-amber-400"}`} />
+                          <span>{favoriteCatalogItems.some((x) => x.id === selectedSeriesItem.id) ? "Salvo na Minha Lista" : "Salvar nos Favoritos"}</span>
+                        </button>
+                        <button
+                          onClick={() => setSelectedSeriesItem(null)}
+                          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors border ${
+                            isLight
+                              ? "bg-zinc-100 hover:bg-cyan-50 border-zinc-300 text-zinc-800 hover:text-cyan-600 shadow-sm"
+                              : "bg-slate-800 hover:bg-zinc-800 border-transparent text-slate-300 hover:text-white"
+                          }`}
+                        >
+                          <ArrowLeft className="w-4 h-4" />
+                          <span>Voltar para lista de títulos</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Seletor de Temporadas e Grade de Episódios */}
+                  {loadingEpisodes ? (
+                    <div className="p-12 flex flex-col items-center justify-center gap-3 text-cyan-500">
+                      <Loader2 className="w-10 h-10 animate-spin" />
+                      <p className={`text-sm font-bold ${isLight ? "text-zinc-800" : "text-slate-300"}`}>Carregando temporadas e episódios sincronizados...</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Abas de Temporada */}
+                      {seriesSeasons.length > 0 && (
+                        <div className={`flex items-center gap-2 overflow-x-auto pb-2 border-b ${
+                          isLight ? "border-zinc-200" : "border-zinc-800"
+                        }`}>
+                          {seriesSeasons.map((s) => (
+                            <button
+                              key={s.seasonNumber}
+                              onClick={() => setActiveSeasonTab(s.seasonNumber)}
+                              className={`px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer ${
+                                activeSeasonTab === s.seasonNumber
+                                  ? "bg-gradient-to-r from-cyan-600 to-blue-700 text-white shadow-lg shadow-cyan-600/20"
+                                  : isLight
+                                  ? "bg-white text-zinc-950 hover:text-cyan-600 hover:bg-cyan-50 border-2 border-zinc-300 shadow-sm"
+                                  : "bg-zinc-950/90 text-slate-300 hover:text-white border border-zinc-800"
+                              }`}
+                            >
+                              <span>
+                                {s.seasonTitle} ({s.episodes.length} eps)
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Lista de Episódios da Temporada Ativa */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {(
+                          seriesSeasons.find((s) => s.seasonNumber === activeSeasonTab)?.episodes || []
+                        ).map((ep) => (
+                          <div
+                            key={ep.number}
+                            onClick={() =>
+                              handlePlayMedia(
+                                `${selectedSeriesItem.title} - T${activeSeasonTab}E${ep.number}: ${ep.title}`,
+                                selectedSeriesItem.synopsis,
+                                selectedSeriesItem.thumbnail,
+                                selectedSeriesItem.tmdb_id,
+                                ep.link || selectedSeriesItem.link || ep.streamUrl,
+                                activeSeasonTab,
+                                ep.number
+                              )
+                            }
+                            className={`group p-4 rounded-xl border cursor-pointer transition-all duration-200 flex items-center justify-between shadow-md ${
+                              isLight
+                                ? "border-zinc-300 bg-white hover:bg-cyan-50/50 hover:border-cyan-500 hover:scale-[1.01]"
+                                : "border-cyan-600/20 bg-zinc-950/70 hover:bg-zinc-900/80 hover:border-cyan-500/50 hover:scale-[1.01]"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-9 h-9 rounded-lg bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 flex items-center justify-center font-bold text-xs shrink-0">
+                                {ep.number}
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className={`font-bold text-xs truncate transition-colors ${
+                                  isLight ? "text-zinc-950 group-hover:text-cyan-600" : "text-slate-100 group-hover:text-cyan-400"
+                                }`}>
+                                  {ep.title}
+                                </h4>
+                                {ep.duration && (
+                                  <p className="text-[10px] text-slate-400 truncate mt-0.5">{ep.duration}</p>
+                                )}
+                              </div>
+                            </div>
+                            <Play className="w-4 h-4 text-cyan-400 opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all shrink-0" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* TELA 3: CATÁLOGO ONEPLAY POR CATEGORIA (FILMES, SÉRIES, ETC.) */
+                <CatalogBrowseView
+                  title={activeBrazucaCategory.title}
+                  badge={activeBrazucaCategory.badge}
+                  catalogLoading={catalogLoading}
+                  catalogItems={catalogItems}
+                  catalogPage={catalogPage}
+                  catalogTotalPages={catalogTotalPages}
+                  catalogTotalCount={catalogTotalCount}
+                  catalogGenre={catalogGenre}
+                  catalogPlatform={catalogPlatform}
+                  platformsList={PLATFORMS_LIST}
+                  onSelectPlatform={(p) => {
+                    const nextPlat = (catalogPlatform === p && p !== "") ? "" : p;
+                    setCatalogPlatform(nextPlat);
+                    setCatalogPage(1);
+                    fetchCatalogData(getCurrentCatalogType(), 1, catalogSearch, catalogGenre, undefined, nextPlat);
+                  }}
+                  tvFocusIndex={tvFocusIndex}
+                  isTvModeActive={isTvModeActive}
+                  onToggleTvMode={() => {
+                    setIsTvModeActive((prev) => !prev);
+                    setTvFocusIndex((prev) => (prev === null ? 0 : null));
+                  }}
+                  catalogSearch={catalogSearch}
+                  jumpPageInput={jumpPageInput}
+                  genresList={GENRES_LIST}
+                  isLight={isLight}
+                  isLiteMode={isLiteMode}
+                  favoriteCatalogItems={favoriteCatalogItems}
+                  onToggleFavoriteCatalog={toggleFavoriteCatalog}
+                  onSelectGenre={(g) => {
+                    setCatalogGenre(g);
+                    setCatalogPage(1);
+                    fetchCatalogData(getCurrentCatalogType(), 1, catalogSearch, g);
+                  }}
+                  onPageChange={(p) => {
+                    setCatalogPage(p);
+                    fetchCatalogData(getCurrentCatalogType(), p, catalogSearch, catalogGenre);
+                  }}
+                  onJumpPageSubmit={(e) => {
+                    e.preventDefault();
+                    const num = parseInt(jumpPageInput, 10);
+                    if (!isNaN(num) && num >= 1 && num <= catalogTotalPages) {
+                      setCatalogPage(num);
+                      fetchCatalogData(getCurrentCatalogType(), num, catalogSearch, catalogGenre);
+                      setJumpPageInput("");
+                    }
+                  }}
+                  setJumpPageInput={setJumpPageInput}
+                  onItemClick={(item) => {
+                    if (
+                      item.type === "series" ||
+                      item.type === "animes" ||
+                      item.type === "novelas" ||
+                      item.type === "doramas" ||
+                      item.type === "desenhos"
+                    ) {
+                      handleOpenSeriesEpisodes(item);
+                    } else {
+                      handlePlayMedia(
+                        item.title,
+                        item.synopsis,
+                        item.thumbnail,
+                        item.tmdb_id,
+                        item.link
+                      );
+                    }
+                  }}
+                />
+              )}
+            </div>
           ) : activeCategory === "movies" || activeCategory === "tv" || activeCategory === "releases" || activeCategory === "novelas" ? (
             /* ============================================================== */
             /* SEÇÃO 2: CATÁLOGO DIRETO VIA MENU LATERAL DO KODI              */
@@ -2853,6 +3445,13 @@ export default function KodiApp() {
                 isLiteMode={isLiteMode}
                 favoriteCatalogItems={favoriteCatalogItems}
                 onToggleFavoriteCatalog={toggleFavoriteCatalog}
+                selectedRepo={selectedRepo}
+                onSelectRepo={(r) => {
+                  setSelectedRepo(r);
+                  selectedRepoRef.current = r;
+                  setCatalogPage(1);
+                  fetchCatalogData(currentCatalogType, 1, catalogSearch, catalogGenre, undefined, catalogPlatform);
+                }}
                 onSelectGenre={(g) => {
                   const newGenre = g === "Todos" ? "" : g;
                   setCatalogGenre(newGenre);
@@ -2916,6 +3515,8 @@ export default function KodiApp() {
                 }`}>
                   {[
                     { id: "todos", label: `Todos (${ALL_CHANNELS.length})` },
+                    { id: "oneplay", label: `⚡ OnePlay (${ONEPLAY_CHANNELS.length})` },
+                    { id: "brazuca", label: `🔥 Brazuca (${BRAZUCA_CHANNELS.length})` },
                     { id: "favoritos", label: `⭐ Favoritos (${favoriteChannels.length})` },
                     { id: "aberta", label: "TV Aberta" },
                     { id: "esportes", label: "Esportes / Premiere" },
@@ -3033,12 +3634,18 @@ export default function KodiApp() {
                         <div className={`mt-3 pt-2 border-t flex items-center justify-between text-[11px] ${
                           isLight ? "border-zinc-200" : "border-zinc-850"
                         }`}>
-                          <span className="text-red-600 font-mono uppercase font-black">
+                          <span className={`font-mono uppercase font-black ${
+                            ch.id.startsWith("oneplay_") ? "text-cyan-600" : "text-red-600"
+                          }`}>
                             {ch.category}
                           </span>
-                          <span className="text-emerald-700 flex items-center gap-1 font-bold">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                            AO VIVO
+                          <span className={`flex items-center gap-1 font-bold ${
+                            ch.id.startsWith("oneplay_") ? "text-cyan-600" : "text-emerald-700"
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full animate-ping ${
+                              ch.id.startsWith("oneplay_") ? "bg-cyan-500" : "bg-emerald-500"
+                            }`} />
+                            {ch.id.startsWith("oneplay_") ? "⚡ ONEPLAY" : "AO VIVO"}
                           </span>
                         </div>
                       </div>
@@ -3139,16 +3746,29 @@ export default function KodiApp() {
                     </div>
 
                     <div className={`mt-5 pt-3 border-t flex items-center justify-between ${isLight ? "border-zinc-200" : "border-zinc-850"}`}>
-                      {addon.id === "plugin.video.brazucaplay" ? (
+                      {addon.id === "plugin.video.brazucaplay" || addon.id === "addon-brazuca-play" ? (
                         <button
                           onClick={() => {
                             setActiveAddonView("brazucaplay");
+                            setSelectedRepo("brazuca");
                             setActiveBrazucaCategory(null);
                           }}
                           className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-red-700 to-rose-800 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs py-2 rounded-xl shadow-md transition-all hover:scale-[1.02]"
                         >
-                          <Flame className="w-4 h-4" />
+                          <Flame className="w-4 h-4 text-amber-300" />
                           <span>Abrir Brazuca Play</span>
+                        </button>
+                      ) : addon.id === "addon-oneplay" ? (
+                        <button
+                          onClick={() => {
+                            setActiveAddonView("oneplay");
+                            setSelectedRepo("oneplay");
+                            setActiveBrazucaCategory(null);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white font-bold text-xs py-2 rounded-xl shadow-md transition-all hover:scale-[1.02]"
+                        >
+                          <Zap className="w-4 h-4 text-cyan-200" />
+                          <span>Abrir OnePlay HD</span>
                         </button>
                       ) : (
                         <button
@@ -3441,6 +4061,8 @@ function CatalogBrowseView({
   isLiteMode = false,
   favoriteCatalogItems = [],
   onToggleFavoriteCatalog,
+  selectedRepo,
+  onSelectRepo,
 }: {
   title: string;
   badge?: string;
@@ -3468,6 +4090,8 @@ function CatalogBrowseView({
   isLiteMode?: boolean;
   favoriteCatalogItems?: CatalogItem[];
   onToggleFavoriteCatalog?: (item: CatalogItem) => void;
+  selectedRepo?: "all" | "oneplay" | "brazuca";
+  onSelectRepo?: (repo: "all" | "oneplay" | "brazuca") => void;
 }) {
   const isFavoritesTab = catalogGenre === "favoritos";
   const displayedItems = isFavoritesTab
@@ -3528,6 +4152,48 @@ function CatalogBrowseView({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {onSelectRepo && (
+            <div className={`flex items-center gap-1 p-1 rounded-xl border text-xs font-bold ${
+              isLight ? "bg-white border-zinc-300 shadow-sm" : "bg-zinc-950/90 border-zinc-800"
+            }`}>
+              <button
+                type="button"
+                onClick={() => onSelectRepo("all")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  selectedRepo === "all"
+                    ? "bg-red-600 text-white shadow-md shadow-red-600/30"
+                    : isLight ? "text-zinc-700 hover:text-zinc-950" : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                🌐 Todos
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelectRepo("oneplay")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                  selectedRepo === "oneplay"
+                    ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/30"
+                    : "text-cyan-500 hover:text-cyan-400"
+                }`}
+              >
+                <Zap className="w-3 h-3 fill-current" />
+                <span>OnePlay HD</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelectRepo("brazuca")}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                  selectedRepo === "brazuca"
+                    ? "bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-md shadow-red-600/30"
+                    : "text-rose-500 hover:text-rose-400"
+                }`}
+              >
+                <Flame className="w-3 h-3 fill-current" />
+                <span>Brazuca</span>
+              </button>
+            </div>
+          )}
+
           {onToggleTvMode && (
             <button
               onClick={onToggleTvMode}
@@ -3709,6 +4375,12 @@ function CatalogBrowseView({
                   {/* Badges superiores (Ano / Avaliação / Favorito) */}
                   <div className="absolute top-1.5 left-1.5 right-1.5 sm:top-2 sm:left-2 sm:right-2 z-20 flex items-center justify-between pointer-events-none">
                     <div className="flex items-center gap-1">
+                      {item.link?.includes("oneplay") && (
+                        <span className="text-[9px] sm:text-[10px] font-black text-cyan-300 bg-cyan-950/90 backdrop-blur-md px-1.5 py-0.5 rounded-full flex items-center gap-0.5 border border-cyan-500/40 shadow-sm">
+                          <Zap className="w-2.5 h-2.5 fill-cyan-400 text-cyan-400" />
+                          OnePlay
+                        </span>
+                      )}
                       {item.rating ? (
                         <span className="text-[9px] sm:text-[10px] font-bold text-amber-300 bg-black/85 backdrop-blur-md px-1.5 py-0.5 rounded-full flex items-center gap-0.5 border border-amber-500/30">
                           <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
