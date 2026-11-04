@@ -81,12 +81,12 @@ interface MenuItem {
 }
 
 const MENU_ITEMS: MenuItem[] = [
-  { id: "movies", label: "Filmes (17.8k+)", icon: Film },
-  { id: "tv", label: "Séries (13k+)", icon: Tv },
-  { id: "releases", label: "Lançamentos (1.1k+)", icon: Sparkles },
+  { id: "movies", label: "Filmes (6.8k+)", icon: Film },
+  { id: "tv", label: "Séries (5.7k+)", icon: Tv },
+  { id: "releases", label: "Lançamentos (840+)", icon: Sparkles },
   { id: "novelas", label: "Novelas (450+)", icon: Heart },
   { id: "music", label: "Música", icon: Music },
-  { id: "live", label: "TV ao Vivo (1.3k+ ch)", icon: Radio },
+  { id: "live", label: "TV ao Vivo (+1.340)", icon: Radio },
   { id: "addons", label: "Add-ons (Brazuca Play)", icon: Grid },
 ];
 
@@ -330,7 +330,7 @@ export default function KodiApp() {
   const [activeBrazucaCategory, setActiveBrazucaCategory] = useState<BrazucaCategoryNode | null>(null);
   const [channelSubFilter, setChannelSubFilter] = useState<string>("todos");
 
-  // Dynamic Catalog State (SQLite 38,676 real items)
+  // Dynamic Catalog State (SQLite 17,003 real items)
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
   const [catalogLoading, setCatalogLoading] = useState<boolean>(false);
   const [catalogPage, setCatalogPage] = useState<number>(1);
@@ -1553,7 +1553,7 @@ export default function KodiApp() {
           <div className={`flex items-center justify-between px-2 text-xs font-bold ${isLight ? "text-zinc-700" : "text-slate-400"}`}>
             <span className="flex items-center gap-2">
               <Wifi className="w-3.5 h-3.5 text-emerald-600 font-bold" />
-              <span className={isLight ? "text-zinc-800 font-bold" : ""}>Online (38.6k DB)</span>
+              <span className={isLight ? "text-zinc-800 font-bold" : ""}>Online (17.0k DB)</span>
             </span>
             <span className="font-mono text-red-600 font-black">{currentTime}</span>
           </div>
@@ -1696,7 +1696,7 @@ export default function KodiApp() {
               }`}>
                 <span className="flex items-center gap-2">
                   <Wifi className="w-3.5 h-3.5 text-emerald-500 font-bold" />
-                  <span className={isLight ? "text-zinc-800 font-bold" : ""}>Online (38.6k DB)</span>
+                  <span className={isLight ? "text-zinc-800 font-bold" : ""}>Online (17.0k DB)</span>
                 </span>
                 <span className="font-mono text-red-600 font-black">{currentTime}</span>
               </div>
@@ -2030,11 +2030,11 @@ export default function KodiApp() {
                       <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
                         isLight ? "text-emerald-800 bg-emerald-100 border border-emerald-300" : "text-emerald-300 bg-emerald-950/80 border border-emerald-500/50"
                       }`}>
-                        38.676 Títulos
+                        17.003 Títulos
                       </span>
                     </div>
                     <p className={`text-xs mt-1 max-w-xl ${isLight ? "text-zinc-700 font-semibold" : "text-slate-300"}`}>
-                      Repositório oficial descompactado: Todos os 154 canais de TV ao vivo, mais de 17.800 filmes, 13.000 séries, animes e desenhos com episódios completos!
+                      Repositório oficial: Mais de 1.340 canais de TV ao vivo, 6.872 filmes, 5.719 séries, 2.047 animes, 1.058 doramas e 461 desenhos!
                     </p>
                   </div>
                 </div>
@@ -3415,11 +3415,11 @@ export default function KodiApp() {
                   catalogSearch.trim()
                     ? "Busca Global"
                     : activeCategory === "movies"
-                    ? "17.857 Filmes"
+                    ? "6.872 Filmes"
                     : activeCategory === "tv"
-                    ? "13.075 Séries"
+                    ? "5.719 Séries"
                     : activeCategory === "releases"
-                    ? "1.137 Lançamentos"
+                    ? "846 Lançamentos"
                     : "453 Novelas"
                 }
                 catalogLoading={catalogLoading}
@@ -4335,7 +4335,7 @@ function CatalogBrowseView({
       {catalogLoading && !isFavoritesTab ? (
         <div className="p-16 flex flex-col items-center justify-center gap-3 text-red-500">
           <Loader2 className="w-10 h-10 animate-spin text-red-500" />
-          <p className={`text-xs sm:text-sm font-bold ${isLight ? "text-zinc-700" : "text-slate-300"}`}>Consultando catálogo de 38.600+ títulos...</p>
+          <p className={`text-xs sm:text-sm font-bold ${isLight ? "text-zinc-700" : "text-slate-300"}`}>Consultando catálogo de 17.000+ títulos...</p>
         </div>
       ) : displayedItems.length === 0 ? (
         <div className={`p-12 text-center rounded-2xl border ${

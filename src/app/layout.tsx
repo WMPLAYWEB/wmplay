@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "WMPLAY - Filmes, Séries & TV ao Vivo",
-  description: "WMPLAY - Plataforma completa de streaming e TV ao vivo com mais de 38.000 títulos",
+  description: "WMPLAY - Plataforma completa de streaming e TV ao vivo com mais de 17.000 títulos",
   referrer: "no-referrer",
   manifest: "/manifest.json",
   icons: {
