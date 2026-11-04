@@ -286,14 +286,6 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
       isDubbed: true
     });
   }
-  if (dub.doodstream) {
-    servers.push({
-      name: `Servidor DoodStream Dublado (Player Seguro)`,
-      url: `https://playmogo.com/e/${dub.doodstream}`,
-      type: 'embed',
-      isDubbed: true
-    });
-  }
 
   // 2. Se não possuir versão dublada, tentar versão legendada PT-BR
   const hasDirectDub = servers.some(s => s.type === 'video' && s.isDubbed);
@@ -365,14 +357,6 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
       servers.push({
         name: `Servidor Byse Legendado PT-BR (Player Seguro)`,
         url: `https://bysebuho.com/e/${leg.byse}`,
-        type: 'embed',
-        isDubbed: false
-      });
-    }
-    if (leg.doodstream) {
-      servers.push({
-        name: `Servidor DoodStream Legendado PT-BR (Player Seguro)`,
-        url: `https://playmogo.com/e/${leg.doodstream}`,
         type: 'embed',
         isDubbed: false
       });
@@ -1356,11 +1340,14 @@ export async function GET(req: NextRequest) {
       finalServers.push(s);
     }
 
-    // Prioridade absoluta: Áudio Dublado PT-BR sempre no topo (índices 0, 1, 2...)
+    // Prioridade absoluta:
+    // 1. Sinal Direto de Vídeo MP4/HLS Dublado PT-BR (100% nativo, sem anúncios)
+    // 2. Sinal Direto de Vídeo Legendado PT-BR
+    // 3. Servidores de Apoio Embeds
     finalServers.sort((a, b) => {
-      const aDub = a.isDubbed !== false ? 1 : 0;
-      const bDub = b.isDubbed !== false ? 1 : 0;
-      return bDub - aDub;
+      const aScore = (a.type === 'video' ? 10 : 0) + (a.isDubbed !== false ? 5 : 0);
+      const bScore = (b.type === 'video' ? 10 : 0) + (b.isDubbed !== false ? 5 : 0);
+      return bScore - aScore;
     });
 
     return NextResponse.json({
