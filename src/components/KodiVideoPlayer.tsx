@@ -1115,21 +1115,21 @@ export default function KodiVideoPlayer({
           }
           lastStallTime = now;
 
-          // Watchdog ativo: se o servidor ficar congelado por mais de 5s em buffer, avança para o próximo ou sinaliza
+          // Watchdog ativo: se o servidor ficar congelado por mais de 12s em buffer contínuo, avança para o próximo ou sinaliza
           if (waitingTimer) clearTimeout(waitingTimer);
           waitingTimer = setTimeout(() => {
             if (servers.length > 1 && activeServerIndex + 1 < servers.length) {
-              console.warn(`[WMPLAY Watchdog] Buffer sem resposta por 5s no servidor ${activeServerIndex + 1}, alternando automaticamente para: ${servers[activeServerIndex + 1]?.name}`);
+              console.warn(`[WMPLAY Watchdog] Buffer sem resposta por 12s no servidor ${activeServerIndex + 1}, alternando automaticamente para: ${servers[activeServerIndex + 1]?.name}`);
               onSelectServer(activeServerIndex + 1);
             } else if (servers.length <= 1 || activeServerIndex + 1 >= servers.length) {
               setIsLoading(false);
               setHasError(true);
               setErrorMessage("O sinal deste servidor demorou para responder. Clique abaixo para tentar novamente ou selecione outro episódio.");
             }
-          }, 5000);
+          }, 12000);
 
-          // Se travar repetidamente e tiver servidor reserva, alternar imediatamente
-          if (stallCount >= 2 && servers.length > 1 && activeServerIndex + 1 < servers.length) {
+          // Se travar repetidamente (3 vezes consecutivas em 15s) e tiver servidor reserva, alternar
+          if (stallCount >= 3 && servers.length > 1 && activeServerIndex + 1 < servers.length) {
             console.warn(`[WMPLAY] Travamento repetido detectado no servidor ${activeServerIndex + 1}, alternando para o servidor reserva: ${servers[activeServerIndex + 1]?.name}`);
             onSelectServer(activeServerIndex + 1);
           }
@@ -1172,11 +1172,11 @@ export default function KodiVideoPlayer({
           setIsLoading(false);
         }, 1500);
 
-        // Watchdog de conexão inicial: se o vídeo não iniciar reprodução em 6s, avança para o próximo ou sinaliza
+        // Watchdog de conexão inicial: se o vídeo não iniciar reprodução em 15s, avança para o próximo ou sinaliza
         const initialWatchdog = setTimeout(() => {
           if (video && !video.currentTime && !video.readyState) {
             if (servers.length > 1 && activeServerIndex + 1 < servers.length) {
-              console.warn(`[WMPLAY Watchdog] Servidor ${activeServerIndex + 1} sem resposta inicial em 6s, alternando para o próximo: ${servers[activeServerIndex + 1]?.name}`);
+              console.warn(`[WMPLAY Watchdog] Servidor ${activeServerIndex + 1} sem resposta inicial em 15s, alternando para o próximo: ${servers[activeServerIndex + 1]?.name}`);
               onSelectServer(activeServerIndex + 1);
             } else if (servers.length <= 1 || activeServerIndex + 1 >= servers.length) {
               setIsLoading(false);
@@ -1184,7 +1184,7 @@ export default function KodiVideoPlayer({
               setErrorMessage("O sinal deste servidor demorou para carregar. Tente novamente ou selecione outro episódio/servidor.");
             }
           }
-        }, 6000);
+        }, 15000);
 
         return () => {
           clearTimeout(fallbackTimer);

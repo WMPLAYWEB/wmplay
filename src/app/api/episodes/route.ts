@@ -33,7 +33,7 @@ async function callResolver(resolverNum: number, requestStr: string): Promise<an
             'Authorization': `Bearer ${TOKEN}`,
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
           },
-          timeout: 4500
+          timeout: 1200
         }, (res) => {
           let data = '';
           res.on('data', chunk => data += chunk);
@@ -49,6 +49,9 @@ async function callResolver(resolverNum: number, requestStr: string): Promise<an
       const json = JSON.parse(resData);
       if (json && json.success && json.result) {
         if (typeof json.result === 'string') {
+          if (json.result.includes('not found') || json.result.includes('Maintenance') || json.result.trim() === '') {
+            return null;
+          }
           try {
             const decoded = Buffer.from(json.result, 'base64').toString('utf8');
             try {
@@ -159,6 +162,37 @@ async function searchOverflixSeries(query: string): Promise<{ url: string; serie
       });
     }).on('error', () => resolve([]));
   });
+}
+
+async function searchAnimesDigitalSeries(cleanTitle: string): Promise<{ url: string; episodes: { number: number; url: string; title: string }[] } | null> {
+  if (!cleanTitle) return null;
+  const sUrl = `https://animesdigital.org/?s=${encodeURIComponent(cleanTitle)}`;
+  try {
+    const res = await fetch(sUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36' },
+      signal: AbortSignal.timeout(4000)
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const animes = [...html.matchAll(/<a[^>]+href="(https:\/\/animesdigital\.org\/anime\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g)].map(m => m[1]);
+    if (animes.length === 0) return null;
+    const animeUrl = animes[0];
+    const aRes = await fetch(animeUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36' },
+      signal: AbortSignal.timeout(4000)
+    });
+    if (!aRes.ok) return null;
+    const aHtml = await aRes.text();
+    const epLinks = [...aHtml.matchAll(/<a[^>]+href="(https:\/\/animesdigital\.org\/video\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g)];
+    const episodes = epLinks.map((m, i) => ({
+      number: i + 1,
+      url: m[1],
+      title: m[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() || `Episódio ${i + 1}`
+    }));
+    return { url: animeUrl, episodes };
+  } catch {
+    return null;
+  }
 }
 
 async function fetchTmdbTvShow(tmdbId: string): Promise<any> {
@@ -354,6 +388,63 @@ export async function GET(req: NextRequest) {
         }
       } catch (err) {
         console.error('Overflix serie3 error:', err);
+      }
+    }
+
+    // =========================================================================
+    // 2.5 PRIORIDADE ANIMES: animesonlinecc.to & animesdigital.org (1.827 animes)
+    // =========================================================================
+    if (Object.keys(seasonsMap).length === 0 && (link.includes('animes3=') || link.includes('animes2='))) {
+      try {
+        const rawSlug = link.includes('animes3=') ? link.split('animes3=')[1] : link.split('animes2=')[1];
+        const slug = rawSlug?.split('|')[0]?.split('&')[0]?.trim();
+        if (slug) {
+          const animeUrl = `https://animesonlinecc.to/anime/${slug}`;
+          const res = await fetch(animeUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            },
+            signal: AbortSignal.timeout(4000)
+          });
+          if (res.ok) {
+            const html = await res.text();
+            const seasonBlocks = [...html.matchAll(/<div class="se-c">[\s\S]*?<span class="title">([^<]+)<\/span>([\s\S]*?)<\/div>\s*<\/div>/g)];
+            if (seasonBlocks.length > 0) {
+              seasonBlocks.forEach((sb, sIdx) => {
+                const sNum = sIdx + 1;
+                seasonsMap[sNum] = [];
+                const sBody = sb[2];
+                const eps = [...sBody.matchAll(/<a href="([^"]+)">([^<]+)<\/a>/g)];
+                eps.forEach((m, eIdx) => {
+                  const epNum = eIdx + 1;
+                  seasonsMap[sNum].push({
+                    number: epNum,
+                    title: m[2].trim() || `Episódio ${epNum}`,
+                    duration: '24m',
+                    link: `animes3_ep=${encodeURIComponent(m[1])}&season=${sNum}&episode=${epNum}&title=${encodeURIComponent(title)}`,
+                    streamUrl: ''
+                  });
+                });
+              });
+            }
+          }
+        }
+        // Se ainda vazio, tentar busca dinâmica no animesdigital.org
+        if (Object.keys(seasonsMap).length === 0 && title) {
+          const cleanAnimeTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/dublado|legendado/gi, '').trim();
+          const adData = await searchAnimesDigitalSeries(cleanAnimeTitle);
+          if (adData && adData.episodes.length > 0) {
+            seasonsMap[1] = adData.episodes.map(ep => ({
+              number: ep.number,
+              title: ep.title,
+              duration: '24m',
+              link: `animesdigital_ep=${encodeURIComponent(ep.url)}&season=1&episode=${ep.number}&title=${encodeURIComponent(title)}`,
+              streamUrl: ''
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('Erro na extração de episódios animes3:', err);
       }
     }
 

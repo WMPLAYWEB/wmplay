@@ -418,7 +418,7 @@ async function callResolver(resolverNum: number, requestStr: string): Promise<st
             'Authorization': `Bearer ${TOKEN}`,
             'User-Agent': 'Mozilla/5.0'
           },
-          timeout: 4500
+          timeout: 1200
         }, (res) => {
           let data = '';
           res.on('data', chunk => data += chunk);
@@ -450,6 +450,183 @@ async function callResolver(resolverNum: number, requestStr: string): Promise<st
   return null;
 }
 
+async function searchCineVibeMovie(title: string): Promise<StreamServer[]> {
+  if (!title) return [];
+  const cleanQ = title.replace(/[^\w\sÀ-ÿ]/gi, ' ').replace(/\s+/g, ' ').trim();
+  const searchUrl = `https://cinevibehd.com/?s=${encodeURIComponent(cleanQ)}`;
+  try {
+    const res = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://cinevibehd.com/'
+      },
+      signal: AbortSignal.timeout(4500)
+    });
+    const html = await res.text();
+    const movieMatches = [...html.matchAll(/href="(https:\/\/cinevibehd\.com\/filmes\/[^"]+)"/g)].map(m => m[1]);
+    const uniqueMovies = [...new Set(movieMatches)];
+    if (uniqueMovies.length === 0) return [];
+
+    const movieUrl = uniqueMovies[0];
+    const pageRes = await fetch(movieUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://cinevibehd.com/'
+      },
+      signal: AbortSignal.timeout(4500)
+    });
+    const pageHtml = await pageRes.text();
+    const postIdMatch = pageHtml.match(/data-post=["'](\d+)["']/i) || pageHtml.match(/postid-(\d+)/);
+    const postId = postIdMatch ? postIdMatch[1] : null;
+    const numes = [...pageHtml.matchAll(/data-nume=["'](\d+)["']/g)].map(m => m[1]);
+    if (!postId || numes.length === 0) return [];
+
+    const servers: StreamServer[] = [];
+    for (const nume of numes.slice(0, 5)) {
+      try {
+        const api = `https://cinevibehd.com/wp-json/dooplayer/v2/${postId}/movie/${nume}`;
+        const apiRes = await fetch(api, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': movieUrl
+          },
+          signal: AbortSignal.timeout(3500)
+        });
+        const d = await apiRes.json();
+        const embed = d?.embed_url || d?.url;
+        if (!embed) continue;
+
+        if (embed.includes('drive.google.com')) {
+          servers.push({
+            name: 'Servidor Google Drive Full HD Dublado (Sem Anúncios)',
+            url: embed,
+            type: 'embed',
+            isDubbed: true
+          });
+        } else if (embed.includes('streamtape.com')) {
+          const tapeId = embed.split('/e/')[1]?.split('?')[0];
+          if (tapeId) {
+            const directMp4 = await resolveStreamTape(tapeId);
+            if (directMp4) {
+              servers.push({
+                name: 'Servidor StreamTape Full HD Dublado (Sinal Direto)',
+                url: directMp4,
+                type: 'video',
+                isDubbed: true
+              });
+              servers.push({
+                name: 'Servidor StreamTape Anti-Buffer (Proxy)',
+                url: `/api/proxy-stream?url=${encodeURIComponent(directMp4)}`,
+                type: 'video',
+                isDubbed: true
+              });
+            }
+          }
+        } else if (embed.includes('mixdrop')) {
+          servers.push({
+            name: 'Servidor MixDrop Full HD Dublado (Anti-Buffer)',
+            url: `/api/proxy-stream?url=${encodeURIComponent(embed)}`,
+            type: 'video',
+            isDubbed: true
+          });
+        } else {
+          servers.push({
+            name: `Servidor CineVibe HD Dublado ${servers.length + 1} (Sem Anúncios)`,
+            url: embed,
+            type: 'embed',
+            isDubbed: true
+          });
+        }
+      } catch {}
+    }
+    return servers;
+  } catch {
+    return [];
+  }
+}
+
+async function resolveAnimeStream(epUrl: string, animeTitle: string, season: number | string = 1, epNum: number | string = 1): Promise<StreamServer[]> {
+  const servers: StreamServer[] = [];
+  const epIndex = parseInt(String(epNum), 10) || 1;
+
+  // 1. Fetch do animesonlinecc.to se houver link de episódio
+  if (epUrl && epUrl.includes('animesonlinecc.to')) {
+    try {
+      const res = await fetch(epUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Referer': 'https://animesonlinecc.to/'
+        },
+        signal: AbortSignal.timeout(4500)
+      });
+      if (res.ok) {
+        const html = await res.text();
+        const iframes = [...html.matchAll(/<iframe[^>]+src="([^"]+)"/gi)].map(m => m[1]);
+        for (const ifr of iframes) {
+          if (ifr.includes('blogger.com') || ifr.includes('drive.google.com') || ifr.includes('video') || ifr.includes('stream')) {
+            servers.push({
+              name: `Anime Player HD Dublado Ep ${epIndex} (Sem Anúncios)`,
+              url: ifr,
+              type: 'embed',
+              isDubbed: true
+            });
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // 2. Fetch de Sinal Direto HLS do animesdigital.org
+  if (animeTitle) {
+    try {
+      const cleanTitle = animeTitle.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/dublado|legendado/gi, '').trim();
+      const sUrl = `https://animesdigital.org/?s=${encodeURIComponent(cleanTitle)}`;
+      const res = await fetch(sUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36' },
+        signal: AbortSignal.timeout(4500)
+      });
+      if (res.ok) {
+        const html = await res.text();
+        const animes = [...html.matchAll(/<a[^>]+href="(https:\/\/animesdigital\.org\/anime\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g)].map(m => m[1]);
+        if (animes.length > 0) {
+          const aRes = await fetch(animes[0], {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36' },
+            signal: AbortSignal.timeout(4500)
+          });
+          const aHtml = await aRes.text();
+          const epLinks = [...aHtml.matchAll(/<a[^>]+href="(https:\/\/animesdigital\.org\/video\/[^"]+)"/g)].map(m => m[1]);
+          const targetIdx = Math.max(0, epIndex - 1);
+          if (epLinks[targetIdx]) {
+            const epRes = await fetch(epLinks[targetIdx], {
+              headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36' },
+              signal: AbortSignal.timeout(4500)
+            });
+            const epHtml = await epRes.text();
+            const hlsMatch = epHtml.match(/https?:\/\/[^\s"'<>]+\.m3u8[^\s"'<>]*/);
+            if (hlsMatch) {
+              const hlsUrl = hlsMatch[0];
+              servers.unshift({
+                name: `Anime Sinal Direto Full HD HLS (Ep ${epIndex})`,
+                url: hlsUrl,
+                type: 'video',
+                isDubbed: true
+              });
+              servers.splice(1, 0, {
+                name: `Anime Acelerado Anti-Buffer (Ep ${epIndex})`,
+                url: `/api/proxy-stream?url=${encodeURIComponent(hlsUrl)}`,
+                type: 'video',
+                isDubbed: true
+              });
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
+  return servers;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -472,6 +649,26 @@ export async function GET(req: NextRequest) {
     const episode = searchParams.get('episode') || '1';
 
     const servers: StreamServer[] = [];
+
+    // =========================================================================
+    // 0.5 SERVIDORES DE ANIMES (animes3_ep= & animesdigital_ep=)
+    // =========================================================================
+    if (link.includes('animes3_ep=') || link.includes('animesdigital_ep=') || link.includes('animes3=') || rawType === 'animes') {
+      try {
+        let targetEpUrl = '';
+        if (link.includes('animes3_ep=')) {
+          targetEpUrl = decodeURIComponent(link.split('animes3_ep=')[1].split('&')[0]);
+        } else if (link.includes('animesdigital_ep=')) {
+          targetEpUrl = decodeURIComponent(link.split('animesdigital_ep=')[1].split('&')[0]);
+        }
+        const animeServers = await resolveAnimeStream(targetEpUrl, title, season, episode);
+        if (animeServers.length > 0) {
+          servers.push(...animeServers);
+        }
+      } catch (err) {
+        console.error('Erro ao resolver stream de anime:', err);
+      }
+    }
 
 
     // =========================================================================
@@ -1116,6 +1313,36 @@ export async function GET(req: NextRequest) {
         }
       } catch (err) {
         console.error('Erro na busca dinâmica Overflix:', err);
+      }
+    }
+
+    // =========================================================================
+    // 11. BUSCA DINÂMICA CINEVIBE HD (GOOGLE DRIVE FULL HD, STREAMTAPE, MIXDROP)
+    // =========================================================================
+    if (servers.length === 0 && title && !isTvOrSeries) {
+      try {
+        const cleanTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\sÀ-ÿ]/g, ' ').replace(/\s+/g, ' ').trim();
+        const cvServers = await searchCineVibeMovie(cleanTitle);
+        if (cvServers.length > 0) {
+          servers.push(...cvServers);
+        }
+      } catch (err) {
+        console.error('Erro na busca CineVibeHD:', err);
+      }
+    }
+
+    // =========================================================================
+    // 12. BUSCA DINÂMICA ANIMES (ANIMESONLINECC & ANIMESDIGITAL)
+    // =========================================================================
+    if (servers.length === 0 && title && (rawType === 'animes' || isTvOrSeries)) {
+      try {
+        const cleanAnime = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\sÀ-ÿ]/g, ' ').replace(/\s+/g, ' ').trim();
+        const aServers = await resolveAnimeStream('', cleanAnime, season, episode);
+        if (aServers.length > 0) {
+          servers.push(...aServers);
+        }
+      } catch (err) {
+        console.error('Erro no fallback final de animes:', err);
       }
     }
 
