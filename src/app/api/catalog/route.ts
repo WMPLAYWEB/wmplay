@@ -30,6 +30,9 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     let type = searchParams.get('type') || 'filmes';
+    if (type === 'kids') type = 'desenhos';
+    if (type === 'movies') type = 'filmes';
+    if (type === 'tv') type = 'series';
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '48', 10)));
     const search = searchParams.get('search')?.trim() || '';
