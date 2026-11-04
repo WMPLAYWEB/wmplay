@@ -218,16 +218,13 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
       const directTape = await resolveStreamTape(dub.streamtape);
       if (directTape) {
         const finalMp4 = await getRedirectLocation(directTape);
-        const playable = await isStreamPlayable(finalMp4, 'https://streamtape.com/');
-        if (playable) {
-          const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
-          servers.push({
-            name: `Servidor StreamTape Full HD Dublado (CDN Rápida)`,
-            url: proxiedUrl,
-            type: 'video',
-            isDubbed: true
-          });
-        }
+        const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
+        servers.push({
+          name: `Servidor StreamTape Full HD Dublado (CDN Rápida)`,
+          url: proxiedUrl,
+          type: 'video',
+          isDubbed: true
+        });
       }
     } catch (err) {
       console.error('Erro ao resolver StreamTape dublado:', err);
@@ -239,21 +236,42 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
     try {
       const directMix = await resolveMixdrop(dub.mixdrop);
       if (directMix) {
-        const playable = await isStreamPlayable(directMix, 'https://mxdrop.click/');
-        if (playable) {
-          const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
-          servers.push({
-            name: `Servidor MixDrop Full HD Dublado (Anti-Buffer)`,
-            url: proxiedUrl,
-            type: 'video',
-            isDubbed: true
-          });
-        } else {
-          console.warn('[WMPLAY] Link do MixDrop inválido ou sem resposta DNS, ignorando:', directMix);
-        }
+        const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
+        servers.push({
+          name: `Servidor MixDrop Full HD Dublado (Anti-Buffer)`,
+          url: proxiedUrl,
+          type: 'video',
+          isDubbed: true
+        });
+        servers.push({
+          name: `Servidor MixDrop Direto (Full HD)`,
+          url: directMix,
+          type: 'video',
+          isDubbed: true
+        });
       }
     } catch (err) {
       console.error('Erro ao resolver Mixdrop dublado:', err);
+    }
+  }
+
+  // 1.8 Fallback de Embed Dublado caso os arquivos MP4 diretos não tenham sido extraídos
+  if (servers.length === 0) {
+    if (dub.streamtape) {
+      servers.push({
+        name: `Servidor StreamTape Dublado (Player)`,
+        url: `https://streamtape.com/e/${dub.streamtape}`,
+        type: 'embed',
+        isDubbed: true
+      });
+    }
+    if (dub.mixdrop) {
+      servers.push({
+        name: `Servidor MixDrop Dublado (Player)`,
+        url: `https://mixdrop.top/e/${dub.mixdrop}`,
+        type: 'embed',
+        isDubbed: true
+      });
     }
   }
 
@@ -264,16 +282,13 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
         const directTape = await resolveStreamTape(leg.streamtape);
         if (directTape) {
           const finalMp4 = await getRedirectLocation(directTape);
-          const playable = await isStreamPlayable(finalMp4, 'https://streamtape.com/');
-          if (playable) {
-            const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
-            servers.push({
-              name: `Servidor StreamTape Full HD Legendado PT-BR`,
-              url: proxiedUrl,
-              type: 'video',
-              isDubbed: false
-            });
-          }
+          const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
+          servers.push({
+            name: `Servidor StreamTape Full HD Legendado PT-BR`,
+            url: proxiedUrl,
+            type: 'video',
+            isDubbed: false
+          });
         }
       } catch (err) {
         console.error('Erro ao resolver StreamTape legendado:', err);
@@ -284,19 +299,35 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
       try {
         const directMix = await resolveMixdrop(leg.mixdrop);
         if (directMix) {
-          const playable = await isStreamPlayable(directMix, 'https://mxdrop.click/');
-          if (playable) {
-            const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
-            servers.push({
-              name: `Servidor MixDrop Full HD Legendado PT-BR (Anti-Buffer)`,
-              url: proxiedUrl,
-              type: 'video',
-              isDubbed: false
-            });
-          }
+          const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
+          servers.push({
+            name: `Servidor MixDrop Full HD Legendado PT-BR (Anti-Buffer)`,
+            url: proxiedUrl,
+            type: 'video',
+            isDubbed: false
+          });
         }
       } catch (err) {
         console.error('Erro ao resolver Mixdrop legendado:', err);
+      }
+    }
+
+    if (servers.length === 0) {
+      if (leg.streamtape) {
+        servers.push({
+          name: `Servidor StreamTape Legendado PT-BR (Player)`,
+          url: `https://streamtape.com/e/${leg.streamtape}`,
+          type: 'embed',
+          isDubbed: false
+        });
+      }
+      if (leg.mixdrop) {
+        servers.push({
+          name: `Servidor MixDrop Legendado PT-BR (Player)`,
+          url: `https://mixdrop.top/e/${leg.mixdrop}`,
+          type: 'embed',
+          isDubbed: false
+        });
       }
     }
   }
