@@ -239,13 +239,13 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
         const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
         servers.push({
           name: `Servidor MixDrop Full HD Dublado (Anti-Buffer)`,
-          url: proxiedUrl,
+          url: directMix,
           type: 'video',
           isDubbed: true
         });
         servers.push({
-          name: `Servidor MixDrop Direto (Full HD)`,
-          url: directMix,
+          name: `Servidor MixDrop Proxy (Acelerado)`,
+          url: proxiedUrl,
           type: 'video',
           isDubbed: true
         });
