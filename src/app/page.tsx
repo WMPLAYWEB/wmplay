@@ -4646,9 +4646,17 @@ function MusicHubView({
   const [soundcloudResults, setSoundcloudResults] = useState<SoundCloudResultItem[]>([]);
   const [spotifyResults, setSpotifyResults] = useState<SpotifyResultItem[]>([]);
 
-  // YouTube Player State
-  const [activeYoutubeUrl, setActiveYoutubeUrl] = useState("https://www.youtube-nocookie.com/embed/jfKfPfyJRdk?autoplay=1");
+  // YouTube Player State & Size Control
+  const [youtubeSize, setYoutubeSize] = useState<"compact" | "normal" | "cinema">("normal");
+  const [activeYoutubeId, setActiveYoutubeId] = useState("jfKfPfyJRdk");
+  const [activeYoutubeUrl, setActiveYoutubeUrl] = useState("https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&enablejsapi=1&rel=0");
   const [activeYoutubeTitle, setActiveYoutubeTitle] = useState("Lofi Girl 24/7 - Beats to Relax/Study (Ao Vivo)");
+
+  const playYoutubeVideo = (id: string, title: string) => {
+    setActiveYoutubeId(id);
+    setActiveYoutubeUrl(`https://www.youtube.com/embed/${id}?autoplay=1&enablejsapi=1&rel=0`);
+    setActiveYoutubeTitle(title);
+  };
 
   // Spotify Player State
   const [spotifyEmbedUrl, setSpotifyEmbedUrl] = useState("https://open.spotify.com/embed/playlist/37i9dQZF1DX0FOF1IUWK1W?utm_source=generator&theme=0");
@@ -4693,16 +4701,14 @@ function MusicHubView({
       if (q.includes("youtube.com/watch?v=")) {
         const vId = q.split("v=")[1]?.split("&")[0];
         if (vId) {
-          setActiveYoutubeUrl(`https://www.youtube-nocookie.com/embed/${vId}?autoplay=1`);
-          setActiveYoutubeTitle(`Vídeo do YouTube (${vId})`);
+          playYoutubeVideo(vId, `Vídeo do YouTube (${vId})`);
           setIsSearching(false);
           return;
         }
       } else if (q.includes("youtu.be/")) {
         const vId = q.split("youtu.be/")[1]?.split("?")[0];
         if (vId) {
-          setActiveYoutubeUrl(`https://www.youtube-nocookie.com/embed/${vId}?autoplay=1`);
-          setActiveYoutubeTitle(`Vídeo do YouTube (${vId})`);
+          playYoutubeVideo(vId, `Vídeo do YouTube (${vId})`);
           setIsSearching(false);
           return;
         }
@@ -4739,8 +4745,7 @@ function MusicHubView({
         const items: YouTubeResultItem[] = data.items || [];
         setYoutubeResults(items);
         if (items.length > 0) {
-          setActiveYoutubeUrl(`https://www.youtube-nocookie.com/embed/${items[0].id}?autoplay=1`);
-          setActiveYoutubeTitle(items[0].title);
+          playYoutubeVideo(items[0].id, items[0].title);
         } else {
           setSearchError("Nenhum vídeo encontrado para este termo no YouTube.");
         }
@@ -5196,22 +5201,90 @@ function MusicHubView({
       {activePlatform === "youtube" && (
         <div className="space-y-6">
           {/* Player YouTube Embutido Ativo */}
-          <div className="rounded-2xl overflow-hidden border border-red-600/30 bg-black/95 shadow-2xl p-4 space-y-3">
-            <div className="flex items-center justify-between text-xs text-slate-300 px-1">
-              <span className="flex items-center gap-2 font-bold text-white truncate max-w-xl">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                Tocando Agora: <span className="text-red-400 truncate">{activeYoutubeTitle}</span>
-              </span>
-              <span className="text-[11px] font-mono text-slate-500 shrink-0">YouTube Player HD</span>
-            </div>
-            <div className="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-inner border border-zinc-800">
-              <iframe
-                src={activeYoutubeUrl}
-                title={activeYoutubeTitle}
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
+          <div className={`transition-all duration-300 ${
+            youtubeSize === "compact"
+              ? "max-w-2xl mx-auto"
+              : youtubeSize === "cinema"
+              ? "w-full"
+              : "max-w-4xl mx-auto"
+          }`}>
+            <div className="rounded-2xl overflow-hidden border border-red-600/30 bg-black/95 shadow-2xl p-3 sm:p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300 px-1">
+                <span className="flex items-center gap-2 font-bold text-white truncate max-w-[260px] sm:max-w-md">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping shrink-0" />
+                  <span className="truncate">Tocando Agora: <span className="text-red-400 font-bold">{activeYoutubeTitle}</span></span>
+                </span>
+
+                {/* Controles de Tamanho e Ações do Player */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 shadow-inner">
+                    <button
+                      onClick={() => setYoutubeSize("compact")}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                        youtubeSize === "compact"
+                          ? "bg-red-600 text-white shadow-sm"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                      title="Tamanho Compacto (Pequeno)"
+                    >
+                      Pequeno
+                    </button>
+                    <button
+                      onClick={() => setYoutubeSize("normal")}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                        youtubeSize === "normal"
+                          ? "bg-red-600 text-white shadow-sm"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                      title="Tamanho Médio (Padrão Equilibrado)"
+                    >
+                      Médio
+                    </button>
+                    <button
+                      onClick={() => setYoutubeSize("cinema")}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                        youtubeSize === "cinema"
+                          ? "bg-red-600 text-white shadow-sm"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                      title="Modo Cinema (Grande / Expandido)"
+                    >
+                      Grande
+                    </button>
+                  </div>
+
+                  {activeYoutubeId && (
+                    <a
+                      href={`https://www.youtube.com/watch?v=${activeYoutubeId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-zinc-900 hover:bg-red-600/20 border border-zinc-800 hover:border-red-500/50 text-[11px] font-bold text-slate-300 hover:text-white transition-all shadow-sm"
+                      title="Abrir diretamente no YouTube"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-red-500" />
+                      <span className="hidden sm:inline">YouTube</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              <div className={`w-full rounded-xl overflow-hidden bg-black shadow-inner border border-zinc-800 transition-all duration-300 ${
+                youtubeSize === "compact"
+                  ? "h-[260px] sm:h-[300px]"
+                  : youtubeSize === "cinema"
+                  ? "h-[460px] sm:h-[540px] md:h-[620px]"
+                  : "h-[340px] sm:h-[400px] md:h-[430px]"
+              }`}>
+                <iframe
+                  key={activeYoutubeUrl}
+                  src={activeYoutubeUrl}
+                  title={activeYoutubeTitle}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  referrerPolicy="strict-origin-when-cross-origin"
+                />
+              </div>
             </div>
           </div>
 
@@ -5239,8 +5312,7 @@ function MusicHubView({
                   <div
                     key={item.id}
                     onClick={() => {
-                      setActiveYoutubeUrl(`https://www.youtube-nocookie.com/embed/${item.id}?autoplay=1`);
-                      setActiveYoutubeTitle(item.title);
+                      playYoutubeVideo(item.id, item.title);
                       window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
                     className="group rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950/80 hover:border-red-500 p-3.5 cursor-pointer transition-all hover:scale-[1.02] shadow-xl hover:shadow-red-600/20 flex flex-col justify-between"
@@ -5291,8 +5363,8 @@ function MusicHubView({
                 <div
                   key={idx}
                   onClick={() => {
-                    setActiveYoutubeUrl(`https://www.youtube-nocookie.com/embed/${item.id}?autoplay=1`);
-                    setActiveYoutubeTitle(item.title);
+                    playYoutubeVideo(item.id, item.title);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                   className="group rounded-2xl overflow-hidden border border-red-600/20 bg-zinc-950/70 hover:border-red-500 p-4 cursor-pointer transition-all hover:scale-[1.02] shadow-xl hover:shadow-red-600/20 flex flex-col justify-between"
                 >
