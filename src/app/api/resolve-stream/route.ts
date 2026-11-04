@@ -151,39 +151,40 @@ async function isUrlPlayable(url: string, referer: string = ''): Promise<boolean
   return await isStreamPlayable(url, referer);
 }
 
+async function fetchHtmlWithRedirects(targetUrl: string, referer = 'https://www.overflix.download/', depth = 0): Promise<string> {
+  if (depth > 3) return '';
+  return new Promise((resolve) => {
+    try {
+      const u = new URL(targetUrl);
+      https.get({
+        hostname: u.hostname,
+        path: u.pathname + u.search,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Referer': referer
+        },
+        timeout: 5000
+      }, (res) => {
+        if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          const nextLoc = new URL(res.headers.location, targetUrl).toString();
+          return resolve(fetchHtmlWithRedirects(nextLoc, referer, depth + 1));
+        }
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => resolve(data));
+      }).on('error', () => resolve(''));
+    } catch {
+      resolve('');
+    }
+  });
+}
+
 // Extrai o link direto de vídeo MP4 do MixDrop (Padrão Kodi ResolveURL - Sem Anúncios)
 async function resolveMixdrop(mediaId: string): Promise<string | null> {
-  const domains = ['https://mxdrop.click', 'https://mxdrop.to'];
+  const domains = ['https://mxdrop.click', 'https://mixdrop.top', 'https://mixdrop.ag', 'https://mixdrop.co'];
   for (const domain of domains) {
     try {
-      const pageData = await new Promise<string>((resolve) => {
-        https.get(`${domain}/e/${mediaId}`, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Referer': 'https://www.overflix.win/'
-          },
-          timeout: 6000
-        }, (res) => {
-          if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-            https.get(res.headers.location, {
-              headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Referer': 'https://www.overflix.win/'
-              },
-              timeout: 6000
-            }, (res2) => {
-              let d = '';
-              res2.on('data', c => d += c);
-              res2.on('end', () => resolve(d));
-            }).on('error', () => resolve(''));
-            return;
-          }
-          let d = '';
-          res.on('data', c => d += c);
-          res.on('end', () => resolve(d));
-        }).on('error', () => resolve(''));
-      });
-
+      const pageData = await fetchHtmlWithRedirects(`${domain}/e/${mediaId}`, 'https://www.overflix.download/');
       if (!pageData) continue;
       const match = pageData.match(/eval\(function\(p,a,c,k,e,d\)[\s\S]+?\.split\('\|'\),\d+,\{\}\)\)/);
       if (match) {
@@ -580,9 +581,10 @@ export async function GET(req: NextRequest) {
     // =========================================================================
     if (link.includes('movie2=')) {
       try {
-        const match = link.match(/movie2=([a-zA-Z0-9_\-]+)/);
-        if (match && match[1]) {
-          const slug = match[1];
+        const rawSlug = link.split('movie2=')[1]?.split('|')[0]?.split('&')[0] || '';
+        const decodedSlug = decodeURIComponent(rawSlug).trim();
+        const slug = decodedSlug.replace(/^[^\w]+/, '');
+        if (slug) {
           const baseSlug = slug.replace(/-dublado-\d+$/, '').replace(/-legendado-\d+$/, '').replace(/-\d+$/, '');
 
           // Se ainda não encontrou servidor direto, tentar via Resolver 2 / 3 com o baseSlug
@@ -619,7 +621,7 @@ export async function GET(req: NextRequest) {
 
           const videoId = slug.split('-').pop();
           if (videoId && /^\d+$/.test(videoId)) {
-            const referer = `https://${OVERFLIX_HOST}/filmes/online/${slug}/`;
+            const referer = `https://${OVERFLIX_HOST}/filmes/online/${encodeURIComponent(slug)}/`;
             const path = `/index.php?app=videobox&module=video&controller=view&do=playerData&id=${videoId}`;
             const playerData = await fetchOverflix(path, referer);
             const ovServers = await buildOverflixServers(playerData, 'Dublado PT-BR');
@@ -654,12 +656,13 @@ export async function GET(req: NextRequest) {
     
     if (link.includes('serie3=')) {
       try {
-        const match = link.match(/serie3=([a-zA-Z0-9_\-]+)/);
-        if (match && match[1]) {
-          const slug = match[1];
+        const rawSlug = link.split('serie3=')[1]?.split('|')[0]?.split('&')[0] || '';
+        const decodedSlug = decodeURIComponent(rawSlug).trim();
+        const slug = decodedSlug.replace(/^[^\w]+/, '');
+        if (slug) {
           const seriesId = slug.split('-').pop();
           if (seriesId && /^\d+$/.test(seriesId)) {
-            const referer = `https://${OVERFLIX_HOST}/series/online/${slug}/`;
+            const referer = `https://${OVERFLIX_HOST}/series/online/${encodeURIComponent(slug)}/`;
             const epListPath = `/index.php?app=videobox&module=video&controller=view&do=episodesList&id=${seriesId}&season=${season}&audio=Dublado`;
             let epListData = await fetchOverflix(epListPath, referer);
             if (!epListData || !Array.isArray(epListData.episodes) || epListData.episodes.length === 0) {
@@ -796,12 +799,13 @@ export async function GET(req: NextRequest) {
 
             // 2. Tentar serie3 na rota alternativa (Overflix: StreamTape / MixDrop Dublado)
             if (servers.length === 0 && altLink.includes('serie3=')) {
-              const match = altLink.match(/serie3=([a-zA-Z0-9_\-]+)/);
-              if (match && match[1]) {
-                const sSlug = match[1];
+              const rawSlug = altLink.split('serie3=')[1]?.split('|')[0]?.split('&')[0] || '';
+              const decodedSlug = decodeURIComponent(rawSlug).trim();
+              const sSlug = decodedSlug.replace(/^[^\w]+/, '');
+              if (sSlug) {
                 const seriesId = sSlug.split('-').pop();
                 if (seriesId && /^\d+$/.test(seriesId)) {
-                  const referer = `https://${OVERFLIX_HOST}/series/online/${sSlug}/`;
+                  const referer = `https://${OVERFLIX_HOST}/series/online/${encodeURIComponent(sSlug)}/`;
                   let epList = await fetchOverflix(`/index.php?app=videobox&module=video&controller=view&do=episodesList&id=${seriesId}&season=${season}&audio=Dublado`, referer);
                   if (!epList || !Array.isArray(epList.episodes) || epList.episodes.length === 0) {
                     epList = await fetchOverflix(`/index.php?app=videobox&module=video&controller=view&do=episodesList&id=${seriesId}&season=${season}&audio=Legendado`, referer);
@@ -898,12 +902,13 @@ export async function GET(req: NextRequest) {
 
             // 2. Se ainda sem servidores, tentar movie2 (Overflix: StreamTape / MixDrop Dublado)
             if (servers.length === 0 && altLink.includes('movie2=')) {
-              const match = altLink.match(/movie2=([a-zA-Z0-9_\-]+)/);
-              if (match && match[1]) {
-                const slug = match[1];
+              const rawSlug = altLink.split('movie2=')[1]?.split('|')[0]?.split('&')[0] || '';
+              const decodedSlug = decodeURIComponent(rawSlug).trim();
+              const slug = decodedSlug.replace(/^[^\w]+/, '');
+              if (slug) {
                 const videoId = slug.split('-').pop();
                 if (videoId && /^\d+$/.test(videoId)) {
-                  const referer = `https://${OVERFLIX_HOST}/filmes/online/${slug}/`;
+                  const referer = `https://${OVERFLIX_HOST}/filmes/online/${encodeURIComponent(slug)}/`;
                   const p = `/index.php?app=videobox&module=video&controller=view&do=playerData&id=${videoId}`;
                   const playerData = await fetchOverflix(p, referer);
                   const ovServers = await buildOverflixServers(playerData, 'Dublado PT-BR');

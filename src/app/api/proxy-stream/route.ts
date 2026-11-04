@@ -37,11 +37,16 @@ export async function GET(req: NextRequest) {
     );
     const rangeHeader = req.headers.get('range');
 
+    const isMxContent = targetUrl.includes('mxcontent.net');
     const reqHeaders: Record<string, string> = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'User-Agent': isMxContent ? 'curl/8.13.0' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'Referer': referer,
-      'Origin': new URL(referer).origin
     };
+    if (!isMxContent) {
+      try {
+        reqHeaders['Origin'] = new URL(referer).origin;
+      } catch {}
+    }
     if (rangeHeader) {
       reqHeaders['Range'] = rangeHeader;
     }
