@@ -123,6 +123,44 @@ async function fetchOverflixEpisodes(seriesId: string, season: number, referer: 
   return eps;
 }
 
+async function searchOverflixSeries(query: string): Promise<{ url: string; seriesId: string; title: string }[]> {
+  if (!query) return [];
+  const cleanQ = query.replace(/[^\w\sÀ-ÿ]/gi, ' ').replace(/\s+/g, ' ').trim();
+  const searchUrl = `https://${OVERFLIX_HOST}/index.php?app=videobox&module=video&controller=index&do=buscarContent&q=${encodeURIComponent(cleanQ)}&type=serie`;
+  return new Promise((resolve) => {
+    https.get(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Referer': `https://${OVERFLIX_HOST}/`
+      },
+      timeout: 5000
+    }, (res) => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (!json || !json.html) return resolve([]);
+          const results: { url: string; seriesId: string; title: string }[] = [];
+          const matches = [...json.html.matchAll(/href="([^"]+)"[^>]*>[\s\S]*?<h3>([^<]+)<\/h3>/g)];
+          for (const m of matches) {
+            const fullUrl = m[1];
+            const title = m[2].replace(/&amp;/g, '&').replace(/&#039;/g, "'").trim();
+            const idMatch = fullUrl.match(/-(\d+)\/?$/);
+            if (idMatch) {
+              results.push({ url: fullUrl, seriesId: idMatch[1], title });
+            }
+          }
+          resolve(results);
+        } catch {
+          resolve([]);
+        }
+      });
+    }).on('error', () => resolve([]));
+  });
+}
+
 async function fetchTmdbTvShow(tmdbId: string): Promise<any> {
   return new Promise((resolve) => {
     https.get(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_KEY}&language=pt-BR`, { timeout: 4500 }, (res) => {
@@ -285,12 +323,12 @@ export async function GET(req: NextRequest) {
     // =========================================================================
     if (Object.keys(seasonsMap).length === 0 && link.includes('serie3=')) {
       try {
-        const match = link.match(/serie3=([a-zA-Z0-9_\-]+)/);
-        if (match && match[1]) {
-          const slug = match[1];
+        const rawSlug = link.split('serie3=')[1]?.split('|')[0]?.split('&')[0] || '';
+        const slug = decodeURIComponent(rawSlug).trim().replace(/^[^\w]+/, '');
+        if (slug) {
           const seriesId = slug.split('-').pop();
           if (seriesId && /^\d+$/.test(seriesId)) {
-            const referer = `https://${OVERFLIX_HOST}/series/online/${slug}/`;
+            const referer = `https://${OVERFLIX_HOST}/series/online/${encodeURIComponent(slug)}/`;
             // Buscar até 10 temporadas
             for (let s = 1; s <= 10; s++) {
               const epList = await fetchOverflixEpisodes(seriesId, s, referer);
@@ -454,12 +492,12 @@ export async function GET(req: NextRequest) {
 
           // 3. Se ainda vazio, tentar serie3 na rota alternativa
           if (Object.keys(seasonsMap).length === 0 && altLink.includes('serie3=')) {
-            const match = altLink.match(/serie3=([a-zA-Z0-9_\-]+)/);
-            if (match && match[1]) {
-              const sSlug = match[1];
+            const rawSlug = altLink.split('serie3=')[1]?.split('|')[0]?.split('&')[0] || '';
+            const sSlug = decodeURIComponent(rawSlug).trim().replace(/^[^\w]+/, '');
+            if (sSlug) {
               const seriesId = sSlug.split('-').pop();
               if (seriesId && /^\d+$/.test(seriesId)) {
-                const referer = `https://${OVERFLIX_HOST}/series/online/${sSlug}/`;
+                const referer = `https://${OVERFLIX_HOST}/series/online/${encodeURIComponent(sSlug)}/`;
                 for (let s = 1; s <= 10; s++) {
                   const epList = await fetchOverflixEpisodes(seriesId, s, referer);
                   if (Array.isArray(epList) && epList.length > 0) {
@@ -485,6 +523,41 @@ export async function GET(req: NextRequest) {
         }
       } catch (err) {
         console.error('Erro na busca de episódios alternativos no catálogo:', err);
+      }
+    }
+
+    // =========================================================================
+    // 3.8 BUSCA DINÂMICA DIRETA NO ACERVO OVERFLIX POR TÍTULO
+    // =========================================================================
+    if (Object.keys(seasonsMap).length === 0 && title && title !== 'Série') {
+      try {
+        const cleanTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\sÀ-ÿ]/g, ' ').replace(/\s+/g, ' ').trim();
+        const ovResults = await searchOverflixSeries(cleanTitle);
+        if (ovResults.length > 0) {
+          const match = ovResults[0];
+          const referer = match.url;
+          for (let s = 1; s <= 10; s++) {
+            const epList = await fetchOverflixEpisodes(match.seriesId, s, referer);
+            if (Array.isArray(epList) && epList.length > 0) {
+              seasonsMap[s] = [];
+              epList.forEach((ep: any) => {
+                const epNum = parseInt(ep.number, 10) || 1;
+                seasonsMap[s].push({
+                  number: epNum,
+                  title: ep.title || `Episódio ${epNum}`,
+                  duration: ep.duration || '45m',
+                  thumbnail: ep.thumb || '',
+                  link: `serie3_ep=${encodeURIComponent(ep.url || '')}&season=${s}&episode=${epNum}`,
+                  streamUrl: ''
+                });
+              });
+            } else {
+              if (s > 1) break;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Erro na busca dinâmica de séries Overflix:', err);
       }
     }
 

@@ -1950,6 +1950,7 @@ export default function KodiVideoPlayer({
               playsInline
               preload="auto"
               poster={poster}
+              {...({ referrerPolicy: "no-referrer" } as any)}
               className={`w-full h-full ${
                 aspectMode === "cover"
                   ? "object-cover"
@@ -2131,21 +2132,15 @@ export default function KodiVideoPlayer({
             )}
           </div>
         ) : (
-          <div className="w-full h-full relative flex flex-col items-center justify-center bg-zinc-950 p-6 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-500 mb-4 animate-pulse">
-              <Tv className="w-8 h-8" />
-            </div>
-            <h3 className="text-lg font-bold text-white mb-2">Transmissão Direta Indisponível</h3>
-            <p className="text-sm text-zinc-400 max-w-md mb-6 leading-relaxed">
-              Este título ainda não possui link direto 100% dublado e sem anúncios ativo no acervo. Para garantir sua segurança contra anúncios, selecione outro filme ou série no catálogo.
-            </p>
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow-lg shadow-red-600/30 transition-all hover:scale-105 cursor-pointer"
-            >
-              Voltar ao Catálogo
-            </button>
+          <div className="w-full h-full relative bg-black flex items-center justify-center overflow-hidden">
+            <iframe
+              key={currentServer?.url}
+              src={currentServer?.url}
+              sandbox="allow-scripts allow-same-origin allow-forms"
+              allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+              className="w-full h-full border-0 bg-black"
+              referrerPolicy="no-referrer"
+            />
           </div>
         )}
 

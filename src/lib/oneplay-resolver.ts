@@ -43,9 +43,8 @@ export async function isStreamPlayable(url: string, referer: string = ''): Promi
   if (url.includes('source.apperror404.com') || url.includes('teco.bugoumods.com')) return false;
 
   try {
-    const isMxContent = url.includes('mxcontent.net');
     const headers: Record<string, string> = {
-      'User-Agent': isMxContent ? 'curl/8.13.0' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'Range': 'bytes=0-100'
     };
     if (referer) headers['Referer'] = referer;

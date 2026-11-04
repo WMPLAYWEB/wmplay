@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
 
     const referer = customReferer || (
       targetUrl.includes('mxcontent.net') ? 'https://mxdrop.click/' :
+      targetUrl.includes('tapecontent.net') || targetUrl.includes('streamtape.com') ? 'https://streamtape.com/' :
       targetUrl.includes('bugoumods.com') ? 'https://embed.bugoumods.com/' :
       targetUrl.includes('fenix') ? 'https://fenixflix.fenixhub.online/' :
       targetUrl.includes('zunderflix') ? 'https://zunderflix.lat/' :
@@ -37,12 +38,11 @@ export async function GET(req: NextRequest) {
     );
     const rangeHeader = req.headers.get('range');
 
-    const isMxContent = targetUrl.includes('mxcontent.net');
     const reqHeaders: Record<string, string> = {
-      'User-Agent': isMxContent ? 'curl/8.13.0' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'Referer': referer,
     };
-    if (!isMxContent) {
+    if (!targetUrl.includes('mxcontent.net')) {
       try {
         reqHeaders['Origin'] = new URL(referer).origin;
       } catch {}

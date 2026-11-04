@@ -48,6 +48,10 @@ next-env.d.ts
 /*.py
 /*.js
 /*.json
+/*.zip
+/plugin.video.*
+/scripts/test_*
+/scripts/analyze_links.js
 !package.json
 !package-lock.json
 !tsconfig.json

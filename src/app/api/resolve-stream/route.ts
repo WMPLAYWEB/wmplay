@@ -212,15 +212,21 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
   const dub = parseServersString(playerData.servers_dub);
   const leg = parseServersString(playerData.servers_leg);
 
-  // 1. Extração Direta de Vídeo MP4 via StreamTape Dublado (0 Anúncios / Reprodução Direta)
+  // 1. Extração Direta de Vídeo MP4 via StreamTape Dublado (CDN de Alta Velocidade + Suporte CORS Nativo)
   if (dub.streamtape) {
     try {
       const directTape = await resolveStreamTape(dub.streamtape);
       if (directTape) {
         const finalMp4 = await getRedirectLocation(directTape);
-        const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
         servers.push({
           name: `Servidor StreamTape Full HD Dublado (CDN Rápida)`,
+          url: finalMp4,
+          type: 'video',
+          isDubbed: true
+        });
+        const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
+        servers.push({
+          name: `Servidor StreamTape Proxy Acelerado (Anti-Buffer)`,
           url: proxiedUrl,
           type: 'video',
           isDubbed: true
@@ -231,7 +237,7 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
     }
   }
 
-  // 1.5 Extração Direta de Vídeo MP4 via MixDrop Dublado (0 Anúncios / Reprodução Direta)
+  // 1.5 Extração de Vídeo MP4 via MixDrop Dublado (Proxy Acelerado com bypass de CORS & Referer)
   if (dub.mixdrop) {
     try {
       const directMix = await resolveMixdrop(dub.mixdrop);
@@ -239,13 +245,13 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
         const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
         servers.push({
           name: `Servidor MixDrop Full HD Dublado (Anti-Buffer)`,
-          url: directMix,
+          url: proxiedUrl,
           type: 'video',
           isDubbed: true
         });
         servers.push({
-          name: `Servidor MixDrop Proxy (Acelerado)`,
-          url: proxiedUrl,
+          name: `Servidor MixDrop Sinal Direto`,
+          url: directMix,
           type: 'video',
           isDubbed: true
         });
@@ -255,36 +261,57 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
     }
   }
 
-  // 1.8 Fallback de Embed Dublado caso os arquivos MP4 diretos não tenham sido extraídos
-  if (servers.length === 0) {
-    if (dub.streamtape) {
-      servers.push({
-        name: `Servidor StreamTape Dublado (Player)`,
-        url: `https://streamtape.com/e/${dub.streamtape}`,
-        type: 'embed',
-        isDubbed: true
-      });
-    }
-    if (dub.mixdrop) {
-      servers.push({
-        name: `Servidor MixDrop Dublado (Player)`,
-        url: `https://mixdrop.top/e/${dub.mixdrop}`,
-        type: 'embed',
-        isDubbed: true
-      });
-    }
+  // 1.8 Fallback de Players Embeds Dublados (Sem Anúncios / Sandbox Ad-Shield)
+  if (dub.streamtape) {
+    servers.push({
+      name: `Servidor StreamTape Dublado (Player Seguro)`,
+      url: `https://streamtape.com/e/${dub.streamtape}`,
+      type: 'embed',
+      isDubbed: true
+    });
+  }
+  if (dub.mixdrop) {
+    servers.push({
+      name: `Servidor MixDrop Dublado (Player Seguro)`,
+      url: `https://mixdrop.top/e/${dub.mixdrop}`,
+      type: 'embed',
+      isDubbed: true
+    });
+  }
+  if (dub.byse) {
+    servers.push({
+      name: `Servidor Byse Full HD Dublado (Player Seguro)`,
+      url: `https://bysebuho.com/e/${dub.byse}`,
+      type: 'embed',
+      isDubbed: true
+    });
+  }
+  if (dub.doodstream) {
+    servers.push({
+      name: `Servidor DoodStream Dublado (Player Seguro)`,
+      url: `https://playmogo.com/e/${dub.doodstream}`,
+      type: 'embed',
+      isDubbed: true
+    });
   }
 
   // 2. Se não possuir versão dublada, tentar versão legendada PT-BR
-  if (servers.length === 0) {
+  const hasDirectDub = servers.some(s => s.type === 'video' && s.isDubbed);
+  if (!hasDirectDub) {
     if (leg.streamtape) {
       try {
         const directTape = await resolveStreamTape(leg.streamtape);
         if (directTape) {
           const finalMp4 = await getRedirectLocation(directTape);
-          const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
           servers.push({
             name: `Servidor StreamTape Full HD Legendado PT-BR`,
+            url: finalMp4,
+            type: 'video',
+            isDubbed: false
+          });
+          const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
+          servers.push({
+            name: `Servidor StreamTape Legendado (Proxy Acelerado)`,
             url: proxiedUrl,
             type: 'video',
             isDubbed: false
@@ -306,33 +333,77 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
             type: 'video',
             isDubbed: false
           });
+          servers.push({
+            name: `Servidor MixDrop Legendado Sinal Direto`,
+            url: directMix,
+            type: 'video',
+            isDubbed: false
+          });
         }
       } catch (err) {
         console.error('Erro ao resolver Mixdrop legendado:', err);
       }
     }
 
-    if (servers.length === 0) {
-      if (leg.streamtape) {
-        servers.push({
-          name: `Servidor StreamTape Legendado PT-BR (Player)`,
-          url: `https://streamtape.com/e/${leg.streamtape}`,
-          type: 'embed',
-          isDubbed: false
-        });
-      }
-      if (leg.mixdrop) {
-        servers.push({
-          name: `Servidor MixDrop Legendado PT-BR (Player)`,
-          url: `https://mixdrop.top/e/${leg.mixdrop}`,
-          type: 'embed',
-          isDubbed: false
-        });
-      }
+    if (leg.streamtape) {
+      servers.push({
+        name: `Servidor StreamTape Legendado PT-BR (Player Seguro)`,
+        url: `https://streamtape.com/e/${leg.streamtape}`,
+        type: 'embed',
+        isDubbed: false
+      });
+    }
+    if (leg.mixdrop) {
+      servers.push({
+        name: `Servidor MixDrop Legendado PT-BR (Player Seguro)`,
+        url: `https://mixdrop.top/e/${leg.mixdrop}`,
+        type: 'embed',
+        isDubbed: false
+      });
+    }
+    if (leg.byse) {
+      servers.push({
+        name: `Servidor Byse Legendado PT-BR (Player Seguro)`,
+        url: `https://bysebuho.com/e/${leg.byse}`,
+        type: 'embed',
+        isDubbed: false
+      });
+    }
+    if (leg.doodstream) {
+      servers.push({
+        name: `Servidor DoodStream Legendado PT-BR (Player Seguro)`,
+        url: `https://playmogo.com/e/${leg.doodstream}`,
+        type: 'embed',
+        isDubbed: false
+      });
     }
   }
 
   return servers;
+}
+
+async function searchOverflix(query: string, type: 'filme' | 'serie' | 'todos' = 'todos'): Promise<{ url: string; videoId: string; title: string }[]> {
+  if (!query) return [];
+  const cleanQ = query.replace(/[^\w\sÀ-ÿ]/gi, ' ').replace(/\s+/g, ' ').trim();
+  const searchUrl = `/index.php?app=videobox&module=video&controller=index&do=buscarContent&q=${encodeURIComponent(cleanQ)}&type=${type}`;
+  try {
+    const data = await fetchOverflix(searchUrl, `https://${OVERFLIX_HOST}/`);
+    if (!data || !data.html) return [];
+    const html = data.html;
+    const results: { url: string; videoId: string; title: string }[] = [];
+    const matches = [...html.matchAll(/href="([^"]+)"[^>]*>[\s\S]*?<h3>([^<]+)<\/h3>/g)];
+    for (const m of matches) {
+      const fullUrl = m[1];
+      const title = m[2].replace(/&amp;/g, '&').replace(/&#039;/g, "'").trim();
+      const idMatch = fullUrl.match(/-(\d+)\/?$/);
+      if (idMatch) {
+        results.push({ url: fullUrl, videoId: idMatch[1], title });
+      }
+    }
+    return results;
+  } catch {
+    return [];
+  }
 }
 
 async function callResolver(resolverNum: number, requestStr: string): Promise<string | null> {
@@ -1005,6 +1076,47 @@ export async function GET(req: NextRequest) {
       }
     } catch (err) {
       console.error('Erro ao resolver provedores OnePlay:', err);
+    }
+
+    // =========================================================================
+    // 10. BUSCA DINÂMICA DIRETA NO ACERVO OVERFLIX POR TÍTULO (REDE GLOBAL FULL HD)
+    // =========================================================================
+    if (servers.length === 0 && title) {
+      try {
+        const cleanTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\sÀ-ÿ]/g, ' ').replace(/\s+/g, ' ').trim();
+        const isTv = isTvOrSeries;
+        const ovResults = await searchOverflix(cleanTitle, isTv ? 'serie' : 'filme');
+        if (ovResults.length > 0) {
+          const match = ovResults[0];
+          if (isTv) {
+            const referer = match.url;
+            const epList = await fetchOverflix(`/index.php?app=videobox&module=video&controller=view&do=episodesList&id=${match.videoId}&season=${season}&audio=Dublado`, referer);
+            let epArr = epList && Array.isArray(epList.episodes) ? epList.episodes : [];
+            if (epArr.length === 0) {
+              const legList = await fetchOverflix(`/index.php?app=videobox&module=video&controller=view&do=episodesList&id=${match.videoId}&season=${season}&audio=Legendado`, referer);
+              epArr = legList && Array.isArray(legList.episodes) ? legList.episodes : [];
+            }
+            if (epArr.length > 0) {
+              const targetEp = epArr.find((e: any) => String(e.number) === String(episode)) || epArr[0];
+              if (targetEp && targetEp.url) {
+                const epId = targetEp.url.replace(/\/$/, '').split('/').pop()?.split('-').pop();
+                if (epId && /^\d+$/.test(epId)) {
+                  const epPlayerData = await fetchOverflix(`/index.php?app=videobox&module=video&controller=view&do=playerData&id=${epId}`, targetEp.url);
+                  const ovServers = await buildOverflixServers(epPlayerData, `Dublado PT-BR T${season}E${episode}`);
+                  servers.push(...ovServers);
+                }
+              }
+            }
+          } else {
+            const referer = match.url;
+            const playerData = await fetchOverflix(`/index.php?app=videobox&module=video&controller=view&do=playerData&id=${match.videoId}`, referer);
+            const ovServers = await buildOverflixServers(playerData, 'Dublado PT-BR');
+            servers.push(...ovServers);
+          }
+        }
+      } catch (err) {
+        console.error('Erro na busca dinâmica Overflix:', err);
+      }
     }
 
     // Deduplicação de servidores por URL para garantir lista limpa
