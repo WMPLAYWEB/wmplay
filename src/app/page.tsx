@@ -2061,6 +2061,7 @@ export default function KodiApp() {
               {!activeBrazucaCategory ? (
                 catalogSearch.trim() ? (
                   <CatalogBrowseView
+                    selectedRepo="brazuca"
                     title={`Busca: "${catalogSearch}"`}
                     badge={`${catalogTotalCount.toLocaleString("pt-BR")} títulos`}
                     catalogLoading={catalogLoading}
@@ -2606,6 +2607,7 @@ export default function KodiApp() {
               ) : (
                 /* TELA 4: CATÁLOGO GIGANTE DE VÍDEOS (FILMES, LANÇAMENTOS, SÉRIES, ANIMES, DORAMAS, DESENHOS) */
                 <CatalogBrowseView
+                  selectedRepo="brazuca"
                   title={activeBrazucaCategory.title}
                   badge={activeBrazucaCategory.badge}
                   catalogLoading={catalogLoading}
@@ -2729,6 +2731,7 @@ export default function KodiApp() {
               {!activeBrazucaCategory ? (
                 catalogSearch.trim() ? (
                   <CatalogBrowseView
+                    selectedRepo="oneplay"
                     title={`Busca OnePlay: "${catalogSearch}"`}
                     badge={`${catalogTotalCount.toLocaleString("pt-BR")} títulos`}
                     catalogLoading={catalogLoading}
@@ -3153,6 +3156,7 @@ export default function KodiApp() {
               ) : (
                 /* TELA 3: CATÁLOGO ONEPLAY POR CATEGORIA (FILMES, SÉRIES, ETC.) */
                 <CatalogBrowseView
+                  selectedRepo="oneplay"
                   title={activeBrazucaCategory.title}
                   badge={activeBrazucaCategory.badge}
                   catalogLoading={catalogLoading}
@@ -4375,12 +4379,17 @@ function CatalogBrowseView({
                   {/* Badges superiores (Ano / Avaliação / Favorito) */}
                   <div className="absolute top-1.5 left-1.5 right-1.5 sm:top-2 sm:left-2 sm:right-2 z-20 flex items-center justify-between pointer-events-none">
                     <div className="flex items-center gap-1">
-                      {item.link?.includes("oneplay") && (
+                      {(selectedRepo === "oneplay" || item.link?.includes("oneplay")) ? (
                         <span className="text-[9px] sm:text-[10px] font-black text-cyan-300 bg-cyan-950/90 backdrop-blur-md px-1.5 py-0.5 rounded-full flex items-center gap-0.5 border border-cyan-500/40 shadow-sm">
                           <Zap className="w-2.5 h-2.5 fill-cyan-400 text-cyan-400" />
                           OnePlay
                         </span>
-                      )}
+                      ) : selectedRepo === "brazuca" ? (
+                        <span className="text-[9px] sm:text-[10px] font-black text-rose-300 bg-rose-950/90 backdrop-blur-md px-1.5 py-0.5 rounded-full flex items-center gap-0.5 border border-rose-500/40 shadow-sm">
+                          <Flame className="w-2.5 h-2.5 fill-rose-400 text-rose-400" />
+                          Brazuca
+                        </span>
+                      ) : null}
                       {item.rating ? (
                         <span className="text-[9px] sm:text-[10px] font-bold text-amber-300 bg-black/85 backdrop-blur-md px-1.5 py-0.5 rounded-full flex items-center gap-0.5 border border-amber-500/30">
                           <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />

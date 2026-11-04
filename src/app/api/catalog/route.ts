@@ -53,11 +53,7 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      if (repo === 'oneplay') {
-        conditions.push("link LIKE '%oneplay%'");
-      } else if (repo === 'brazuca') {
-        conditions.push("link NOT LIKE '%oneplay%'");
-      }
+
 
       let cleanSearch = '';
       let cleanCombined = '';
