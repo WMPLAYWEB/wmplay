@@ -51,6 +51,43 @@ export async function GET(req: NextRequest) {
       reqHeaders['Range'] = rangeHeader;
     }
 
+    const isM3U8 = targetUrl.includes('.m3u8');
+
+    if (!isM3U8) {
+      try {
+        const upstreamRes = await fetch(targetUrl, {
+          headers: reqHeaders,
+          signal: AbortSignal.timeout(15000),
+        });
+
+        if (!upstreamRes.ok && upstreamRes.status !== 206) {
+          return new NextResponse(`Erro upstream ${upstreamRes.status}`, { status: upstreamRes.status });
+        }
+
+        const contentType = upstreamRes.headers.get('content-type') || 'video/mp4';
+        const respHeaders: Record<string, string> = {
+          'Content-Type': contentType.includes('video') || targetUrl.includes('.ts') ? (contentType || 'video/mp4') : contentType,
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Accept-Ranges': 'bytes',
+          'Cache-Control': 'public, max-age=3600',
+        };
+        if (upstreamRes.headers.get('content-range')) {
+          respHeaders['Content-Range'] = upstreamRes.headers.get('content-range')!;
+        }
+        if (upstreamRes.headers.get('content-length')) {
+          respHeaders['Content-Length'] = upstreamRes.headers.get('content-length')!;
+        }
+
+        return new NextResponse(upstreamRes.body, {
+          status: upstreamRes.status,
+          headers: respHeaders
+        });
+      } catch (err: any) {
+        return new NextResponse(`Erro no Proxy de Vídeo: ${err.message}`, { status: 502 });
+      }
+    }
+
     return await new Promise<NextResponse>((resolve) => {
       const request = mod.get(targetUrl, {
         headers: reqHeaders,
@@ -67,94 +104,46 @@ export async function GET(req: NextRequest) {
           return resolve(new NextResponse(`Erro upstream ${res.statusCode}`, { status: res.statusCode }));
         }
 
-        const contentType = res.headers['content-type'] || 'application/vnd.apple.mpegurl';
-        const isM3U8 = targetUrl.includes('.m3u8') || contentType.includes('mpegurl') || contentType.includes('text/plain');
-
-        if (isM3U8) {
-          let body = '';
-          res.on('data', chunk => { body += chunk; });
-          res.on('end', () => {
-            // Reescrever as linhas do manifesto HLS para apontar para o proxy local
-            const lines = body.split('\n');
-            const rewritten = lines.map(line => {
-              const trimmed = line.trim();
-              if (!trimmed) return line;
-              if (trimmed.startsWith('#')) {
-                // Reescrever URIs em tags como #EXT-X-MEDIA:URI="..."
-                if (trimmed.includes('URI="')) {
-                  return line.replace(/URI="([^"]+)"/g, (_, uri) => {
-                    try {
-                      const full = new URL(uri, targetUrl).toString();
-                      return `URI="/api/proxy-stream?url=${encodeURIComponent(full)}"`;
-                    } catch {
-                      return _;
-                    }
-                  });
-                }
-                return line;
+        let body = '';
+        res.on('data', chunk => { body += chunk; });
+        res.on('end', () => {
+          // Reescrever as linhas do manifesto HLS para apontar para o proxy local
+          const lines = body.split('\n');
+          const rewritten = lines.map(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return line;
+            if (trimmed.startsWith('#')) {
+              // Reescrever URIs em tags como #EXT-X-MEDIA:URI="..."
+              if (trimmed.includes('URI="')) {
+                return line.replace(/URI="([^"]+)"/g, (_, uri) => {
+                  try {
+                    const full = new URL(uri, targetUrl).toString();
+                    return `URI="/api/proxy-stream?url=${encodeURIComponent(full)}"`;
+                  } catch {
+                    return _;
+                  }
+                });
               }
-              try {
-                const fullSegmentUrl = new URL(trimmed, targetUrl).toString();
-                return `/api/proxy-stream?url=${encodeURIComponent(fullSegmentUrl)}`;
-              } catch {
-                return line;
-              }
-            }).join('\n');
-
-            resolve(new NextResponse(rewritten, {
-              status: 200,
-              headers: {
-                'Content-Type': 'application/vnd.apple.mpegurl',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, OPTIONS',
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-              }
-            }));
-          });
-        } else {
-          // Streaming em tempo real (ReadableStream) para início instantâneo de vídeo sem travar buffer
-          const stream = new ReadableStream({
-            start(controller) {
-              res.on('data', chunk => {
-                try {
-                  controller.enqueue(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-                } catch {}
-              });
-              res.on('end', () => {
-                try {
-                  controller.close();
-                } catch {}
-              });
-              res.on('error', (err) => {
-                try {
-                  controller.error(err);
-                } catch {}
-              });
-            },
-            cancel() {
-              res.destroy();
+              return line;
             }
-          });
+            try {
+              const fullSegmentUrl = new URL(trimmed, targetUrl).toString();
+              return `/api/proxy-stream?url=${encodeURIComponent(fullSegmentUrl)}`;
+            } catch {
+              return line;
+            }
+          }).join('\n');
 
-          const respHeaders: Record<string, string> = {
-            'Content-Type': contentType.includes('video') || targetUrl.includes('.ts') ? (contentType || 'video/mp4') : contentType,
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Accept-Ranges': 'bytes',
-            'Cache-Control': 'public, max-age=3600',
-          };
-          if (res.headers['content-range']) {
-            respHeaders['Content-Range'] = res.headers['content-range'] as string;
-          }
-          if (res.headers['content-length']) {
-            respHeaders['Content-Length'] = res.headers['content-length'] as string;
-          }
-
-          resolve(new NextResponse(stream as any, {
-            status: res.statusCode || 200,
-            headers: respHeaders
+          resolve(new NextResponse(rewritten, {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/vnd.apple.mpegurl',
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, OPTIONS',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+            }
           }));
-        }
+        });
       });
 
       request.on('error', (err) => {
