@@ -434,6 +434,28 @@ async function callResolver(resolverNum: number, requestStr: string): Promise<st
   return null;
 }
 
+async function resolveGoogleDriveDirect(gdriveUrl: string): Promise<string | null> {
+  try {
+    const match = gdriveUrl.match(/\/file\/d\/([a-zA-Z0-9_\-]+)/) || gdriveUrl.match(/id=([a-zA-Z0-9_\-]+)/);
+    if (!match || !match[1]) return null;
+    const mediaId = match[1];
+
+    const initUrl = `https://drive.usercontent.google.com/download?id=${mediaId}&export=download&authuser=0`;
+    const res = await fetch(initUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      },
+      signal: AbortSignal.timeout(4000)
+    });
+    const html = await res.text();
+    const uuidMatch = html.match(/name="uuid"\s+value="([^"]+)"/);
+    if (uuidMatch && uuidMatch[1]) {
+      return `https://drive.usercontent.google.com/download?id=${mediaId}&export=download&confirm=t&uuid=${uuidMatch[1]}`;
+    }
+  } catch {}
+  return null;
+}
+
 async function searchCineVibeMovie(title: string): Promise<StreamServer[]> {
   if (!title) return [];
   const cleanQ = title.replace(/[^\w\sÀ-ÿ]/gi, ' ').replace(/\s+/g, ' ').trim();
@@ -481,12 +503,28 @@ async function searchCineVibeMovie(title: string): Promise<StreamServer[]> {
         if (!embed) continue;
 
         if (embed.includes('drive.google.com')) {
-          servers.push({
-            name: 'Servidor Google Drive Full HD Dublado (Sem Anúncios)',
-            url: embed,
-            type: 'embed',
-            isDubbed: true
-          });
+          const directGdrive = await resolveGoogleDriveDirect(embed);
+          if (directGdrive) {
+            servers.push({
+              name: 'Servidor Google Drive Full HD Dublado (Sinal Direto)',
+              url: directGdrive,
+              type: 'video',
+              isDubbed: true
+            });
+            servers.push({
+              name: 'Servidor Google Drive Anti-Buffer (Proxy)',
+              url: `/api/proxy-stream?url=${encodeURIComponent(directGdrive)}`,
+              type: 'video',
+              isDubbed: true
+            });
+          } else {
+            servers.push({
+              name: 'Servidor Google Drive Full HD Dublado (Sem Anúncios)',
+              url: embed,
+              type: 'embed',
+              isDubbed: true
+            });
+          }
         } else if (embed.includes('streamtape.com')) {
           const tapeId = embed.split('/e/')[1]?.split('?')[0];
           if (tapeId) {
@@ -633,6 +671,31 @@ export async function GET(req: NextRequest) {
     const episode = searchParams.get('episode') || '1';
 
     const servers: StreamServer[] = [];
+
+    // =========================================================================
+    // 0.4 SERVIDORES GOOGLE DRIVE DIRETOS
+    // =========================================================================
+    if (link.includes('drive.google.com') || link.includes('drive.usercontent.google.com')) {
+      try {
+        const directGdrive = await resolveGoogleDriveDirect(link);
+        if (directGdrive) {
+          servers.push({
+            name: 'Servidor Google Drive Full HD Dublado (Sinal Direto)',
+            url: directGdrive,
+            type: 'video',
+            isDubbed: true
+          });
+          servers.push({
+            name: 'Servidor Google Drive Anti-Buffer (Proxy)',
+            url: `/api/proxy-stream?url=${encodeURIComponent(directGdrive)}`,
+            type: 'video',
+            isDubbed: true
+          });
+        }
+      } catch (err) {
+        console.error('Erro ao resolver Google Drive direto:', err);
+      }
+    }
 
     // =========================================================================
     // 0.5 SERVIDORES DE ANIMES (animes3_ep= & animesdigital_ep=)
