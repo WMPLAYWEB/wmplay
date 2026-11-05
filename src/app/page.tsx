@@ -4659,12 +4659,12 @@ function MusicHubView({
   // YouTube Player State & Size Control
   const [youtubeSize, setYoutubeSize] = useState<"compact" | "normal" | "cinema">("normal");
   const [activeYoutubeId, setActiveYoutubeId] = useState("jfKfPfyJRdk");
-  const [activeYoutubeUrl, setActiveYoutubeUrl] = useState("https://www.youtube-nocookie.com/embed/jfKfPfyJRdk?autoplay=1&rel=0");
+  const [activeYoutubeUrl, setActiveYoutubeUrl] = useState("https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&rel=0&enablejsapi=1");
   const [activeYoutubeTitle, setActiveYoutubeTitle] = useState("Lofi Girl 24/7 - Beats to Relax/Study (Ao Vivo)");
 
   const playYoutubeVideo = (id: string, title: string) => {
     setActiveYoutubeId(id);
-    setActiveYoutubeUrl(`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`);
+    setActiveYoutubeUrl(`https://www.youtube.com/embed/${id}?autoplay=1&rel=0&enablejsapi=1`);
     setActiveYoutubeTitle(title);
   };
 
@@ -4849,10 +4849,10 @@ function MusicHubView({
       cover: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&auto=format&fit=crop&q=80",
     },
     {
-      title: "Henrique & Juliano - Manifesto Musical",
+      title: "Henrique & Juliano - Manifesto Musical 2",
       channel: "Henrique e Juliano",
-      desc: "Última Saudade, Arranhão e os maiores hinos do sertanejo",
-      id: "iLq3K6hDkU4",
+      desc: "Última Saudade, Arranhão e os maiores hinos do sertanejo ao vivo",
+      id: "9Vt4XguN2-A",
       badge: "SERTANEJO",
       cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80",
     },
@@ -4865,11 +4865,11 @@ function MusicHubView({
       cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80",
     },
     {
-      title: "Trap Brasil & Funk Mandelão Explosão",
-      channel: "KondZilla / GR6",
-      desc: "Os maiores sucessos do trap e do funk consciente e mandelão",
-      id: "7V2x7v5Qc4E",
-      badge: "FUNK / TRAP",
+      title: "Matuê & Trap Brasil 2026",
+      channel: "30PRAUM / Trap Brasil",
+      desc: "Os maiores sucessos do trap nacional, flow e mandelão",
+      id: "dSSV9g1e-ts",
+      badge: "TRAP / FUNK",
       cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80",
     },
     {
@@ -5292,7 +5292,6 @@ function MusicHubView({
                   className="w-full h-full border-0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
-                  referrerPolicy="strict-origin-when-cross-origin"
                 />
               </div>
             </div>
