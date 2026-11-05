@@ -261,31 +261,7 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
     }
   }
 
-  // 1.8 Fallback de Players Embeds Dublados (Sem Anúncios / Sandbox Ad-Shield)
-  if (dub.streamtape) {
-    servers.push({
-      name: `Servidor StreamTape Dublado (Player Seguro)`,
-      url: `https://streamtape.com/e/${dub.streamtape}`,
-      type: 'embed',
-      isDubbed: true
-    });
-  }
-  if (dub.mixdrop) {
-    servers.push({
-      name: `Servidor MixDrop Dublado (Player Seguro)`,
-      url: `https://mixdrop.top/e/${dub.mixdrop}`,
-      type: 'embed',
-      isDubbed: true
-    });
-  }
-  if (dub.byse) {
-    servers.push({
-      name: `Servidor Byse Full HD Dublado (Player Seguro)`,
-      url: `https://bysebuho.com/e/${dub.byse}`,
-      type: 'embed',
-      isDubbed: true
-    });
-  }
+
 
   // 2. Se não possuir versão dublada, tentar versão legendada PT-BR
   const hasDirectDub = servers.some(s => s.type === 'video' && s.isDubbed);
@@ -337,30 +313,7 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
       }
     }
 
-    if (leg.streamtape) {
-      servers.push({
-        name: `Servidor StreamTape Legendado PT-BR (Player Seguro)`,
-        url: `https://streamtape.com/e/${leg.streamtape}`,
-        type: 'embed',
-        isDubbed: false
-      });
-    }
-    if (leg.mixdrop) {
-      servers.push({
-        name: `Servidor MixDrop Legendado PT-BR (Player Seguro)`,
-        url: `https://mixdrop.top/e/${leg.mixdrop}`,
-        type: 'embed',
-        isDubbed: false
-      });
-    }
-    if (leg.byse) {
-      servers.push({
-        name: `Servidor Byse Legendado PT-BR (Player Seguro)`,
-        url: `https://bysebuho.com/e/${leg.byse}`,
-        type: 'embed',
-        isDubbed: false
-      });
-    }
+
   }
 
   return servers;
@@ -517,13 +470,6 @@ async function searchCineVibeMovie(title: string): Promise<StreamServer[]> {
               type: 'video',
               isDubbed: true
             });
-          } else {
-            servers.push({
-              name: 'Servidor Google Drive Full HD Dublado (Sem Anúncios)',
-              url: embed,
-              type: 'embed',
-              isDubbed: true
-            });
           }
         } else if (embed.includes('streamtape.com')) {
           const tapeId = embed.split('/e/')[1]?.split('?')[0];
@@ -549,13 +495,6 @@ async function searchCineVibeMovie(title: string): Promise<StreamServer[]> {
             name: 'Servidor MixDrop Full HD Dublado (Anti-Buffer)',
             url: `/api/proxy-stream?url=${encodeURIComponent(embed)}`,
             type: 'video',
-            isDubbed: true
-          });
-        } else {
-          servers.push({
-            name: `Servidor CineVibe HD Dublado ${servers.length + 1} (Sem Anúncios)`,
-            url: embed,
-            type: 'embed',
             isDubbed: true
           });
         }
@@ -585,11 +524,11 @@ async function resolveAnimeStream(epUrl: string, animeTitle: string, season: num
         const html = await res.text();
         const iframes = [...html.matchAll(/<iframe[^>]+src="([^"]+)"/gi)].map(m => m[1]);
         for (const ifr of iframes) {
-          if (ifr.includes('blogger.com') || ifr.includes('drive.google.com') || ifr.includes('video') || ifr.includes('stream')) {
+          if (ifr.includes('blogger.com/video.g')) {
             servers.push({
-              name: `Anime Player HD Dublado Ep ${epIndex} (Sem Anúncios)`,
+              name: `Anime Player HD Dublado Ep ${epIndex} (Sinal Google)`,
               url: ifr,
-              type: 'embed',
+              type: 'video',
               isDubbed: true
             });
           }

@@ -782,15 +782,32 @@ export default function KodiApp() {
       .catch(() => []);
 
     Promise.all([resolveBackendPromise, resolveClientPromise]).then(([backendData, clientFenixServers]) => {
+      const isAdUrl = (url: string) => {
+        const u = (url || "").toLowerCase();
+        return (
+          u.includes("streamtape.com/e/") ||
+          u.includes("mixdrop.top/e/") ||
+          u.includes("mixdrop.co/e/") ||
+          u.includes("mixdrop.ag/e/") ||
+          u.includes("mxdrop.click/e/") ||
+          u.includes("bysebuho.com/e/") ||
+          u.includes("dood") ||
+          u.includes("playmogo") ||
+          u.includes("filemoon") ||
+          u.includes("streamwish") ||
+          u.includes("luluvdo")
+        );
+      };
+
       const backendServers = (backendData.success && Array.isArray(backendData.servers))
-        ? backendData.servers.filter((s: any) => (s.type === "video" || s.type === "embed") && s.url && s.url !== "ERROR_UNAVAILABLE")
+        ? backendData.servers.filter((s: any) => s.type === "video" && s.url && s.url !== "ERROR_UNAVAILABLE" && !isAdUrl(s.url))
         : [];
 
       // Prioridade máxima: FenixFlix 1080p Dublado HLS resolvido diretamente no cliente, seguido do backend
       const combined = [...clientFenixServers, ...backendServers];
       const seenUrls = new Set<string>();
       const finalServers = combined.filter((s) => {
-        if (!s || !s.url || seenUrls.has(s.url)) return false;
+        if (!s || !s.url || seenUrls.has(s.url) || isAdUrl(s.url)) return false;
         seenUrls.add(s.url);
         return true;
       });

@@ -38,7 +38,8 @@ import {
   ArrowLeft,
   Server,
   RefreshCw,
-  ShieldCheck
+  ShieldCheck,
+  ShieldAlert
 } from "lucide-react";
 
 export interface ServerOption {
@@ -2132,15 +2133,38 @@ export default function KodiVideoPlayer({
             )}
           </div>
         ) : (
-          <div className="w-full h-full relative bg-black flex items-center justify-center overflow-hidden">
-            <iframe
-              key={currentServer?.url}
-              src={currentServer?.url}
-              sandbox="allow-scripts allow-same-origin allow-forms"
-              allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-              className="w-full h-full border-0 bg-black"
-              referrerPolicy="no-referrer"
-            />
+          <div className="w-full h-full relative bg-black flex flex-col items-center justify-center p-6 text-center select-none">
+            {currentServer?.url?.includes("blogger.com") ? (
+              <iframe
+                key={currentServer?.url}
+                src={currentServer?.url}
+                sandbox="allow-scripts allow-same-origin allow-forms"
+                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                className="w-full h-full border-0 bg-black"
+                referrerPolicy="strict-origin-when-cross-origin"
+              />
+            ) : (
+              <div className="flex flex-col items-center gap-3.5 max-w-sm bg-zinc-950/90 border border-red-500/40 p-6 sm:p-8 rounded-2xl shadow-2xl">
+                <div className="w-12 h-12 rounded-full bg-red-600/20 border border-red-500/50 flex items-center justify-center text-red-500">
+                  <ShieldAlert className="w-6 h-6" />
+                </div>
+                <h3 className="text-sm sm:text-base font-bold text-white">Sinal com Anúncios Bloqueado</h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Este servidor externo tenta injetar popups ou anúncios invasivos e foi permanentemente bloqueado pelo sistema Ad-Shield do WMPLAY.
+                </p>
+                {servers.length > 1 && (
+                  <button
+                    onClick={() => {
+                      const next = (activeServerIndex + 1) % servers.length;
+                      onSelectServer(next);
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all shadow-lg shadow-red-600/30"
+                  >
+                    Alternar para Servidor Seguro
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 
