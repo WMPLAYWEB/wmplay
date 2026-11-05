@@ -218,50 +218,42 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
       const directTape = await resolveStreamTape(dub.streamtape);
       if (directTape) {
         const finalMp4 = await getRedirectLocation(directTape);
-        servers.push({
-          name: `Servidor StreamTape Full HD Dublado (CDN Rápida)`,
-          url: finalMp4,
-          type: 'video',
-          isDubbed: true
-        });
-        const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
-        servers.push({
-          name: `Servidor StreamTape Proxy Acelerado (Anti-Buffer)`,
-          url: proxiedUrl,
-          type: 'video',
-          isDubbed: true
-        });
+        const playable = await isUrlPlayable(finalMp4, 'https://streamtape.com/');
+        if (playable) {
+          const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
+          servers.push({
+            name: `Servidor StreamTape Full HD Dublado`,
+            url: proxiedUrl,
+            type: 'video',
+            isDubbed: true
+          });
+        }
       }
     } catch (err) {
       console.error('Erro ao resolver StreamTape dublado:', err);
     }
   }
 
-  // 1.5 Extração de Vídeo MP4 via MixDrop Dublado (Proxy Acelerado com bypass de CORS & Referer)
+  // 1.5 Extração de Vídeo MP4 via MixDrop Dublado (Apenas via proxy acelerado se responder 200/206)
   if (dub.mixdrop) {
     try {
       const directMix = await resolveMixdrop(dub.mixdrop);
       if (directMix) {
-        const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
-        servers.push({
-          name: `Servidor MixDrop Full HD Dublado (Anti-Buffer)`,
-          url: proxiedUrl,
-          type: 'video',
-          isDubbed: true
-        });
-        servers.push({
-          name: `Servidor MixDrop Sinal Direto`,
-          url: directMix,
-          type: 'video',
-          isDubbed: true
-        });
+        const playable = await isUrlPlayable(directMix, 'https://mxdrop.click/');
+        if (playable) {
+          const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
+          servers.push({
+            name: `Servidor MixDrop Full HD Dublado (Anti-Buffer)`,
+            url: proxiedUrl,
+            type: 'video',
+            isDubbed: true
+          });
+        }
       }
     } catch (err) {
       console.error('Erro ao resolver Mixdrop dublado:', err);
     }
   }
-
-
 
   // 2. Se não possuir versão dublada, tentar versão legendada PT-BR
   const hasDirectDub = servers.some(s => s.type === 'video' && s.isDubbed);
@@ -271,19 +263,16 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
         const directTape = await resolveStreamTape(leg.streamtape);
         if (directTape) {
           const finalMp4 = await getRedirectLocation(directTape);
-          servers.push({
-            name: `Servidor StreamTape Full HD Legendado PT-BR`,
-            url: finalMp4,
-            type: 'video',
-            isDubbed: false
-          });
-          const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
-          servers.push({
-            name: `Servidor StreamTape Legendado (Proxy Acelerado)`,
-            url: proxiedUrl,
-            type: 'video',
-            isDubbed: false
-          });
+          const playable = await isUrlPlayable(finalMp4, 'https://streamtape.com/');
+          if (playable) {
+            const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
+            servers.push({
+              name: `Servidor StreamTape Full HD Legendado`,
+              url: proxiedUrl,
+              type: 'video',
+              isDubbed: false
+            });
+          }
         }
       } catch (err) {
         console.error('Erro ao resolver StreamTape legendado:', err);
@@ -294,26 +283,21 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
       try {
         const directMix = await resolveMixdrop(leg.mixdrop);
         if (directMix) {
-          const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
-          servers.push({
-            name: `Servidor MixDrop Full HD Legendado PT-BR (Anti-Buffer)`,
-            url: proxiedUrl,
-            type: 'video',
-            isDubbed: false
-          });
-          servers.push({
-            name: `Servidor MixDrop Legendado Sinal Direto`,
-            url: directMix,
-            type: 'video',
-            isDubbed: false
-          });
+          const playable = await isUrlPlayable(directMix, 'https://mxdrop.click/');
+          if (playable) {
+            const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
+            servers.push({
+              name: `Servidor MixDrop Full HD Legendado (Anti-Buffer)`,
+              url: proxiedUrl,
+              type: 'video',
+              isDubbed: false
+            });
+          }
         }
       } catch (err) {
         console.error('Erro ao resolver Mixdrop legendado:', err);
       }
     }
-
-
   }
 
   return servers;
@@ -704,6 +688,56 @@ export async function GET(req: NextRequest) {
           isDubbed: true
         }
       );
+    }
+
+    // =========================================================================
+    // PRIORIDADE 1: REPOSITÓRIO OFICIAL ONEPLAY (FENIXFLIX CDN 1080p DUB/LEG)
+    // =========================================================================
+    let targetTmdbId = tmdbId;
+    let targetSeason = season;
+    let targetEpisode = episode;
+
+    if (!targetTmdbId && link.includes('tmdb_ep=')) {
+      const match = link.match(/tmdb_ep=(\d+)/);
+      if (match) targetTmdbId = match[1];
+      const sMatch = link.match(/season=(\d+)/);
+      if (sMatch) targetSeason = sMatch[1];
+      const eMatch = link.match(/episode=(\d+)/);
+      if (eMatch) targetEpisode = eMatch[1];
+    }
+    if (!targetTmdbId && link.includes('tmdb=')) {
+      const match = link.match(/tmdb=(\d+)/);
+      if (match) targetTmdbId = match[1];
+    }
+    if (!targetTmdbId && title) {
+      try {
+        const normTitle = title.toLowerCase().trim();
+        const cleanTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+        const db = getDb();
+        const row = db.prepare(
+          'SELECT tmdb_id FROM items WHERE (clean_title = ? OR lower(title) = ? OR title = ?) AND tmdb_id IS NOT NULL AND tmdb_id != "" LIMIT 1'
+        ).get(cleanTitle, normTitle, title) as { tmdb_id?: string } | undefined;
+        if (row && row.tmdb_id) {
+          targetTmdbId = row.tmdb_id;
+        }
+      } catch {}
+    }
+
+    if (targetTmdbId || title) {
+      try {
+        const onePlayServers = await resolveOnePlaySources({
+          title,
+          mediaType: mediaType === 'tv' || mediaType === 'series' ? 'series' : 'movie',
+          tmdbId: targetTmdbId,
+          season: targetSeason,
+          episode: targetEpisode
+        });
+        if (onePlayServers && onePlayServers.length > 0) {
+          servers.push(...onePlayServers);
+        }
+      } catch (err) {
+        console.error('Erro ao resolver provedores OnePlay Prioridade 1:', err);
+      }
     }
 
     // =========================================================================
@@ -1206,59 +1240,6 @@ export async function GET(req: NextRequest) {
       } catch (err) {
         console.error('Erro no fallback por título:', err);
       }
-    }
-
-    // =========================================================================
-    // 8. REDE UNIVERSAL DE SERVIDORES DE BACKUP INTERNACIONAL (EMERGÊNCIA)
-    // =========================================================================
-    let targetTmdbId = tmdbId;
-    let targetSeason = season;
-    let targetEpisode = episode;
-
-    if (!targetTmdbId && link.includes('tmdb_ep=')) {
-      const match = link.match(/tmdb_ep=(\d+)/);
-      if (match) targetTmdbId = match[1];
-      const sMatch = link.match(/season=(\d+)/);
-      if (sMatch) targetSeason = sMatch[1];
-      const eMatch = link.match(/episode=(\d+)/);
-      if (eMatch) targetEpisode = eMatch[1];
-    }
-    if (!targetTmdbId && link.includes('tmdb=')) {
-      const match = link.match(/tmdb=(\d+)/);
-      if (match) targetTmdbId = match[1];
-    }
-
-    if (!targetTmdbId && title) {
-      try {
-        const normTitle = title.toLowerCase().trim();
-        const cleanTitle = title.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
-        const db = getDb();
-        const row = db.prepare(
-          'SELECT tmdb_id FROM items WHERE (clean_title = ? OR lower(title) = ? OR title = ?) AND tmdb_id IS NOT NULL AND tmdb_id != "" LIMIT 1'
-        ).get(cleanTitle, normTitle, title) as { tmdb_id?: string } | undefined;
-        if (row && row.tmdb_id) {
-          targetTmdbId = row.tmdb_id;
-        }
-      } catch {}
-    }
-
-    // =========================================================================
-    // 9. REPOSITÓRIO OFICIAL ONEPLAY (FENIXFLIX + BUGOUVORTEX HLS/MP4 DUBLADO)
-    // =========================================================================
-    try {
-      const onePlayServers = await resolveOnePlaySources({
-        title,
-        mediaType: mediaType === 'tv' || mediaType === 'series' ? 'series' : 'movie',
-        tmdbId: targetTmdbId || tmdbId,
-        season: targetSeason,
-        episode: targetEpisode
-      });
-      if (onePlayServers && onePlayServers.length > 0) {
-        // Colocar servidores CDN HLS de ultra-alta velocidade do OnePlay como prioridade máxima
-        servers.unshift(...onePlayServers);
-      }
-    } catch (err) {
-      console.error('Erro ao resolver provedores OnePlay:', err);
     }
 
     // =========================================================================

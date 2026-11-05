@@ -42,17 +42,22 @@ export async function isStreamPlayable(url: string, referer: string = ''): Promi
   if (!url || !url.startsWith('http')) return false;
   if (url.includes('source.apperror404.com') || url.includes('teco.bugoumods.com')) return false;
 
+  const targetReferer = referer || (
+    url.includes('zunderflix') || url.includes('sprintcdn') ? 'https://zunderflix.lat/' :
+    url.includes('fenix') ? 'https://fenixflix.fenixhub.online/' : ''
+  );
+
   try {
     const headers: Record<string, string> = {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'Range': 'bytes=0-100'
     };
-    if (referer) headers['Referer'] = referer;
+    if (targetReferer) headers['Referer'] = targetReferer;
 
     const res = await fetch(url, {
       method: 'GET',
       headers,
-      signal: AbortSignal.timeout(1800)
+      signal: AbortSignal.timeout(2500)
     });
 
     if (res.body && typeof res.body.cancel === 'function') {
@@ -136,24 +141,28 @@ export async function resolveFenixFlix(
     // Verificação de acessibilidade em paralelo: descarta URLs 404/403/off-line
     const verifiedResults = await Promise.allSettled(
       candidateStreams.map(async (item) => {
-        const playable = await isStreamPlayable(item.rawUrl, 'https://fenixflix.fenixhub.online/');
-        return { item, playable };
+        const itemReferer = item.rawUrl.includes('zunderflix') || item.rawUrl.includes('sprintcdn')
+          ? 'https://zunderflix.lat/'
+          : 'https://fenixflix.fenixhub.online/';
+        const playable = await isStreamPlayable(item.rawUrl, itemReferer);
+        return { item, playable, itemReferer };
       })
     );
 
     const streams: OnePlayStream[] = [];
     for (const r of verifiedResults) {
       if (r.status === 'fulfilled' && r.value.playable) {
-        const { item } = r.value;
+        const { item, itemReferer } = r.value;
+        const encodedRef = itemReferer ? `&referer=${encodeURIComponent(itemReferer)}` : '';
         streams.push({
-          name: `${item.cleanLabel} - Acelerado`,
-          url: `/api/proxy-stream?url=${encodeURIComponent(item.rawUrl)}`,
+          name: `${item.cleanLabel} - CDN Principal Full HD`,
+          url: `/api/proxy-stream?url=${encodeURIComponent(item.rawUrl)}${encodedRef}`,
           type: 'video',
           isDubbed: item.isDub
         });
         streams.push({
-          name: `${item.cleanLabel} - Sinal Direto`,
-          url: item.rawUrl,
+          name: `${item.cleanLabel} - Acelerador Anti-Buffer`,
+          url: `/api/proxy-stream?url=${encodeURIComponent(item.rawUrl)}${encodedRef}&buffer=safe`,
           type: 'video',
           isDubbed: item.isDub
         });

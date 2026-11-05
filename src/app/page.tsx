@@ -68,8 +68,6 @@ import { ONEPLAY_CHANNELS } from "@/data/oneplay_channels";
 const ALL_CHANNELS: BrazucaChannel[] = [...BRAZUCA_CHANNELS, ...ONEPLAY_CHANNELS];
 import KodiVideoPlayer from "@/components/KodiVideoPlayer";
 import WmplayLogo from "@/components/WmplayLogo";
-import Ps1Button from "@/components/Ps1Button";
-import Ps1ControllerHud from "@/components/Ps1ControllerHud";
 import CastConnectView from "@/components/CastConnectView";
 
 type CategoryType = "movies" | "tv" | "releases" | "novelas" | "music" | "live" | "addons" | "cast";
@@ -617,10 +615,22 @@ export default function KodiApp() {
               const quality = s.name || "Full HD";
               const cleanLabel = `OnePlay Fenix (${quality}${isDub ? " Dublado PT-BR" : " Legendado"})`;
 
-              // O proxy-stream reescreve os manifestos HLS garantindo reprodução contínua e sem bloqueio CORS
+              const targetRef = s.url.includes("zunderflix") || s.url.includes("sprintcdn")
+                ? "https://zunderflix.lat/"
+                : "https://fenixflix.fenixhub.online/";
+              const encRef = `&referer=${encodeURIComponent(targetRef)}`;
+
+              // Servidor 1: Rota principal Full HD via proxy otimizado (100% liso, sem anúncios)
               clientServers.push({
-                name: `${cleanLabel} - Acelerado HLS`,
-                url: `/api/proxy-stream?url=${encodeURIComponent(s.url)}`,
+                name: `${cleanLabel} - CDN Principal Full HD`,
+                url: `/api/proxy-stream?url=${encodeURIComponent(s.url)}${encRef}`,
+                type: "video",
+              });
+
+              // Servidor 2: Rota anti-buffer de redundância máxima
+              clientServers.push({
+                name: `${cleanLabel} - Acelerador Anti-Buffer`,
+                url: `/api/proxy-stream?url=${encodeURIComponent(s.url)}${encRef}&buffer=safe`,
                 type: "video",
               });
             }
@@ -800,7 +810,12 @@ export default function KodiApp() {
       };
 
       const backendServers = (backendData.success && Array.isArray(backendData.servers))
-        ? backendData.servers.filter((s: any) => s.type === "video" && s.url && s.url !== "ERROR_UNAVAILABLE" && !isAdUrl(s.url))
+        ? backendData.servers.filter((s: any) => {
+            if (s.type !== "video" || !s.url || s.url === "ERROR_UNAVAILABLE" || isAdUrl(s.url)) return false;
+            // Mixdrop direto bloqueia clientes por IP (403 Forbidden)
+            if (s.url.startsWith("http") && s.url.includes("mxcontent.net")) return false;
+            return true;
+          })
         : [];
 
       // Prioridade máxima: FenixFlix 1080p Dublado HLS resolvido diretamente no cliente, seguido do backend
@@ -2606,13 +2621,13 @@ export default function KodiApp() {
                               </div>
                             </div>
                             <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 ml-2">
-                              {isEpTvFocused ? (
-                                <Ps1Button type="cross" size="sm" />
-                              ) : (
-                                <div className="w-8 h-8 rounded-full bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-600 group-hover:bg-red-600 group-hover:text-white transition-all">
-                                  <Play className="w-4 h-4 fill-current ml-0.5" />
-                                </div>
-                              )}
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                                isEpTvFocused
+                                  ? "bg-red-600 text-white shadow-lg shadow-red-600/50"
+                                  : "bg-red-600/20 border border-red-500/30 text-red-600 group-hover:bg-red-600 group-hover:text-white"
+                              }`}>
+                                <Play className="w-4 h-4 fill-current ml-0.5" />
+                              </div>
                             </div>
                           </div>
                         );
@@ -3891,45 +3906,7 @@ export default function KodiApp() {
         })}
       </nav>
 
-      {/* ============================================================== */}
-      {/* HUD FLUTUANTE DE ATALHOS DO CONTROLE PS1                       */}
-      {/* ============================================================== */}
-      {isTvModeActive && tvFocusIndex !== null && !playingMedia && (
-        <Ps1ControllerHud
-          mode={selectedSeriesItem ? "episodes" : "catalog"}
-          isLight={isLight}
-          focusedTitle={
-            selectedSeriesItem
-              ? seriesSeasons.find((s) => s.seasonNumber === activeSeasonTab)?.episodes[tvFocusIndex]?.title
-              : (catalogGenre === "favoritos" ? favoriteCatalogItems : catalogItems)[tvFocusIndex]?.title
-          }
-          onCross={() => {
-            window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", keyCode: 13, bubbles: true }));
-          }}
-          onCircle={() => {
-            window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", keyCode: 27, bubbles: true }));
-          }}
-          onTriangle={() => {
-            if (selectedSeriesItem && seriesSeasons.length > 0) {
-              setActiveSeasonTab((prev) => (prev >= seriesSeasons.length ? 1 : prev + 1));
-            } else {
-              setCatalogSearch("");
-              const searchInput = document.querySelector('input[placeholder*="Buscar"]') as HTMLInputElement;
-              if (searchInput) searchInput.focus();
-            }
-          }}
-          onSquare={() => {
-            if (selectedSeriesItem) {
-              toggleFavoriteCatalog(selectedSeriesItem);
-            } else {
-              const items = catalogGenre === "favoritos" ? favoriteCatalogItems : catalogItems;
-              if (tvFocusIndex !== null && items[tvFocusIndex]) {
-                toggleFavoriteCatalog(items[tvFocusIndex]);
-              }
-            }
-          }}
-        />
-      )}
+
 
       {/* ============================================================== */}
       {/* MODAL PLAYER DE VÍDEO UNIVERSAL COM HLS.JS + SERVIDORES AUTO   */}
@@ -4215,27 +4192,7 @@ function CatalogBrowseView({
             </div>
           )}
 
-          {onToggleTvMode && (
-            <button
-              onClick={onToggleTvMode}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-black transition-all cursor-pointer ${
-                isTvModeActive && tvFocusIndex !== null
-                  ? "bg-red-600 border-red-500 text-white shadow-md shadow-red-600/40"
-                  : isLight
-                  ? "bg-white border-2 border-zinc-300 hover:border-red-500 text-zinc-950 hover:text-red-600 hover:bg-red-50 shadow-sm"
-                  : "bg-zinc-950 border-zinc-700 hover:border-red-500 text-slate-200 hover:text-white"
-              }`}
-              title="Navegue no catálogo usando as setas do controle da Smart TV ou teclado (Enter para assistir)"
-            >
-              <div className="flex items-center gap-1 shrink-0">
-                <Ps1Button type="triangle" size="xs" />
-                <Ps1Button type="circle" size="xs" />
-                <Ps1Button type="cross" size="xs" />
-                <Ps1Button type="square" size="xs" />
-              </div>
-              <span>{isTvModeActive && tvFocusIndex !== null ? "Controle PS1 Ativo" : "Controle PS1 / TV"}</span>
-            </button>
-          )}
+
 
           {/* Paginação Compacta Superior (oculta na aba favoritos) */}
           {!isFavoritesTab && (
@@ -4440,17 +4397,11 @@ function CatalogBrowseView({
                     )}
                   </div>
 
-                  {/* Indicador de Foco com Botões Oficiais PS1 */}
+                  {/* Indicador de Foco */}
                   {isTvFocused && (
-                    <div className="absolute bottom-2 left-2 right-2 z-30 bg-zinc-950/95 border border-zinc-700/80 text-white text-[10px] sm:text-[11px] font-black py-1 px-2 rounded-xl text-center shadow-2xl flex items-center justify-center gap-2.5 backdrop-blur-md animate-pulse">
-                      <div className="flex items-center gap-1">
-                        <Ps1Button type="cross" size="xs" />
-                        <span className="text-blue-400 font-bold">Assistir</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Ps1Button type="square" size="xs" />
-                        <span className="text-pink-400 font-bold">Favoritar</span>
-                      </div>
+                    <div className="absolute bottom-2 left-2 right-2 z-30 bg-red-600/95 border border-red-400 text-white text-[10px] sm:text-[11px] font-black py-1 px-2 rounded-xl text-center shadow-2xl flex items-center justify-center gap-2 backdrop-blur-md animate-pulse">
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      <span>Pressione Enter para Assistir</span>
                     </div>
                   )}
 
