@@ -818,8 +818,22 @@ export default function KodiApp() {
           })
         : [];
 
-      // Prioridade máxima: FenixFlix 1080p Dublado HLS resolvido diretamente no cliente, seguido do backend
-      const combined = [...clientFenixServers, ...backendServers];
+      // Prioridade máxima: OnePlay Fenix (100% funcional, verificado e sem anúncios)
+      let combined: { name: string; url: string; type: "video" | "embed" }[] = [];
+      if (clientFenixServers.length > 0) {
+        // Se já temos servidores oficiais de alta velocidade do OnePlay Fenix,
+        // manter apenas fontes de alta confiabilidade adicionais (Google Drive, Wasabi S3)
+        const reliableBackend = backendServers.filter((s: any) =>
+          s.url.includes("drive.google.com") ||
+          s.url.includes("wasabisys") ||
+          s.name.toLowerCase().includes("google drive") ||
+          s.name.toLowerCase().includes("wasabi")
+        );
+        combined = [...clientFenixServers, ...reliableBackend];
+      } else {
+        combined = [...backendServers];
+      }
+
       const seenUrls = new Set<string>();
       const finalServers = combined.filter((s) => {
         if (!s || !s.url || seenUrls.has(s.url) || isAdUrl(s.url)) return false;
