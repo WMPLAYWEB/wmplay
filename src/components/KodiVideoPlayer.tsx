@@ -921,72 +921,16 @@ export default function KodiVideoPlayer({
       }
 
       const streamUrl = currentServer.url;
-      const isHls = streamUrl.includes(".m3u8");
+      const isHls = streamUrl.includes(".m3u8") ||
+                    streamUrl.includes("hls") ||
+                    streamUrl.includes("zunderflix") ||
+                    streamUrl.includes("embedplayer") ||
+                    (streamUrl.includes("/api/proxy-stream") && !streamUrl.includes(".mp4"));
       const canNativeHls = Boolean(
         video.canPlayType && video.canPlayType("application/vnd.apple.mpegurl")
       );
 
-      // Em Smart TVs antigas (LG webOS, NetCast, Philco, Samsung), usar hardware nativo sem Web Workers
-      if (isHls && isLiteMode && canNativeHls) {
-        console.log("[WMPLAY TV Lite] Usando decodificador nativo de hardware da Smart TV...");
-        try {
-          (video as any).referrerPolicy = "no-referrer";
-        } catch {}
-        video.src = streamUrl;
-        video.load();
-
-        let initialPlayTriggered = false;
-        const handleInitialReady = () => {
-          setIsLoading(false);
-          applySavedAudioSettings(video);
-          if (!initialPlayTriggered) {
-            initialPlayTriggered = true;
-            video
-              .play()
-              .then(() => {
-                setIsPlaying(true);
-                setHasStartedPlaying(true);
-              })
-              .catch(() => {
-                setIsPlaying(false);
-                setIsLoading(false);
-              });
-          }
-        };
-
-        const handlePlaying = () => {
-          setIsLoading(false);
-          setIsPlaying(true);
-          setHasStartedPlaying(true);
-        };
-
-        const handleError = () => {
-          if (servers.length > 1 && activeServerIndex + 1 < servers.length) {
-            onSelectServer(activeServerIndex + 1);
-            return;
-          }
-          setIsLoading(false);
-          setHasError(true);
-          setErrorMessage("Erro ao decodificar sinal no player nativo da TV.");
-        };
-
-        video.addEventListener("loadedmetadata", handleInitialReady);
-        video.addEventListener("canplay", handleInitialReady);
-        video.addEventListener("playing", handlePlaying);
-        video.addEventListener("error", handleError);
-
-        const fallbackTimer = setTimeout(() => {
-          setIsLoading(false);
-        }, 1800);
-
-        return () => {
-          clearTimeout(fallbackTimer);
-          video.removeEventListener("loadedmetadata", handleInitialReady);
-          video.removeEventListener("canplay", handleInitialReady);
-          video.removeEventListener("playing", handlePlaying);
-          video.removeEventListener("error", handleError);
-        };
-      } else if (isHls && Hls.isSupported()) {
+      if (isHls && Hls.isSupported()) {
         const hls = new Hls({
           enableWorker: !isLiteMode, // Desativa Web Workers pesados em TVs com pouca RAM
           lowLatencyMode: false,
@@ -1077,6 +1021,65 @@ export default function KodiVideoPlayer({
             }
           }
         });
+      } else if (isHls && canNativeHls) {
+        // Suporte HLS Nativo (ex: Safari no iOS / iPad / macOS)
+        try {
+          (video as any).referrerPolicy = "no-referrer";
+        } catch {}
+        video.src = streamUrl;
+        video.load();
+
+        let initialPlayTriggered = false;
+        const handleInitialReady = () => {
+          setIsLoading(false);
+          applySavedAudioSettings(video);
+          if (!initialPlayTriggered) {
+            initialPlayTriggered = true;
+            video
+              .play()
+              .then(() => {
+                setIsPlaying(true);
+                setHasStartedPlaying(true);
+              })
+              .catch(() => {
+                setIsPlaying(false);
+                setIsLoading(false);
+              });
+          }
+        };
+
+        const handlePlaying = () => {
+          setIsLoading(false);
+          setIsPlaying(true);
+          setHasStartedPlaying(true);
+        };
+
+        const handleError = () => {
+          if (servers.length > 1 && activeServerIndex + 1 < servers.length) {
+            onSelectServer(activeServerIndex + 1);
+            return;
+          }
+          setIsLoading(false);
+          setHasError(true);
+          setErrorMessage("Falha ao reproduzir sinal neste servidor.");
+        };
+
+        video.addEventListener("loadedmetadata", handleInitialReady);
+        video.addEventListener("canplay", handleInitialReady);
+        video.addEventListener("playing", handlePlaying);
+        video.addEventListener("error", handleError);
+
+        const fallbackTimer = setTimeout(() => {
+          setIsLoading(false);
+        }, 1800);
+
+        return () => {
+          clearTimeout(fallbackTimer);
+          video.removeEventListener("loadedmetadata", handleInitialReady);
+          video.removeEventListener("canplay", handleInitialReady);
+          video.removeEventListener("playing", handlePlaying);
+          video.removeEventListener("error", handleError);
+        };
       } else {
         // Native HTML5 video (.mp4 or native HLS support)
         try {

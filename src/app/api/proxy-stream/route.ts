@@ -28,14 +28,21 @@ export async function GET(req: NextRequest) {
     const parsed = new URL(targetUrl);
     const mod = parsed.protocol === 'https:' ? https : http;
 
-    const referer = customReferer || (
-      targetUrl.includes('zunderflix') || targetUrl.includes('sprintcdn') ? 'https://zunderflix.lat/' :
-      targetUrl.includes('mxcontent.net') ? 'https://mxdrop.click/' :
-      targetUrl.includes('tapecontent.net') || targetUrl.includes('streamtape.com') ? 'https://streamtape.com/' :
-      targetUrl.includes('bugoumods.com') ? 'https://embed.bugoumods.com/' :
-      targetUrl.includes('fenix') ? 'https://fenixflix.fenixhub.online/' :
-      parsed.origin + '/'
-    );
+    const isEmbedPlayer = targetUrl.includes('embedplayer2') ||
+                          targetUrl.includes('cincloud') ||
+                          targetUrl.includes('playcine') ||
+                          targetUrl.includes('playclou');
+    const isZunder = targetUrl.includes('zunderflix') || targetUrl.includes('sprintcdn');
+
+    const referer = isEmbedPlayer ? 'https://embedplayer2.xyz/' :
+      isZunder ? 'https://zunderflix.lat/' :
+      customReferer || (
+        targetUrl.includes('mxcontent.net') ? 'https://mxdrop.click/' :
+        targetUrl.includes('tapecontent.net') || targetUrl.includes('streamtape.com') ? 'https://streamtape.com/' :
+        targetUrl.includes('bugoumods.com') ? 'https://embed.bugoumods.com/' :
+        targetUrl.includes('fenix') ? 'https://fenixflix.fenixhub.online/' :
+        parsed.origin + '/'
+      );
     const rangeHeader = req.headers.get('range');
 
     const reqHeaders: Record<string, string> = {
@@ -54,7 +61,8 @@ export async function GET(req: NextRequest) {
     const isDirectBinary = targetUrl.includes('.ts') ||
                            targetUrl.includes('.mp4') ||
                            targetUrl.includes('seg-') ||
-                           targetUrl.includes('.m4s');
+                           targetUrl.includes('.m4s') ||
+                           targetUrl.includes('/p/');
 
     if (isDirectBinary) {
       try {
@@ -68,7 +76,7 @@ export async function GET(req: NextRequest) {
         }
 
         const rawContentType = upstreamRes.headers.get('content-type') || '';
-        const contentType = targetUrl.includes('.ts') || targetUrl.includes('seg-')
+        const contentType = targetUrl.includes('.ts') || targetUrl.includes('seg-') || targetUrl.includes('/p/')
           ? 'video/mp2t'
           : (rawContentType || 'video/mp4');
 
@@ -118,7 +126,10 @@ export async function GET(req: NextRequest) {
             return line.replace(/URI="([^"]+)"/g, (_, uri) => {
               try {
                 const full = new URL(uri, targetUrl).toString();
-                return `URI="/api/proxy-stream?url=${encodeURIComponent(full)}&referer=${encodeURIComponent(referer)}"`;
+                const uriReferer = full.includes('cincloud') || full.includes('embedplayer') || full.includes('playcine') || full.includes('playclou')
+                  ? 'https://embedplayer2.xyz/'
+                  : referer;
+                return `URI="/api/proxy-stream?url=${encodeURIComponent(full)}&referer=${encodeURIComponent(uriReferer)}"`;
               } catch {
                 return _;
               }
@@ -128,7 +139,10 @@ export async function GET(req: NextRequest) {
         }
         try {
           const fullSegmentUrl = new URL(trimmed, targetUrl).toString();
-          return `/api/proxy-stream?url=${encodeURIComponent(fullSegmentUrl)}&referer=${encodeURIComponent(referer)}`;
+          const segReferer = fullSegmentUrl.includes('cincloud') || fullSegmentUrl.includes('embedplayer') || fullSegmentUrl.includes('playcine') || fullSegmentUrl.includes('playclou')
+            ? 'https://embedplayer2.xyz/'
+            : referer;
+          return `/api/proxy-stream?url=${encodeURIComponent(fullSegmentUrl)}&referer=${encodeURIComponent(segReferer)}`;
         } catch {
           return line;
         }
