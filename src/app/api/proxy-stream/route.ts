@@ -28,7 +28,8 @@ export async function GET(req: NextRequest) {
     const parsed = new URL(targetUrl);
     const mod = parsed.protocol === 'https:' ? https : http;
 
-    const isEmbedPlayer = targetUrl.includes('embedplayer2') ||
+    const isEmbedPlayer = targetUrl.includes('embedplayer') ||
+                          targetUrl.includes('embedvip') ||
                           targetUrl.includes('cincloud') ||
                           targetUrl.includes('playcine') ||
                           targetUrl.includes('playclou');
@@ -126,7 +127,7 @@ export async function GET(req: NextRequest) {
             return line.replace(/URI="([^"]+)"/g, (_, uri) => {
               try {
                 const full = new URL(uri, targetUrl).toString();
-                const uriReferer = full.includes('cincloud') || full.includes('embedplayer') || full.includes('playcine') || full.includes('playclou')
+                const uriReferer = full.includes('cincloud') || full.includes('embedplayer') || full.includes('embedvip') || full.includes('playcine') || full.includes('playclou')
                   ? 'https://embedplayer2.xyz/'
                   : referer;
                 return `URI="/api/proxy-stream?url=${encodeURIComponent(full)}&referer=${encodeURIComponent(uriReferer)}"`;
@@ -139,7 +140,7 @@ export async function GET(req: NextRequest) {
         }
         try {
           const fullSegmentUrl = new URL(trimmed, targetUrl).toString();
-          const segReferer = fullSegmentUrl.includes('cincloud') || fullSegmentUrl.includes('embedplayer') || fullSegmentUrl.includes('playcine') || fullSegmentUrl.includes('playclou')
+          const segReferer = fullSegmentUrl.includes('cincloud') || fullSegmentUrl.includes('embedplayer') || fullSegmentUrl.includes('embedvip') || fullSegmentUrl.includes('playcine') || fullSegmentUrl.includes('playclou')
             ? 'https://embedplayer2.xyz/'
             : referer;
           return `/api/proxy-stream?url=${encodeURIComponent(fullSegmentUrl)}&referer=${encodeURIComponent(segReferer)}`;

@@ -615,7 +615,9 @@ export default function KodiApp() {
               const quality = s.name || "Full HD";
               const cleanLabel = `OnePlay Fenix (${quality}${isDub ? " Dublado PT-BR" : " Legendado"})`;
 
-              const targetRef = s.url.includes("zunderflix") || s.url.includes("sprintcdn")
+              const targetRef = s.url.includes("embedplayer") || s.url.includes("embedvip") || s.url.includes("cincloud") || s.url.includes("playcine") || s.url.includes("playclou")
+                ? "https://embedplayer2.xyz/"
+                : s.url.includes("zunderflix") || s.url.includes("sprintcdn")
                 ? "https://zunderflix.lat/"
                 : "https://fenixflix.fenixhub.online/";
               const encRef = `&referer=${encodeURIComponent(targetRef)}`;
