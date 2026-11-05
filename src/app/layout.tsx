@@ -32,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="h-full">
       <head>
-        <meta name="referrer" content="no-referrer" />
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/wmplay_icon.png" />

@@ -4631,12 +4631,12 @@ function MusicHubView({
   // YouTube Player State & Size Control
   const [youtubeSize, setYoutubeSize] = useState<"compact" | "normal" | "cinema">("normal");
   const [activeYoutubeId, setActiveYoutubeId] = useState("jfKfPfyJRdk");
-  const [activeYoutubeUrl, setActiveYoutubeUrl] = useState("https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&enablejsapi=1&rel=0");
+  const [activeYoutubeUrl, setActiveYoutubeUrl] = useState("https://www.youtube-nocookie.com/embed/jfKfPfyJRdk?autoplay=1&rel=0");
   const [activeYoutubeTitle, setActiveYoutubeTitle] = useState("Lofi Girl 24/7 - Beats to Relax/Study (Ao Vivo)");
 
   const playYoutubeVideo = (id: string, title: string) => {
     setActiveYoutubeId(id);
-    setActiveYoutubeUrl(`https://www.youtube.com/embed/${id}?autoplay=1&enablejsapi=1&rel=0`);
+    setActiveYoutubeUrl(`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`);
     setActiveYoutubeTitle(title);
   };
 
