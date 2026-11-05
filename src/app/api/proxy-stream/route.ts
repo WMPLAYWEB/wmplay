@@ -114,10 +114,46 @@ export async function GET(req: NextRequest) {
       return new NextResponse(`Erro upstream ${upstreamRes.status}`, { status: upstreamRes.status });
     }
 
-    const rawType = upstreamRes.headers.get('content-type') || '';
-    const bodyText = await upstreamRes.text();
+    const rawContentType = (upstreamRes.headers.get('content-type') || '').toLowerCase();
+    const isExplicitBinary = rawContentType.includes('video/') ||
+                             rawContentType.includes('application/octet-stream') ||
+                             rawContentType.includes('audio/');
 
-    if (bodyText.startsWith('#EXTM3U') || rawType.includes('mpegurl') || rawType.includes('m3u8')) {
+    // Se o cabeçalho upstream já indicar vídeo binário, repassar diretamente o stream sem buffering
+    if (isExplicitBinary) {
+      const contentType = targetUrl.includes('.ts') || targetUrl.includes('seg-') || targetUrl.includes('/p/')
+        ? 'video/mp2t'
+        : (rawContentType || 'video/mp4');
+
+      const respHeaders: Record<string, string> = {
+        'Content-Type': contentType,
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Accept-Ranges': 'bytes',
+        'Cache-Control': 'public, max-age=3600',
+      };
+      if (upstreamRes.headers.get('content-range')) {
+        respHeaders['Content-Range'] = upstreamRes.headers.get('content-range')!;
+      }
+      if (upstreamRes.headers.get('content-length')) {
+        respHeaders['Content-Length'] = upstreamRes.headers.get('content-length')!;
+      }
+
+      return new NextResponse(upstreamRes.body, {
+        status: upstreamRes.status,
+        headers: respHeaders
+      });
+    }
+
+    // Leitura segura do buffer binário: previne corrupção de arquivos de vídeo e permite detecção precisa de M3U8
+    const arrayBuffer = await upstreamRes.arrayBuffer();
+    const isM3U8 = Buffer.from(arrayBuffer.slice(0, 7)).toString('utf-8') === '#EXTM3U' ||
+                   rawContentType.includes('mpegurl') ||
+                   rawContentType.includes('m3u8') ||
+                   targetUrl.includes('.m3u8');
+
+    if (isM3U8) {
+      const bodyText = Buffer.from(arrayBuffer).toString('utf-8');
       const lines = bodyText.split('\n');
       const rewritten = lines.map(line => {
         const trimmed = line.trim();
@@ -160,14 +196,25 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Fallback para conteúdo binário não identificado previamente
-    return new NextResponse(bodyText, {
-      status: 200,
-      headers: {
-        'Content-Type': rawType || 'video/mp4',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      }
+    // Fallback binário seguro: repassar arrayBuffer original sem converter para string UTF-8
+    const fallbackContentType = rawContentType || (targetUrl.includes('.ts') ? 'video/mp2t' : 'video/mp4');
+    const respHeaders: Record<string, string> = {
+      'Content-Type': fallbackContentType,
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Accept-Ranges': 'bytes',
+      'Cache-Control': 'public, max-age=3600',
+    };
+    if (upstreamRes.headers.get('content-range')) {
+      respHeaders['Content-Range'] = upstreamRes.headers.get('content-range')!;
+    }
+    if (upstreamRes.headers.get('content-length')) {
+      respHeaders['Content-Length'] = upstreamRes.headers.get('content-length')!;
+    }
+
+    return new NextResponse(arrayBuffer, {
+      status: upstreamRes.status,
+      headers: respHeaders
     });
   } catch (err: any) {
     return new NextResponse(`Exceção no Proxy: ${err.message}`, { status: 500 });

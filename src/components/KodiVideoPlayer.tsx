@@ -976,6 +976,9 @@ export default function KodiVideoPlayer({
         });
 
         let hasRetriedProxy = false;
+        let networkRetryCount = 0;
+        let mediaRecoveryCount = 0;
+
         hls.on(Hls.Events.ERROR, (_, data) => {
           // Recuperação automática contra travamentos de buffer (Buffer Stalled)
           if (
@@ -993,19 +996,48 @@ export default function KodiVideoPlayer({
           if (data.fatal) {
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
+                networkRetryCount++;
                 if (!hasRetriedProxy && !streamUrl.startsWith('/api/proxy-stream') && !streamUrl.includes('proxy-stream')) {
                   hasRetriedProxy = true;
                   console.warn("[WMPLAY] Falha de rede direta, alternando automaticamente para o Proxy Rápido Local...");
                   const proxyUrl = `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
                   hls.loadSource(proxyUrl);
                   hls.startLoad();
-                } else {
+                } else if (networkRetryCount <= 2) {
+                  console.warn(`[WMPLAY] Tentativa de reconexão de rede HLS (${networkRetryCount}/2)...`);
                   hls.startLoad();
+                } else {
+                  hls.destroy();
+                  if (servers.length > 1 && activeServerIndex + 1 < servers.length) {
+                    console.warn(`[WMPLAY] Falha de rede persistente no Servidor ${activeServerIndex + 1}, alternando automaticamente para: ${servers[activeServerIndex + 1]?.name}`);
+                    onSelectServer(activeServerIndex + 1);
+                  } else {
+                    setIsLoading(false);
+                    setHasError(true);
+                    setErrorMessage("Falha de conexão com este sinal. Selecione outro servidor ou tente novamente.");
+                  }
                 }
                 break;
               case Hls.ErrorTypes.MEDIA_ERROR:
-                console.warn("[WMPLAY] Recuperando erro de mídia HLS...");
-                hls.recoverMediaError();
+                mediaRecoveryCount++;
+                if (mediaRecoveryCount === 1) {
+                  console.warn("[WMPLAY] Recuperando erro de mídia HLS (tentativa 1)...");
+                  hls.recoverMediaError();
+                } else if (mediaRecoveryCount === 2) {
+                  console.warn("[WMPLAY] Tentando swapAudioCodec e recoverMediaError (tentativa 2)...");
+                  hls.swapAudioCodec();
+                  hls.recoverMediaError();
+                } else {
+                  hls.destroy();
+                  if (servers.length > 1 && activeServerIndex + 1 < servers.length) {
+                    console.warn(`[WMPLAY] Falha de mídia persistente, alternando para servidor reserva: ${servers[activeServerIndex + 1]?.name}`);
+                    onSelectServer(activeServerIndex + 1);
+                  } else {
+                    setIsLoading(false);
+                    setHasError(true);
+                    setErrorMessage("Erro de decodificação no player nativo da TV. Selecione outro servidor.");
+                  }
+                }
                 break;
               default:
                 hls.destroy();
@@ -1015,7 +1047,7 @@ export default function KodiVideoPlayer({
                 } else {
                   setIsLoading(false);
                   setHasError(true);
-                  setErrorMessage("Falha de conexão com a transmissão ao vivo. Tente selecionar outro servidor ao lado.");
+                  setErrorMessage("Falha de conexão com a transmissão. Selecione outro servidor ao lado.");
                 }
                 break;
             }

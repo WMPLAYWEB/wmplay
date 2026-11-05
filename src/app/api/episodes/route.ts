@@ -717,6 +717,14 @@ export async function GET(req: NextRequest) {
                   } catch {}
                 })
               );
+              // Filtrar temporadas fantasmas ou nao lancadas: remover temporadas que nao existem no TMDB oficial
+              const validSeasonNumbers = new Set(validSeasons.map((s: any) => s.season_number));
+              for (const sKey of Object.keys(seasonsMap)) {
+                const sNum = parseInt(sKey, 10);
+                if (!validSeasonNumbers.has(sNum)) {
+                  delete seasonsMap[sNum];
+                }
+              }
             }
           }
         }
