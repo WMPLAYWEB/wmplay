@@ -96,44 +96,51 @@ export async function resolveFenixFlix(
 
     for (const qId of queryIds) {
       const streamPath = isSeries ? `series/${qId}:${season}:${episode}.json` : `movie/${qId}.json`;
-      const url = `https://fenixflix.fenixhub.online/qualities=4k,1080p,720p,sd,cam%7Caudio=dublado,legendado%7Ccatalogs=populares_movie,populares_series,recentes_movie,recentes_series/stream/${streamPath}`;
+      const urlsToTry = [
+        `https://fenixflix.fenixhub.online/stream/${streamPath}`,
+        `https://fenixflix.fenixhub.online/qualities=4k,1080p,720p,sd,cam%7Caudio=dublado,legendado%7Ccatalogs=populares_movie,populares_series,recentes_movie,recentes_series/stream/${streamPath}`
+      ];
 
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 3500);
+      for (const url of urlsToTry) {
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 3500);
 
-        const res = await fetch(url, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)',
-            'Referer': 'https://fenixflix.fenixhub.online/'
-          },
-          signal: controller.signal
-        });
-        clearTimeout(timeout);
-
-        if (!res.ok) continue;
-        const data = await res.json();
-        if (!data || !Array.isArray(data.streams)) continue;
-
-        for (const s of data.streams) {
-          if (!s || !s.url || typeof s.url !== 'string') continue;
-          if (seenUrls.has(s.url)) continue;
-          seenUrls.add(s.url);
-
-          const rawTitle = (s.title || '').replace(/\n/g, ' ');
-          const isDub = rawTitle.toLowerCase().includes('dub') || (s.name || '').toLowerCase().includes('dub') || !rawTitle.toLowerCase().includes('leg');
-          const quality = s.name || 'Full HD';
-          const cleanLabel = `OnePlay Fenix (${quality}${isDub ? ' Dublado PT-BR' : ' Legendado'})`;
-
-          candidateStreams.push({
-            rawUrl: s.url,
-            cleanLabel,
-            isDub
+          const res = await fetch(url, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)',
+              'Referer': 'https://fenixflix.fenixhub.online/'
+            },
+            signal: controller.signal
           });
-        }
+          clearTimeout(timeout);
 
-        if (candidateStreams.length > 0) break;
-      } catch {}
+          if (!res.ok) continue;
+          const data = await res.json();
+          if (!data || !Array.isArray(data.streams)) continue;
+
+          for (const s of data.streams) {
+            if (!s || !s.url || typeof s.url !== 'string') continue;
+            if (seenUrls.has(s.url)) continue;
+            seenUrls.add(s.url);
+
+            const rawTitle = (s.title || '').replace(/\n/g, ' ');
+            const isDub = rawTitle.toLowerCase().includes('dub') || (s.name || '').toLowerCase().includes('dub') || !rawTitle.toLowerCase().includes('leg');
+            const quality = s.name || 'Full HD';
+            const cleanLabel = `OnePlay Fenix (${quality}${isDub ? ' Dublado PT-BR' : ' Legendado'})`;
+
+            candidateStreams.push({
+              rawUrl: s.url,
+              cleanLabel,
+              isDub
+            });
+          }
+
+          if (candidateStreams.length > 0) break;
+        } catch {}
+      }
+
+      if (candidateStreams.length > 0) break;
     }
 
     if (candidateStreams.length === 0) return [];

@@ -572,15 +572,35 @@ export default function KodiApp() {
     targetTmdbId?: string,
     isTvSeries?: boolean,
     season?: number,
-    episode?: number
+    episode?: number,
+    mediaTitle?: string
   ): Promise<{ name: string; url: string; type: "video" | "embed" }[]> => {
-    if (!targetTmdbId) return [];
+    let resolvedTmdbId = targetTmdbId;
+    const tmdbKey = "92c1507cc18d85290e7a0b96abb37316";
+
+    // Se não houver TMDB ID direto, buscar pelo título dinamicamente para cobrir 100% das séries
+    if (!resolvedTmdbId && mediaTitle) {
+      try {
+        const cleanT = mediaTitle.split(' - T')[0].replace(/\s*-\s*.*$/, '').replace(/[^a-zA-Z0-9\sÀ-ÿ]/g, ' ').replace(/\s+/g, ' ').trim();
+        const searchRes = await fetch(
+          `https://api.themoviedb.org/3/search/${isTvSeries ? "tv" : "movie"}?api_key=${tmdbKey}&query=${encodeURIComponent(cleanT)}&language=pt-BR`,
+          { signal: AbortSignal.timeout(2000) }
+        );
+        if (searchRes.ok) {
+          const sData = await searchRes.json();
+          if (sData.results && sData.results.length > 0) {
+            resolvedTmdbId = String(sData.results[0].id);
+          }
+        }
+      } catch {}
+    }
+
+    if (!resolvedTmdbId) return [];
     try {
-      const tmdbKey = "92c1507cc18d85290e7a0b96abb37316";
       let imdbId = "";
       try {
         const extRes = await fetch(
-          `https://api.themoviedb.org/3/${isTvSeries ? "tv" : "movie"}/${targetTmdbId}/external_ids?api_key=${tmdbKey}`,
+          `https://api.themoviedb.org/3/${isTvSeries ? "tv" : "movie"}/${resolvedTmdbId}/external_ids?api_key=${tmdbKey}`,
           { signal: AbortSignal.timeout(2000) }
         );
         if (extRes.ok) {
@@ -589,7 +609,7 @@ export default function KodiApp() {
         }
       } catch {}
 
-      const queryIds = imdbId ? [imdbId, `tmdb:${targetTmdbId}`] : [`tmdb:${targetTmdbId}`];
+      const queryIds = imdbId ? [imdbId, `tmdb:${resolvedTmdbId}`] : [`tmdb:${resolvedTmdbId}`];
       const clientServers: { name: string; url: string; type: "video" | "embed" }[] = [];
       const seenUrls = new Set<string>();
 
@@ -597,48 +617,54 @@ export default function KodiApp() {
         const streamPath = isTvSeries
           ? `series/${qId}:${season || 1}:${episode || 1}.json`
           : `movie/${qId}.json`;
-        const url = `https://fenixflix.fenixhub.online/qualities=4k,1080p,720p,sd,cam%7Caudio=dublado,legendado%7Ccatalogs=populares_movie,populares_series,recentes_movie,recentes_series/stream/${streamPath}`;
+        const urlsToTry = [
+          `https://fenixflix.fenixhub.online/stream/${streamPath}`,
+          `https://fenixflix.fenixhub.online/qualities=4k,1080p,720p,sd,cam%7Caudio=dublado,legendado%7Ccatalogs=populares_movie,populares_series,recentes_movie,recentes_series/stream/${streamPath}`
+        ];
 
-        try {
-          const res = await fetch(url, { signal: AbortSignal.timeout(3500) });
-          if (!res.ok) continue;
-          const data = await res.json();
-          if (data && Array.isArray(data.streams)) {
-            for (const s of data.streams) {
-              if (!s || !s.url || seenUrls.has(s.url)) continue;
-              seenUrls.add(s.url);
-              const rawTitle = (s.title || "").replace(/\n/g, " ");
-              const isDub =
-                rawTitle.toLowerCase().includes("dub") ||
-                (s.name || "").toLowerCase().includes("dub") ||
-                !rawTitle.toLowerCase().includes("leg");
-              const quality = s.name || "Full HD";
-              const cleanLabel = `OnePlay Fenix (${quality}${isDub ? " Dublado PT-BR" : " Legendado"})`;
+        for (const url of urlsToTry) {
+          try {
+            const res = await fetch(url, { signal: AbortSignal.timeout(3500) });
+            if (!res.ok) continue;
+            const data = await res.json();
+            if (data && Array.isArray(data.streams)) {
+              for (const s of data.streams) {
+                if (!s || !s.url || seenUrls.has(s.url)) continue;
+                seenUrls.add(s.url);
+                const rawTitle = (s.title || "").replace(/\n/g, " ");
+                const isDub =
+                  rawTitle.toLowerCase().includes("dub") ||
+                  (s.name || "").toLowerCase().includes("dub") ||
+                  !rawTitle.toLowerCase().includes("leg");
+                const quality = s.name || "Full HD";
+                const cleanLabel = `OnePlay Fenix (${quality}${isDub ? " Dublado PT-BR" : " Legendado"})`;
 
-              const targetRef = s.url.includes("embedplayer") || s.url.includes("embedvip") || s.url.includes("cincloud") || s.url.includes("playcine") || s.url.includes("playclou")
-                ? "https://embedplayer2.xyz/"
-                : s.url.includes("zunderflix") || s.url.includes("sprintcdn")
-                ? "https://zunderflix.lat/"
-                : "https://fenixflix.fenixhub.online/";
-              const encRef = `&referer=${encodeURIComponent(targetRef)}`;
+                const targetRef = s.url.includes("embedplayer") || s.url.includes("embedvip") || s.url.includes("cincloud") || s.url.includes("playcine") || s.url.includes("playclou")
+                  ? "https://embedplayer2.xyz/"
+                  : s.url.includes("zunderflix") || s.url.includes("sprintcdn")
+                  ? "https://zunderflix.lat/"
+                  : "https://fenixflix.fenixhub.online/";
+                const encRef = `&referer=${encodeURIComponent(targetRef)}`;
 
-              // Servidor 1: Rota principal Full HD via proxy otimizado (100% liso, sem anúncios)
-              clientServers.push({
-                name: `${cleanLabel} - CDN Principal Full HD`,
-                url: `/api/proxy-stream?url=${encodeURIComponent(s.url)}${encRef}`,
-                type: "video",
-              });
+                // Servidor 1: Rota principal Full HD via proxy otimizado (100% liso, sem anúncios)
+                clientServers.push({
+                  name: `${cleanLabel} - CDN Principal Full HD`,
+                  url: `/api/proxy-stream?url=${encodeURIComponent(s.url)}${encRef}`,
+                  type: "video",
+                });
 
-              // Servidor 2: Rota anti-buffer de redundância máxima
-              clientServers.push({
-                name: `${cleanLabel} - Acelerador Anti-Buffer`,
-                url: `/api/proxy-stream?url=${encodeURIComponent(s.url)}${encRef}&buffer=safe`,
-                type: "video",
-              });
+                // Servidor 2: Rota anti-buffer de redundância máxima
+                clientServers.push({
+                  name: `${cleanLabel} - Acelerador Anti-Buffer`,
+                  url: `/api/proxy-stream?url=${encodeURIComponent(s.url)}${encRef}&buffer=safe`,
+                  type: "video",
+                });
+              }
             }
-          }
-          if (clientServers.length > 0) break;
-        } catch {}
+            if (clientServers.length > 0) break;
+          } catch {}
+        }
+        if (clientServers.length > 0) break;
       }
 
       return clientServers;
@@ -790,7 +816,7 @@ export default function KodiApp() {
       .then((res) => res.json())
       .catch(() => ({ success: false, servers: [] }));
 
-    const resolveClientPromise = resolveClientFenixStreams(tmdbId, isTv, seasonNum, epNum)
+    const resolveClientPromise = resolveClientFenixStreams(tmdbId, isTv, seasonNum, epNum, title)
       .catch(() => []);
 
     Promise.all([resolveBackendPromise, resolveClientPromise]).then(([backendData, clientFenixServers]) => {

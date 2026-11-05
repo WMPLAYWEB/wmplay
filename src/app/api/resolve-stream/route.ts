@@ -280,7 +280,7 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
       }
     }
 
-    if (leg.mixdrop) {
+    if (leg.mixdrop && !BLACKLISTED_MIXDROP_IDS.includes(leg.mixdrop)) {
       try {
         const directMix = await resolveMixdrop(leg.mixdrop);
         if (directMix) {
@@ -1314,7 +1314,7 @@ export async function GET(req: NextRequest) {
               epArr = legList && Array.isArray(legList.episodes) ? legList.episodes : [];
             }
             if (epArr.length > 0) {
-              const targetEp = epArr.find((e: any) => String(e.number) === String(episode)) || epArr[0];
+              const targetEp = epArr.find((e: any) => String(e.number) === String(episode));
               if (targetEp && targetEp.url) {
                 const epId = targetEp.url.replace(/\/$/, '').split('/').pop()?.split('-').pop();
                 if (epId && /^\d+$/.test(epId)) {
