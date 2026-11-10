@@ -181,7 +181,7 @@ async function fetchHtmlWithRedirects(targetUrl: string, referer = 'https://www.
 
 // Extrai o link direto de vídeo MP4 do MixDrop (Padrão Kodi ResolveURL - Sem Anúncios)
 async function resolveMixdrop(mediaId: string): Promise<string | null> {
-  const domains = ['https://mxdrop.click', 'https://mixdrop.top', 'https://mixdrop.ag', 'https://mixdrop.co'];
+  const domains = ['https://mxdrop.click', 'https://mixdrop.top'];
   for (const domain of domains) {
     try {
       const pageData = await fetchHtmlWithRedirects(`${domain}/e/${mediaId}`, 'https://www.overflix.date/');
@@ -340,7 +340,7 @@ async function callResolver(resolverNum: number, requestStr: string): Promise<st
             'Authorization': `Bearer ${TOKEN}`,
             'User-Agent': 'Mozilla/5.0'
           },
-          timeout: 1200
+          timeout: 800
         }, (res) => {
           let data = '';
           res.on('data', chunk => data += chunk);
@@ -742,6 +742,31 @@ export async function GET(req: NextRequest) {
       } catch (err) {
         console.error('Erro ao resolver provedores OnePlay Prioridade 1:', err);
       }
+    }
+
+    // Se já encontramos transmissões 1080p Full HD Dublado verificadas (WatchPlay/Fenix),
+    // retorna IMEDIATAMENTE (< 2 segundos) sem travar o usuário em fallbacks legados
+    if (servers.length > 0) {
+      const seenServerUrls = new Set<string>();
+      const finalServers: StreamServer[] = [];
+      for (const s of servers) {
+        if (!s || !s.url) continue;
+        if (seenServerUrls.has(s.url)) continue;
+        seenServerUrls.add(s.url);
+        finalServers.push(s);
+      }
+
+      finalServers.sort((a, b) => {
+        const aScore = (a.type === 'video' ? 10 : 0) + (a.isDubbed !== false ? 5 : 0);
+        const bScore = (b.type === 'video' ? 10 : 0) + (b.isDubbed !== false ? 5 : 0);
+        return bScore - aScore;
+      });
+
+      return NextResponse.json({
+        success: true,
+        servers: finalServers,
+        totalServers: finalServers.length
+      });
     }
 
     // =========================================================================

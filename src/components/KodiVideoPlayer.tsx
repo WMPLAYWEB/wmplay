@@ -904,7 +904,7 @@ export default function KodiVideoPlayer({
         setIsLoading(false);
         setHasError(true);
         setErrorMessage("Não foi possível sincronizar o sinal deste título no momento. Tente outro servidor.");
-      }, 8000);
+      }, 25000);
       return () => clearTimeout(timeoutId);
     }
 

@@ -812,28 +812,56 @@ export default function KodiApp() {
     const resolveClientPromise = resolveClientFenixStreams(tmdbId, isTv, seasonNum, epNum, title)
       .catch(() => []);
 
-    Promise.all([resolveBackendPromise, resolveClientPromise]).then(([backendData, clientFenixServers]) => {
-      const isAdUrl = (url: string) => {
-        const u = (url || "").toLowerCase();
-        return (
-          u.includes("streamtape.com/e/") ||
-          u.includes("mixdrop.top/e/") ||
-          u.includes("mixdrop.co/e/") ||
-          u.includes("mixdrop.ag/e/") ||
-          u.includes("mxdrop.click/e/") ||
-          u.includes("bysebuho.com/e/") ||
-          u.includes("dood") ||
-          u.includes("playmogo") ||
-          u.includes("filemoon") ||
-          u.includes("streamwish") ||
-          u.includes("luluvdo")
-        );
-      };
+    const isAdUrl = (url: string) => {
+      const u = (url || "").toLowerCase();
+      return (
+        u.includes("streamtape.com/e/") ||
+        u.includes("mixdrop.top/e/") ||
+        u.includes("mixdrop.co/e/") ||
+        u.includes("mixdrop.ag/e/") ||
+        u.includes("mxdrop.click/e/") ||
+        u.includes("bysebuho.com/e/") ||
+        u.includes("dood") ||
+        u.includes("playmogo") ||
+        u.includes("filemoon") ||
+        u.includes("streamwish") ||
+        u.includes("luluvdo")
+      );
+    };
+
+    let backendHandled = false;
+
+    // Resposta ultra-rápida: Inicia o vídeo no player imediatamente assim que o backend responder (< 2s)
+    resolveBackendPromise.then((backendData) => {
+      const backendServers = (backendData.success && Array.isArray(backendData.servers))
+        ? backendData.servers.filter((s: any) => {
+            if (s.type !== "video" || !s.url || s.url === "ERROR_UNAVAILABLE" || isAdUrl(s.url)) return false;
+            if (s.url.startsWith("http") && s.url.includes("mxcontent.net")) return false;
+            return true;
+          })
+        : [];
+
+      if (backendServers.length > 0) {
+        backendHandled = true;
+        setPlayingMedia((prev) => {
+          if (!prev || prev.title !== title) return prev;
+          return {
+            ...prev,
+            servers: backendServers,
+            activeServerIndex: 0,
+          };
+        });
+      }
+    });
+
+    // Quando todos os provedores terminarem, mescla os servidores sem interromper o vídeo em reprodução
+    Promise.allSettled([resolveBackendPromise, resolveClientPromise]).then(([backendRes, clientRes]) => {
+      const backendData = backendRes.status === "fulfilled" ? backendRes.value : { success: false, servers: [] };
+      const clientFenixServers = clientRes.status === "fulfilled" && Array.isArray(clientRes.value) ? clientRes.value : [];
 
       const backendServers = (backendData.success && Array.isArray(backendData.servers))
         ? backendData.servers.filter((s: any) => {
             if (s.type !== "video" || !s.url || s.url === "ERROR_UNAVAILABLE" || isAdUrl(s.url)) return false;
-            // Mixdrop direto bloqueia clientes por IP (403 Forbidden)
             if (s.url.startsWith("http") && s.url.includes("mxcontent.net")) return false;
             return true;
           })
@@ -852,6 +880,13 @@ export default function KodiApp() {
       if (finalServers.length > 0) {
         setPlayingMedia((prev) => {
           if (!prev || prev.title !== title) return prev;
+          // Se o vídeo já começou a tocar via backend, apenas anexa novos servidores na lista sem reiniciar
+          if (backendHandled && prev.servers.length > 0 && prev.servers[0].url) {
+            return {
+              ...prev,
+              servers: finalServers,
+            };
+          }
           return {
             ...prev,
             servers: finalServers,

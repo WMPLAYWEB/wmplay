@@ -159,53 +159,55 @@ export async function resolveFenixFlix(
     const candidateStreams: { rawUrl: string; cleanLabel: string; isDub: boolean }[] = [];
     const seenUrls = new Set<string>();
 
+    const urlsToTry: string[] = [];
     for (const qId of queryIds) {
       const streamPath = isSeries ? `series/${qId}:${season}:${episode}.json` : `movie/${qId}.json`;
-      const urlsToTry = [
+      urlsToTry.push(
         `https://fenixflix.fenixhub.online/stream/${streamPath}`,
         `https://fenixflix.fenixhub.online/qualities=4k,1080p,720p,sd,cam%7Caudio=dublado,legendado%7Ccatalogs=populares_movie,populares_series,recentes_movie,recentes_series/stream/${streamPath}`
-      ];
+      );
+    }
 
-      for (const url of urlsToTry) {
+    // Consulta paralela com timeout ágil de 2.5s (evita travar a resposta em títulos ausentes)
+    const responses = await Promise.allSettled(
+      urlsToTry.map(async (url) => {
         try {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 3500);
-
           const res = await fetch(url, {
             headers: {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)',
               'Referer': 'https://fenixflix.fenixhub.online/'
             },
-            signal: controller.signal
+            signal: AbortSignal.timeout(2500)
           });
-          clearTimeout(timeout);
+          if (!res.ok) return null;
+          return await res.json();
+        } catch {
+          return null;
+        }
+      })
+    );
 
-          if (!res.ok) continue;
-          const data = await res.json();
-          if (!data || !Array.isArray(data.streams)) continue;
+    for (const r of responses) {
+      if (r.status !== 'fulfilled' || !r.value) continue;
+      const data = r.value;
+      if (!data || !Array.isArray(data.streams)) continue;
 
-          for (const s of data.streams) {
-            if (!s || !s.url || typeof s.url !== 'string') continue;
-            if (seenUrls.has(s.url)) continue;
-            seenUrls.add(s.url);
+      for (const s of data.streams) {
+        if (!s || !s.url || typeof s.url !== 'string') continue;
+        if (seenUrls.has(s.url)) continue;
+        seenUrls.add(s.url);
 
-            const rawTitle = (s.title || '').replace(/\n/g, ' ');
-            const isDub = rawTitle.toLowerCase().includes('dub') || (s.name || '').toLowerCase().includes('dub') || !rawTitle.toLowerCase().includes('leg');
-            const quality = s.name || 'Full HD';
-            const cleanLabel = `OnePlay Fenix (${quality}${isDub ? ' Dublado PT-BR' : ' Legendado'})`;
+        const rawTitle = (s.title || '').replace(/\n/g, ' ');
+        const isDub = rawTitle.toLowerCase().includes('dub') || (s.name || '').toLowerCase().includes('dub') || !rawTitle.toLowerCase().includes('leg');
+        const quality = s.name || 'Full HD';
+        const cleanLabel = `OnePlay Fenix (${quality}${isDub ? ' Dublado PT-BR' : ' Legendado'})`;
 
-            candidateStreams.push({
-              rawUrl: s.url,
-              cleanLabel,
-              isDub
-            });
-          }
-
-          if (candidateStreams.length > 0) break;
-        } catch {}
+        candidateStreams.push({
+          rawUrl: s.url,
+          cleanLabel,
+          isDub
+        });
       }
-
-      if (candidateStreams.length > 0) break;
     }
 
     if (candidateStreams.length === 0) return [];
@@ -259,33 +261,33 @@ export async function resolveOnePlaySources(params: {
   const results: OnePlayStream[] = [];
   const seenUrls = new Set<string>();
 
-  // 1. Prioridade Máxima: Servidor WatchPlay Full HD Nativo (PlayerFlix CDN - Alta Velocidade, Sem Anúncios)
-  if (tmdbId) {
-    try {
-      const wpStream = await resolveWatchPlayStream({
-        tmdbId,
-        mediaType,
-        season,
-        episode
-      });
-      if (wpStream && !seenUrls.has(wpStream.url)) {
-        seenUrls.add(wpStream.url);
-        results.push(wpStream);
-      }
-    } catch {}
+  // Executa WatchPlay 1080p e FenixFlix em paralelo para retorno instantâneo (< 2 segundos)
+  const [wpRes, fenixRes] = await Promise.allSettled([
+    tmdbId
+      ? resolveWatchPlayStream({ tmdbId, mediaType, season, episode })
+      : Promise.resolve(null),
+    targetId
+      ? resolveFenixFlix(mediaType, targetId, season, episode)
+      : Promise.resolve([])
+  ]);
+
+  // 1. Prioridade Máxima: Servidor WatchPlay 1080p Nativo (PlayerFlix CDN - Alta Velocidade, Sem Anúncios)
+  if (wpRes.status === 'fulfilled' && wpRes.value) {
+    const wpStream = wpRes.value;
+    if (!seenUrls.has(wpStream.url)) {
+      seenUrls.add(wpStream.url);
+      results.push(wpStream);
+    }
   }
 
-  // 2. Prioridade 2: FenixFlix (HLS Direto Multi-Qualidade)
-  if (targetId) {
-    try {
-      const fenixStreams = await resolveFenixFlix(mediaType, targetId, season, episode);
-      for (const s of fenixStreams) {
-        if (!seenUrls.has(s.url)) {
-          seenUrls.add(s.url);
-          results.push(s);
-        }
+  // 2. Prioridade 2: FenixFlix (Multi-Qualidades HLS)
+  if (fenixRes.status === 'fulfilled' && Array.isArray(fenixRes.value)) {
+    for (const s of fenixRes.value) {
+      if (!seenUrls.has(s.url)) {
+        seenUrls.add(s.url);
+        results.push(s);
       }
-    } catch {}
+    }
   }
 
   return results;
