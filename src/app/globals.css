@@ -415,14 +415,6 @@ body {
   backdrop-filter: blur(8px) !important;
 }
 
-.theme-offwhite .w-full.max-w-xl.bg-zinc-950,
-.theme-offwhite .w-full.max-w-4xl.bg-zinc-950,
-.theme-offwhite .w-full.max-w-5xl.bg-zinc-950 {
-  background-color: #ffffff !important;
-  border-color: #cbd5e1 !important;
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.22) !important;
-}
-
 /* ============================================================== */
 /* PRESERVAÇÃO INTEGRAL DO PLAYER DE VÍDEO & YOUTUBE (MODO CINEMA)*/
 /* ============================================================== */
@@ -614,44 +606,76 @@ body {
 /* ============================================================== */
 /* MODAIS DO PLAYER DE VÍDEO (SEMPRE ESCUROS COM CONTRASTE MÁXIMO)*/
 /* ============================================================== */
-.kodi-cinema-modal,
+.wmplay-cinema-player .kodi-cinema-modal,
+.wmplay-cinema-player .kodi-cinema-modal-card,
+.theme-offwhite .wmplay-cinema-player .kodi-cinema-modal,
+.theme-offwhite .wmplay-cinema-player .kodi-cinema-modal-card,
 .theme-offwhite .kodi-cinema-modal,
-div.kodi-cinema-modal {
+.theme-offwhite .kodi-cinema-modal-card,
+.kodi-cinema-modal,
+.kodi-cinema-modal-card,
+div.kodi-cinema-modal,
+div.kodi-cinema-modal-card {
   background-color: #09090b !important;
+  background: #09090b !important;
   color: #ffffff !important;
   border: 1px solid #27272a !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85) !important;
+  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.9) !important;
 }
 
+.wmplay-cinema-player .kodi-cinema-modal h1,
+.wmplay-cinema-player .kodi-cinema-modal h2,
+.wmplay-cinema-player .kodi-cinema-modal h3,
+.wmplay-cinema-player .kodi-cinema-modal-card h1,
+.wmplay-cinema-player .kodi-cinema-modal-card h2,
+.wmplay-cinema-player .kodi-cinema-modal-card h3,
+.theme-offwhite .wmplay-cinema-player .kodi-cinema-modal h1,
+.theme-offwhite .wmplay-cinema-player .kodi-cinema-modal h2,
+.theme-offwhite .wmplay-cinema-player .kodi-cinema-modal h3,
+.theme-offwhite .wmplay-cinema-player .kodi-cinema-modal-card h1,
+.theme-offwhite .wmplay-cinema-player .kodi-cinema-modal-card h2,
+.theme-offwhite .wmplay-cinema-player .kodi-cinema-modal-card h3,
 .kodi-cinema-modal h1,
 .kodi-cinema-modal h2,
 .kodi-cinema-modal h3,
-.theme-offwhite .kodi-cinema-modal h1,
-.theme-offwhite .kodi-cinema-modal h2,
-.theme-offwhite .kodi-cinema-modal h3 {
+.kodi-cinema-modal-card h1,
+.kodi-cinema-modal-card h2,
+.kodi-cinema-modal-card h3 {
   color: #ffffff !important;
 }
 
+.wmplay-cinema-player .kodi-cinema-modal p,
+.wmplay-cinema-player .kodi-cinema-modal-card p,
+.theme-offwhite .wmplay-cinema-player .kodi-cinema-modal p,
+.theme-offwhite .wmplay-cinema-player .kodi-cinema-modal-card p,
 .kodi-cinema-modal p,
-.theme-offwhite .kodi-cinema-modal p {
+.kodi-cinema-modal-card p {
   color: #f4f4f5 !important;
   font-size: 0.95rem !important;
-  line-height: 1.6 !important;
+  line-height: 1.65 !important;
 }
 
+.wmplay-cinema-player .kodi-cinema-modal span,
+.wmplay-cinema-player .kodi-cinema-modal-card span,
+.theme-offwhite .wmplay-cinema-player .kodi-cinema-modal span,
+.theme-offwhite .wmplay-cinema-player .kodi-cinema-modal-card span,
 .kodi-cinema-modal span,
-.theme-offwhite .kodi-cinema-modal span {
+.kodi-cinema-modal-card span {
   color: #ef4444 !important;
 }
 
+.wmplay-cinema-player .kodi-cinema-modal button,
+.wmplay-cinema-player .kodi-cinema-modal-card button,
+.theme-offwhite .wmplay-cinema-player .kodi-cinema-modal button,
+.theme-offwhite .wmplay-cinema-player .kodi-cinema-modal-card button,
 .kodi-cinema-modal button,
-.theme-offwhite .kodi-cinema-modal button {
+.kodi-cinema-modal-card button {
   color: #ffffff !important;
 }
 
-/* Prevenção global contra texto claro em fundo claro */
-.theme-offwhite .text-zinc-100,
-.theme-offwhite .text-zinc-200 {
+/* Prevenção global contra texto claro em fundo claro (apenas fora do player de cinema) */
+.theme-offwhite :not(.wmplay-cinema-player):not(.kodi-cinema-modal):not(.kodi-cinema-modal-card) > .text-zinc-100,
+.theme-offwhite :not(.wmplay-cinema-player):not(.kodi-cinema-modal):not(.kodi-cinema-modal-card) > .text-zinc-200 {
   color: #0f172a !important;
 }
 

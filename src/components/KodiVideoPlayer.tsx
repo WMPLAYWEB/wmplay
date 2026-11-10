@@ -2303,7 +2303,10 @@ export default function KodiVideoPlayer({
       {/* ============================================================== */}
       {isCastModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="max-w-md w-full bg-zinc-950 border border-zinc-800 rounded-3xl p-6 shadow-2xl space-y-5 text-white relative">
+          <div
+            className="kodi-cinema-modal kodi-cinema-modal-card max-w-md w-full rounded-3xl p-6 shadow-2xl space-y-5 text-white relative"
+            style={{ backgroundColor: '#09090b', color: '#ffffff', border: '1px solid #27272a' }}
+          >
             <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
@@ -2438,13 +2441,13 @@ export default function KodiVideoPlayer({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="kodi-cinema-modal w-full max-w-xl bg-zinc-950 border border-zinc-700/80 rounded-2xl shadow-2xl p-6 text-white space-y-4"
-            style={{ backgroundColor: '#09090b', color: '#ffffff', borderColor: '#27272a' }}
+            className="kodi-cinema-modal kodi-cinema-modal-card w-full max-w-xl rounded-2xl shadow-2xl p-6 text-white space-y-4"
+            style={{ backgroundColor: '#09090b', color: '#ffffff', border: '1px solid #27272a' }}
           >
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3" style={{ borderColor: '#27272a' }}>
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: '#27272a' }}>
               <div className="flex items-center gap-2.5">
                 <Info className="w-5 h-5 text-red-500 shrink-0" />
-                <h3 className="font-black text-base sm:text-lg" style={{ color: '#ffffff' }}>{title}</h3>
+                <h3 className="font-black text-base sm:text-lg text-white" style={{ color: '#ffffff' }}>{title}</h3>
               </div>
               <button
                 type="button"
@@ -2456,21 +2459,22 @@ export default function KodiVideoPlayer({
               </button>
             </div>
             <div className="max-h-72 overflow-y-auto pr-2 space-y-2 select-text">
-              <span className="text-[11px] font-black uppercase tracking-wider text-red-500 block">
+              <span className="text-[11px] font-black uppercase tracking-wider text-red-500 block" style={{ color: '#ef4444' }}>
                 Sinopse Completa
               </span>
               <p
-                className="text-sm sm:text-base leading-relaxed text-zinc-100 font-medium"
+                className="text-sm sm:text-base leading-relaxed font-normal"
                 style={{ color: '#f4f4f5' }}
               >
                 {info}
               </p>
             </div>
-            <div className="pt-2 flex justify-end border-t border-zinc-800/80" style={{ borderColor: '#27272a' }}>
+            <div className="pt-2 flex justify-end border-t" style={{ borderColor: '#27272a' }}>
               <button
                 type="button"
                 onClick={() => setShowSynopsisModal(false)}
                 className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-colors cursor-pointer shadow-lg shadow-red-600/30"
+                style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
               >
                 Fechar
               </button>
