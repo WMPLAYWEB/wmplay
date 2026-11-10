@@ -646,17 +646,10 @@ export default function KodiApp() {
                   : "https://fenixflix.fenixhub.online/";
                 const encRef = `&referer=${encodeURIComponent(targetRef)}`;
 
-                // Servidor 1: Rota principal Full HD via proxy otimizado (100% liso, sem anúncios)
+                // Rota Full HD via proxy otimizado (100% liso, sem anúncios)
                 clientServers.push({
-                  name: `${cleanLabel} - CDN Principal Full HD`,
+                  name: cleanLabel,
                   url: `/api/proxy-stream?url=${encodeURIComponent(s.url)}${encRef}`,
-                  type: "video",
-                });
-
-                // Servidor 2: Rota anti-buffer de redundância máxima
-                clientServers.push({
-                  name: `${cleanLabel} - Acelerador Anti-Buffer`,
-                  url: `/api/proxy-stream?url=${encodeURIComponent(s.url)}${encRef}&buffer=safe`,
                   type: "video",
                 });
               }
@@ -846,21 +839,8 @@ export default function KodiApp() {
           })
         : [];
 
-      // Prioridade máxima: OnePlay Fenix (100% funcional, verificado e sem anúncios)
-      let combined: { name: string; url: string; type: "video" | "embed" }[] = [];
-      if (clientFenixServers.length > 0) {
-        // Se já temos servidores oficiais de alta velocidade do OnePlay Fenix,
-        // manter apenas fontes de alta confiabilidade adicionais (Google Drive, Wasabi S3)
-        const reliableBackend = backendServers.filter((s: any) =>
-          s.url.includes("drive.google.com") ||
-          s.url.includes("wasabisys") ||
-          s.name.toLowerCase().includes("google drive") ||
-          s.name.toLowerCase().includes("wasabi")
-        );
-        combined = [...clientFenixServers, ...reliableBackend];
-      } else {
-        combined = [...backendServers];
-      }
+      // Prioridade: Servidores verificados do backend (WatchPlay 1080p, StreamTape, Google Drive, Wasabi) + Fenix direto
+      const combined = [...backendServers, ...clientFenixServers];
 
       const seenUrls = new Set<string>();
       const finalServers = combined.filter((s) => {

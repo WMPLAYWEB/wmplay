@@ -36,7 +36,7 @@ export async function getImdbId(mediaType: 'movie' | 'tv' | 'series', tmdbId: st
 }
 
 /**
- * Verifica se um stream HLS ou MP4 está realmente ativo e acessível (evita erros 403/404/DNS)
+ * Verifica se um stream HLS ou MP4 está realmente ativo e acessível (evita erros 403/404/DNS/JSON de erro)
  */
 export async function isStreamPlayable(url: string, referer: string = ''): Promise<boolean> {
   if (!url || !url.startsWith('http')) return false;
@@ -44,30 +44,95 @@ export async function isStreamPlayable(url: string, referer: string = ''): Promi
 
   const targetReferer = referer || (
     url.includes('zunderflix') || url.includes('sprintcdn') ? 'https://zunderflix.lat/' :
+    url.includes('hclod.qzz.io') || url.includes('watchplay') ? 'https://v1.watchplay.shop/' :
     url.includes('fenix') ? 'https://fenixflix.fenixhub.online/' : ''
   );
 
   try {
     const headers: Record<string, string> = {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Range': 'bytes=0-100'
+      'Range': 'bytes=0-150'
     };
     if (targetReferer) headers['Referer'] = targetReferer;
 
     const res = await fetch(url, {
       method: 'GET',
       headers,
-      signal: AbortSignal.timeout(2500)
+      signal: AbortSignal.timeout(3000)
     });
 
-    if (res.body && typeof res.body.cancel === 'function') {
-      try { res.body.cancel(); } catch {}
+    if (res.status !== 200 && res.status !== 206) return false;
+
+    const textPreview = await res.text();
+    if (
+      textPreview.includes('"error"') ||
+      textPreview.includes('File not found') ||
+      textPreview.includes('Not Found') ||
+      textPreview.includes('Maintenance') ||
+      textPreview.includes('Upstream error')
+    ) {
+      return false;
     }
 
-    return res.status === 200 || res.status === 206 || (res.status >= 300 && res.status < 400);
+    return true;
   } catch {
     return false;
   }
+}
+
+/**
+ * Resolve streams 1080p Dublado PT-BR nativos via WatchPlay (PlayerFlix CDN)
+ */
+export async function resolveWatchPlayStream(params: {
+  tmdbId: string;
+  mediaType: 'movie' | 'tv' | 'series';
+  season?: string | number;
+  episode?: string | number;
+}): Promise<OnePlayStream | null> {
+  const { tmdbId, mediaType, season = 1, episode = 1 } = params;
+  if (!tmdbId || !/^\d+$/.test(tmdbId)) return null;
+  const isTv = mediaType === 'tv' || mediaType === 'series';
+  const url = `https://playerflix.ink/inc/Ajax.php?type=${isTv ? 'tv' : 'movie'}&id=${tmdbId}&season=${isTv ? season : 'null'}&episode=${isTv ? episode : 'null'}`;
+  const ref = isTv ? `https://playerflix.ink/serie/${season}/${episode}` : `https://playerflix.ink/filme/${tmdbId}`;
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': ref,
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      signal: AbortSignal.timeout(4000)
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const wp = data.data?.options?.find((o: any) => o.label === 'WatchPlay' || o.id === 'watchplay');
+    if (!wp || !wp.embed) return null;
+
+    const wpRes = await fetch(wp.embed, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://playerflix.ink/'
+      },
+      signal: AbortSignal.timeout(4000)
+    });
+    if (!wpRes.ok) return null;
+    const wpText = await wpRes.text();
+    const match = wpText.match(/createMyPlayer\(\{[\s\S]*?url:\s*"(https?:\\?\/\\?\/[^"]+)"/);
+    if (match) {
+      const streamUrl = match[1].replace(/\\/g, '');
+      const playable = await isStreamPlayable(streamUrl, 'https://v1.watchplay.shop/');
+      if (playable) {
+        return {
+          name: isTv ? `Servidor WatchPlay Full HD Dublado (T${season}E${episode})` : 'Servidor WatchPlay 1080p Full HD Dublado',
+          url: `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}&referer=${encodeURIComponent('https://v1.watchplay.shop/')}`,
+          type: 'video',
+          isDubbed: true
+        };
+      }
+    }
+  } catch {}
+  return null;
 }
 
 /**
@@ -162,14 +227,8 @@ export async function resolveFenixFlix(
         const { item, itemReferer } = r.value;
         const encodedRef = itemReferer ? `&referer=${encodeURIComponent(itemReferer)}` : '';
         streams.push({
-          name: `${item.cleanLabel} - CDN Principal Full HD`,
+          name: `${item.cleanLabel}`,
           url: `/api/proxy-stream?url=${encodeURIComponent(item.rawUrl)}${encodedRef}`,
-          type: 'video',
-          isDubbed: item.isDub
-        });
-        streams.push({
-          name: `${item.cleanLabel} - Acelerador Anti-Buffer`,
-          url: `/api/proxy-stream?url=${encodeURIComponent(item.rawUrl)}${encodedRef}&buffer=safe`,
           type: 'video',
           isDubbed: item.isDub
         });
@@ -195,14 +254,39 @@ export async function resolveOnePlaySources(params: {
   episode?: string | number;
 }): Promise<OnePlayStream[]> {
   const { mediaType, tmdbId, imdbId, season = 1, episode = 1 } = params;
-  const targetId = imdbId || tmdbId || '';
+  const targetId = tmdbId || imdbId || '';
 
-  if (!targetId) return [];
+  const results: OnePlayStream[] = [];
+  const seenUrls = new Set<string>();
 
-  try {
-    const fenixStreams = await resolveFenixFlix(mediaType, targetId, season, episode);
-    return fenixStreams;
-  } catch {
-    return [];
+  // 1. Prioridade Máxima: Servidor WatchPlay Full HD Nativo (PlayerFlix CDN - Alta Velocidade, Sem Anúncios)
+  if (tmdbId) {
+    try {
+      const wpStream = await resolveWatchPlayStream({
+        tmdbId,
+        mediaType,
+        season,
+        episode
+      });
+      if (wpStream && !seenUrls.has(wpStream.url)) {
+        seenUrls.add(wpStream.url);
+        results.push(wpStream);
+      }
+    } catch {}
   }
+
+  // 2. Prioridade 2: FenixFlix (HLS Direto Multi-Qualidade)
+  if (targetId) {
+    try {
+      const fenixStreams = await resolveFenixFlix(mediaType, targetId, season, episode);
+      for (const s of fenixStreams) {
+        if (!seenUrls.has(s.url)) {
+          seenUrls.add(s.url);
+          results.push(s);
+        }
+      }
+    } catch {}
+  }
+
+  return results;
 }

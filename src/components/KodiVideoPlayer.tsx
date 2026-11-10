@@ -751,7 +751,7 @@ export default function KodiVideoPlayer({
         }
       }
 
-      // Play / Pause no controle remoto, teclado e PS1 (Cruz / X, Enter, Espaço, K, MediaPlayPause)
+      // Play / Pause no teclado e atalhos multimídia (Espaço, K, Enter, MediaPlayPause)
       if (
         e.key === "MediaPlayPause" ||
         e.keyCode === 179 ||
@@ -761,8 +761,6 @@ export default function KodiVideoPlayer({
         e.key === " " ||
         e.key === "k" ||
         e.key === "K" ||
-        e.key === "x" ||
-        e.key === "X" ||
         e.key === "Enter" ||
         e.keyCode === 13
       ) {
@@ -1035,7 +1033,7 @@ export default function KodiVideoPlayer({
                   } else {
                     setIsLoading(false);
                     setHasError(true);
-                    setErrorMessage("Erro de decodificação no player nativo da TV. Selecione outro servidor.");
+                    setErrorMessage("Não foi possível decodificar este sinal de vídeo. Selecione outro servidor ou tente novamente.");
                   }
                 }
                 break;

@@ -34,11 +34,14 @@ export async function GET(req: NextRequest) {
                           targetUrl.includes('playcine') ||
                           targetUrl.includes('playclou');
     const isZunder = targetUrl.includes('zunderflix') || targetUrl.includes('sprintcdn');
+    const isWatchPlay = targetUrl.includes('hclod.qzz.io') || targetUrl.includes('watchplay.shop') || targetUrl.includes('playerflix');
 
     const referer = isEmbedPlayer ? 'https://embedplayer2.xyz/' :
       isZunder ? 'https://zunderflix.lat/' :
+      isWatchPlay ? 'https://v1.watchplay.shop/' :
       customReferer || (
         targetUrl.includes('mxcontent.net') ? 'https://mxdrop.click/' :
+        targetUrl.includes('overflix') ? 'https://www.overflix.date/' :
         targetUrl.includes('tapecontent.net') || targetUrl.includes('streamtape.com') ? 'https://streamtape.com/' :
         targetUrl.includes('bugoumods.com') ? 'https://embed.bugoumods.com/' :
         targetUrl.includes('fenix') ? 'https://fenixflix.fenixhub.online/' :
@@ -63,7 +66,8 @@ export async function GET(req: NextRequest) {
                            targetUrl.includes('.mp4') ||
                            targetUrl.includes('seg-') ||
                            targetUrl.includes('.m4s') ||
-                           targetUrl.includes('/p/');
+                           targetUrl.includes('/p/') ||
+                           (targetUrl.includes('.js') && (targetUrl.includes('hclod.qzz.io') || targetUrl.includes('/st/')));
 
     if (isDirectBinary) {
       try {
@@ -79,7 +83,7 @@ export async function GET(req: NextRequest) {
         const rawContentType = upstreamRes.headers.get('content-type') || '';
         const contentType = targetUrl.includes('.ts') || targetUrl.includes('seg-') || targetUrl.includes('/p/')
           ? 'video/mp2t'
-          : (rawContentType || 'video/mp4');
+          : (targetUrl.includes('.js') || targetUrl.includes('.mp4') || targetUrl.includes('.m4s') ? 'video/mp4' : (rawContentType || 'video/mp4'));
 
         const respHeaders: Record<string, string> = {
           'Content-Type': contentType,

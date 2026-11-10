@@ -17,7 +17,7 @@ function getDb(): DatabaseSync {
 
 const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXNvbHZlciIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc5MDk4OTczfQ.WzQBuOqMai96Afleh9g-i7NXo6h-YsjPUbOgxlUqVsU';
 const HOSTS = ['api.geekantenado.online', 'geekantenado.fly.dev'];
-const OVERFLIX_HOSTS = ['www.overflix.download', 'www.overflix.fit', 'www.overflix.asia'];
+const OVERFLIX_HOSTS = ['www.overflix.date', 'www.overflix.fit', 'www.overflix.asia'];
 const OVERFLIX_HOST = OVERFLIX_HOSTS[0];
 
 export interface StreamServer {
@@ -151,7 +151,7 @@ async function isUrlPlayable(url: string, referer: string = ''): Promise<boolean
   return await isStreamPlayable(url, referer);
 }
 
-async function fetchHtmlWithRedirects(targetUrl: string, referer = 'https://www.overflix.download/', depth = 0): Promise<string> {
+async function fetchHtmlWithRedirects(targetUrl: string, referer = 'https://www.overflix.date/', depth = 0): Promise<string> {
   if (depth > 3) return '';
   return new Promise((resolve) => {
     try {
@@ -184,7 +184,7 @@ async function resolveMixdrop(mediaId: string): Promise<string | null> {
   const domains = ['https://mxdrop.click', 'https://mixdrop.top', 'https://mixdrop.ag', 'https://mixdrop.co'];
   for (const domain of domains) {
     try {
-      const pageData = await fetchHtmlWithRedirects(`${domain}/e/${mediaId}`, 'https://www.overflix.download/');
+      const pageData = await fetchHtmlWithRedirects(`${domain}/e/${mediaId}`, 'https://www.overflix.date/');
       if (!pageData) continue;
       const match = pageData.match(/eval\(function\(p,a,c,k,e,d\)[\s\S]+?\.split\('\|'\),\d+,\{\}\)\)/);
       if (match) {
@@ -725,57 +725,8 @@ export async function GET(req: NextRequest) {
     }
 
     // =========================================================================
-    // 0.8 FLUXOS VERIFICADOS COM ALTA PRIORIDADE (EVITA SÉRIES COM EPISÓDIOS TROCADOS)
+    // 0.8 PROVEDORES UNIVERSAIS ONEPLAY / WATCHPLAY (1080p NATIVO FULL HD - SEM ANÚNCIOS)
     // =========================================================================
-    const isLupin = targetTmdbId === '96677' || (title && title.toLowerCase().includes('lupin'));
-    if (isLupin) {
-      const sNum = parseInt(String(targetSeason || 1), 10);
-      const eNum = parseInt(String(targetEpisode || 1), 10);
-      const LUPIN_VERIFIED_STREAMS: Record<number, Record<number, { url: string; referer: string; name: string }>> = {
-        1: {
-          1: { url: 'https://zunderflix.lat/api/media/hls-proxy?token=VqZItHRqdfBGpO8baWL0ilthaF78hbsJoAkmvxo4A4xR_RuRNh-LoF_qONlPnV7c-_dqrPFAlf3QqmbUzDhBKXn7v9sw2EQ23kTUBEu0BJKm5jMZdH7UiNojs9Eyuttnk4JOkDgW9FyxoKLJxjuhQXyFZRrnivYkDWWb8ADEggx3qUhi2_BxVtNmeelwstBti4LHeH6k0XfN4x2jZHDG6LuJx0rkcckEFTKDe6e-v019hLK11TxbI1tjHneLnLg30xADC83vdyCj3vs9j7igjYSY6GAW41RF9YxGOAv2GI4uxd2rNwGuO6C6QF_PdDe3JS6iEMFrLx64VC2tGmtopSN0Z97UtEzY', referer: 'https://zunderflix.lat/', name: 'Lupin T01:E01 1080p Dublado' },
-          2: { url: 'https://zunderflix.lat/api/media/hls-proxy?token=UfKqwi067wo5szhkjhDBZ1d9dJ8Je2ScIyyOYEwsBAtu715HydISYGqGkip84eN5pGJoU-28GhNBMNHlD48ubYjd-s594crA-8QHUi2hg_Q_KJ_NsRl5p3Q8qFdf9yLCjXvtfBKdvste-qqA8TDMPDGWvleiSeGeVkLOQBmW2SXaVSBYQtWbQ5Ury9CdpI-cubCNv37bbm-gvz3oHp_ntP6Gvc-U97d2P98DV1r10nieZI9BE7J362mP8bUbV0UFy3w5JTrpAwOwZfMlimSGeuY_avhVieE0l6X-r6A3k4w4iJoPp3xyWC7dQoP6X8UQaasbPkI48GWf4tb0UHybU2WJTURFvXPg0K3X6pcP', referer: 'https://zunderflix.lat/', name: 'Lupin T01:E02 1080p Dublado' },
-          3: { url: 'https://zunderflix.lat/api/media/hls-proxy?token=SGPelGgw7USW7mWbZwAbveSjrG2xAZT-VQ-Sf3scNmUW3oscwlzX3EZHN3R6Yk_kJPUly_EOsXWvlwKs1OHAthspOkFAPG_5HMwa4jFL_Lo0JAwTDzOOtJTWCedSCqH3Z1qk_s7HccS7-hJ2D7ljQ1BTIwiDwgGbcOjc_EkkS_a_D0vVbwnHyfMP-oZqvGvy0QdrH-_lh65U6GP2hFuJCSJtnhBvembDI7xfwxrTeNBHtT_2uROsfXum-aV2OTeZAzukB7W28SlsCZEfOoYgG_OC60IyllgraCTxPzVun0OQzEtB45uu_PPuDRQffRccgU4Rhtj2oR3Rck9qelXbmDGTqPxswV6yW0fC', referer: 'https://zunderflix.lat/', name: 'Lupin T01:E03 1080p Dublado' },
-          4: { url: 'https://zunderflix.lat/api/media/hls-proxy?token=AzPJmR2b9S2L01WJvYMjOi-4RSBiH9h2Jo74zi-PT91VVNXCnEmwIxn7JlNW6qWjbp0KUBcZHiVpgj8S8suvl7KGdqwodjdfDF4RmfP9rlwgkv72GATqwr3zbgNKsewVPO9_vQ6w7Lb4cTYQIhYcBQfWsXFHQvkhfyOXByBzneCDFeNgdPZxAsy2ujIKZ1Jy0RV_a4-dRrIKkjxhsHRnqQ7VOgFDQAiXFII5ebVPgDMhcUmnD7JofmkXCzYnL0Woq4BKxnaPOhW3mjuwnb1_Hz3WVfdiovczfatlUhZuPstShBgbFth7CfSZhGcdZgbfPdvZIRn0npdaSMOCh0mJ4Umi_R40jse10hqr', referer: 'https://zunderflix.lat/', name: 'Lupin T01:E04 1080p Dublado' },
-          5: { url: 'https://zunderflix.lat/api/media/hls-proxy?token=-UVUunbM2ynYX6y_pRyz0I0mmsWkRLML5v409IAoNFN15RCyQLyvRLCHpf7OMMy260iIOmGvEUqFNGPAAPkXQki400JnahIq2hfADedHYYpfP2yENHx1TI9Wmob2SYj4YfQ-O_HUvrFw8bwUFgB4bFOKBaUbJNlAU_4t85Rkzh0FNJ_7sck0o_BIFGMowYUaAjs5IOqWJsisTsuu6puXOOkUQObuSqOn4kWAh7kGOVp6UwReIbPn58gQrqQqTT-ujN8mvFY4Gk7IVvmHCJ8-NpEYPb8A_Sm4fI-ths_veQQ6VGfluktdsK1-ISKKFUkWnkhuHl2yRxe81xyyOs1JXX1IqdL2NJZi', referer: 'https://zunderflix.lat/', name: 'Lupin T01:E05 1080p Dublado' },
-        },
-        2: {
-          1: { url: 'https://embedplayer2.xyz/cdn/hls/ef6524f904a88dae6dec5312cc48f913/master.m3u8?md5=PcMp9yZ2vMi3LIoToi', referer: 'https://embedplayer2.xyz/', name: 'Lupin T02:E01 1080p Dublado' },
-          2: { url: 'https://embedplayer2.xyz/cdn/hls/8e37a87af2e462f49fc96dd1cef6b65f/master.m3u8?md5=PcMp9yZ2vMi3LIoToi', referer: 'https://embedplayer2.xyz/', name: 'Lupin T02:E02 1080p Dublado' },
-          3: { url: 'https://embedplayer2.xyz/cdn/hls/4ad49e67d7db539124f7bd18e6d4dac3/master.m3u8?md5=PcMp9yZ2vMi3LIoToi', referer: 'https://embedplayer2.xyz/', name: 'Lupin T02:E03 1080p Dublado' },
-          4: { url: 'https://embedplayer2.xyz/cdn/hls/8881b28d4200d57a62d58ec74dbd9dd5/master.m3u8?md5=PcMp9yZ2vMi3LIoToi', referer: 'https://embedplayer2.xyz/', name: 'Lupin T02:E04 1080p Dublado' },
-          5: { url: 'https://embedplayer2.xyz/cdn/hls/63752e000c45aaa534f290fbabc85e77/master.m3u8?md5=PcMp9yZ2vMi3LIoToi', referer: 'https://embedplayer2.xyz/', name: 'Lupin T02:E05 1080p Dublado' },
-        },
-        3: {
-          1: { url: 'https://embedplayer2.xyz/cdn/hls/c3eaa5850f4f579a30c73c6082de3e8e/master.m3u8?md5=PcMp9yZ2vMi3LIoToi', referer: 'https://embedplayer2.xyz/', name: 'Lupin T03:E01 1080p Dublado' },
-          2: { url: 'https://embedplayer2.xyz/cdn/hls/aaf3bdc0f23ddb499c06aa3222c8b947/master.m3u8?md5=PcMp9yZ2vMi3LIoToi', referer: 'https://embedplayer2.xyz/', name: 'Lupin T03:E02 1080p Dublado' },
-          3: { url: 'https://embedplayer2.xyz/cdn/hls/32d09f8a4004bdada49dee57c8b8c058/master.m3u8?md5=PcMp9yZ2vMi3LIoToi', referer: 'https://embedplayer2.xyz/', name: 'Lupin T03:E03 1080p Dublado' },
-          4: { url: 'https://embedplayer2.xyz/cdn/hls/f04ec8df5bbcca12a94abf67925bacc1/master.m3u8?md5=PcMp9yZ2vMi3LIoToi', referer: 'https://embedplayer2.xyz/', name: 'Lupin T03:E04 1080p Dublado' },
-          5: { url: 'https://embedplayer2.xyz/cdn/hls/52f1163c806294267fb8c7fff05922da/master.m3u8?md5=PcMp9yZ2vMi3LIoToi', referer: 'https://embedplayer2.xyz/', name: 'Lupin T03:E05 1080p Dublado' },
-          6: { url: 'https://embedplayer2.xyz/cdn/hls/299c912a33caa41189867260d586da77/master.m3u8?md5=PcMp9yZ2vMi3LIoToi', referer: 'https://embedplayer2.xyz/', name: 'Lupin T03:E06 1080p Dublado' },
-          7: { url: 'https://embedplayer2.xyz/cdn/hls/c158cb7e57b7c752d0c2c1df6ba48670/master.m3u8?md5=PcMp9yZ2vMi3LIoToi', referer: 'https://embedplayer2.xyz/', name: 'Lupin T03:E07 1080p Dublado' },
-        }
-      };
-
-      const verified = LUPIN_VERIFIED_STREAMS[sNum]?.[eNum];
-      if (verified) {
-        const encU = encodeURIComponent(verified.url);
-        const encR = encodeURIComponent(verified.referer);
-        servers.push({
-          name: `OnePlay Fenix (${verified.name}) - CDN Principal Full HD`,
-          url: `/api/proxy-stream?url=${encU}&referer=${encR}`,
-          type: 'video',
-          isDubbed: true
-        });
-        servers.push({
-          name: `OnePlay Fenix (${verified.name}) - Acelerador Anti-Buffer`,
-          url: `/api/proxy-stream?url=${encU}&referer=${encR}&buffer=safe`,
-          type: 'video',
-          isDubbed: true
-        });
-      }
-    }
-
     if (targetTmdbId || title) {
       try {
         const onePlayServers = await resolveOnePlaySources({
