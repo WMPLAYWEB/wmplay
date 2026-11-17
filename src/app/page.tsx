@@ -79,9 +79,9 @@ interface MenuItem {
 }
 
 const MENU_ITEMS: MenuItem[] = [
-  { id: "movies", label: "Filmes (6.8k+)", icon: Film },
-  { id: "tv", label: "Séries (5.7k+)", icon: Tv },
-  { id: "releases", label: "Lançamentos (840+)", icon: Sparkles },
+  { id: "movies", label: "Filmes (17k+)", icon: Film },
+  { id: "tv", label: "Séries (13k+)", icon: Tv },
+  { id: "releases", label: "Lançamentos (1.1k+)", icon: Sparkles },
   { id: "novelas", label: "Novelas (450+)", icon: Heart },
   { id: "music", label: "Música", icon: Music },
   { id: "live", label: "TV ao Vivo (+1.340)", icon: Radio },
@@ -2119,11 +2119,11 @@ export default function KodiApp() {
                       <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
                         isLight ? "text-emerald-800 bg-emerald-100 border border-emerald-300" : "text-emerald-300 bg-emerald-950/80 border border-emerald-500/50"
                       }`}>
-                        17.003 Títulos
+                        +38.600 Títulos
                       </span>
                     </div>
                     <p className={`text-xs mt-1 max-w-xl ${isLight ? "text-zinc-700 font-semibold" : "text-slate-300"}`}>
-                      Repositório oficial: Mais de 1.340 canais de TV ao vivo, 6.872 filmes, 5.719 séries, 2.047 animes, 1.058 doramas e 461 desenhos!
+                      Repositório oficial: Mais de 1.340 canais de TV ao vivo, 17.857 filmes, 13.075 séries, 453 novelas, 3.013 doramas, 2.777 animes e 804 desenhos!
                     </p>
                   </div>
                 </div>
@@ -4366,7 +4366,7 @@ function CatalogBrowseView({
       {catalogLoading && !isFavoritesTab ? (
         <div className="p-16 flex flex-col items-center justify-center gap-3 text-red-500">
           <Loader2 className="w-10 h-10 animate-spin text-red-500" />
-          <p className={`text-xs sm:text-sm font-bold ${isLight ? "text-zinc-700" : "text-slate-300"}`}>Consultando catálogo de 17.000+ títulos...</p>
+          <p className={`text-xs sm:text-sm font-bold ${isLight ? "text-zinc-700" : "text-slate-300"}`}>Consultando catálogo de +38.000 títulos...</p>
         </div>
       ) : displayedItems.length === 0 ? (
         <div className={`p-12 text-center rounded-2xl border ${

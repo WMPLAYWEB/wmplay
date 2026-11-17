@@ -121,6 +121,7 @@ export default function KodiVideoPlayer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Gaveta de Episódios Dentro do Player
   const [isEpisodeDrawerOpen, setIsEpisodeDrawerOpen] = useState(false);
@@ -396,6 +397,9 @@ export default function KodiVideoPlayer({
       if (!audioCtxRef.current) {
         audioCtxRef.current = new AudioCtx();
       }
+      if (audioCtxRef.current.state === "suspended") {
+        audioCtxRef.current.resume().catch(() => {});
+      }
       if (!gainNodeRef.current) {
         gainNodeRef.current = audioCtxRef.current.createGain();
         gainNodeRef.current.connect(audioCtxRef.current.destination);
@@ -409,11 +413,13 @@ export default function KodiVideoPlayer({
   };
 
   const cycleAudioBoost = () => {
-    initAudioBoost();
-    if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
-      audioCtxRef.current.resume();
-    }
     const next = audioBoost === 1 ? 1.5 : audioBoost === 1.5 ? 2.0 : 1.0;
+    if (next > 1) {
+      initAudioBoost();
+      if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
+        audioCtxRef.current.resume().catch(() => {});
+      }
+    }
     setAudioBoost(next);
     if (gainNodeRef.current) {
       gainNodeRef.current.gain.value = next;
@@ -532,15 +538,133 @@ export default function KodiVideoPlayer({
     }
   };
 
-  // Alternar tela cheia nativa
-  const handleFullscreen = () => {
-    const el = document.getElementById("kodi-player-container");
-    if (el) {
-      if (!document.fullscreenElement) {
-        el.requestFullscreen().catch(console.error);
-      } else {
-        document.exitFullscreen().catch(console.error);
+  // Monitorar alterações de Tela Cheia nativa em qualquer dispositivo (iOS Safari, Android Chrome, Desktop)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleFullscreenChange = () => {
+      const isCurrentlyFs = Boolean(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement ||
+        (videoRef.current as any)?.webkitDisplayingFullscreen
+      );
+      setIsFullscreen(isCurrentlyFs);
+      if (!isCurrentlyFs) {
+        try {
+          if (screen.orientation && (screen.orientation as any).unlock) {
+            (screen.orientation as any).unlock();
+          }
+        } catch {}
       }
+    };
+
+    const video = videoRef.current;
+    const handleWebkitBegin = () => setIsFullscreen(true);
+    const handleWebkitEnd = () => {
+      setIsFullscreen(false);
+      try {
+        if (screen.orientation && (screen.orientation as any).unlock) {
+          (screen.orientation as any).unlock();
+        }
+      } catch {}
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+
+    if (video) {
+      video.addEventListener("webkitbeginfullscreen", handleWebkitBegin);
+      video.addEventListener("webkitendfullscreen", handleWebkitEnd);
+    }
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
+      if (video) {
+        video.removeEventListener("webkitbeginfullscreen", handleWebkitBegin);
+        video.removeEventListener("webkitendfullscreen", handleWebkitEnd);
+      }
+    };
+  }, []);
+
+  // Alternar tela cheia nativa (Multi-plataforma: Desktop, Celular Android, iPhone / iPad Safari)
+  const handleFullscreen = () => {
+    const container = document.getElementById("wmplay-cinema-player") || document.getElementById("kodi-player-container");
+    const video = videoRef.current;
+
+    const isDocFs = Boolean(
+      document.fullscreenElement ||
+      (document as any).webkitFullscreenElement ||
+      (document as any).mozFullScreenElement ||
+      (document as any).msFullscreenElement ||
+      (video as any)?.webkitDisplayingFullscreen
+    );
+
+    if (isDocFs || isFullscreen) {
+      // Sair de tela cheia
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      } else if ((document as any).mozCancelFullScreen) {
+        (document as any).mozCancelFullScreen();
+      } else if ((document as any).msExitFullscreen) {
+        (document as any).msExitFullscreen();
+      } else if (video && (video as any).webkitExitFullscreen) {
+        (video as any).webkitExitFullscreen();
+      }
+      setIsFullscreen(false);
+      try {
+        if (screen.orientation && (screen.orientation as any).unlock) {
+          (screen.orientation as any).unlock();
+        }
+      } catch {}
+      return;
+    }
+
+    // Entrar em tela cheia com rotação automática para paisagem no celular
+    const lockLandscape = () => {
+      try {
+        if (screen.orientation && (screen.orientation as any).lock) {
+          (screen.orientation as any).lock("landscape").catch(() => {});
+        }
+      } catch {}
+    };
+
+    if (container && container.requestFullscreen) {
+      container
+        .requestFullscreen()
+        .then(() => {
+          setIsFullscreen(true);
+          lockLandscape();
+        })
+        .catch(() => {
+          // Fallback para Safari no iPhone caso container div seja restrito pelo iOS
+          if (video && (video as any).webkitEnterFullscreen) {
+            (video as any).webkitEnterFullscreen();
+            setIsFullscreen(true);
+          }
+        });
+    } else if (container && (container as any).webkitRequestFullscreen) {
+      (container as any).webkitRequestFullscreen();
+      setIsFullscreen(true);
+      lockLandscape();
+    } else if (container && (container as any).mozRequestFullScreen) {
+      (container as any).mozRequestFullScreen();
+      setIsFullscreen(true);
+    } else if (container && (container as any).msRequestFullscreen) {
+      (container as any).msRequestFullscreen();
+      setIsFullscreen(true);
+    } else if (video && (video as any).webkitEnterFullscreen) {
+      // iPhone / iPad Safari
+      (video as any).webkitEnterFullscreen();
+      setIsFullscreen(true);
     }
   };
 
@@ -941,10 +1065,11 @@ export default function KodiVideoPlayer({
           maxBufferSize: isLiteMode ? 30 * 1024 * 1024 : 120 * 1024 * 1024, // 120 MB de buffer contínuo
           backBufferLength: isLiteMode ? 20 : 60,
           progressive: true, // Download progressivo de chunks HLS
-          maxBufferHole: 0.5,
+          maxBufferHole: 0.8,
           highBufferWatchdogPeriod: 2,
-          nudgeOffset: 0.1,
-          nudgeMaxRetry: 5,
+          nudgeOffset: 0.15,
+          nudgeMaxRetry: 10,
+          maxFragLookUpTolerance: 0.25,
         });
         hlsRef.current = hls;
 
@@ -978,15 +1103,17 @@ export default function KodiVideoPlayer({
         let mediaRecoveryCount = 0;
 
         hls.on(Hls.Events.ERROR, (_, data) => {
-          // Recuperação automática contra travamentos de buffer (Buffer Stalled)
+          // Recuperação automática contra travamentos de buffer e áudio (Buffer Stalled / Audio Desync)
           if (
             data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR ||
-            data.details === Hls.ErrorDetails.BUFFER_NUDGE_ON_STALL
+            data.details === Hls.ErrorDetails.BUFFER_NUDGE_ON_STALL ||
+            data.details === Hls.ErrorDetails.BUFFER_SEEK_OVER_HOLE
           ) {
-            console.warn("[WMPLAY] Buffer stall detectado, normalizando vídeo para reprodução contínua...");
-            if (video && !video.paused) {
-              video.currentTime += 0.1;
+            console.warn("[WMPLAY] Buffer/Audio stall detectado, normalizando vídeo para reprodução contínua...");
+            if (video) {
+              video.currentTime += 0.15;
               hls.startLoad();
+              video.play().catch(() => {});
             }
             return;
           }
@@ -1149,24 +1276,24 @@ export default function KodiVideoPlayer({
           }
           lastStallTime = now;
 
-          // Watchdog ativo: se o servidor ficar congelado por mais de 12s em buffer contínuo, avança para o próximo ou sinaliza
+          // Se estiver pausado ou travado em micro-buraco de áudio, destrava suavemente
+          if (video && video.readyState >= 2) {
+            video.currentTime += 0.1;
+            video.play().catch(() => {});
+          }
+
+          // Watchdog ativo suave: 25 segundos antes de considerar o sinal inerte
           if (waitingTimer) clearTimeout(waitingTimer);
           waitingTimer = setTimeout(() => {
             if (servers.length > 1 && activeServerIndex + 1 < servers.length) {
-              console.warn(`[WMPLAY Watchdog] Buffer sem resposta por 12s no servidor ${activeServerIndex + 1}, alternando automaticamente para: ${servers[activeServerIndex + 1]?.name}`);
+              console.warn(`[WMPLAY Watchdog] Buffer sem resposta por 25s no servidor ${activeServerIndex + 1}, alternando automaticamente para: ${servers[activeServerIndex + 1]?.name}`);
               onSelectServer(activeServerIndex + 1);
             } else if (servers.length <= 1 || activeServerIndex + 1 >= servers.length) {
               setIsLoading(false);
               setHasError(true);
               setErrorMessage("O sinal deste servidor demorou para responder. Clique abaixo para tentar novamente ou selecione outro episódio.");
             }
-          }, 12000);
-
-          // Se travar repetidamente (3 vezes consecutivas em 15s) e tiver servidor reserva, alternar
-          if (stallCount >= 3 && servers.length > 1 && activeServerIndex + 1 < servers.length) {
-            console.warn(`[WMPLAY] Travamento repetido detectado no servidor ${activeServerIndex + 1}, alternando para o servidor reserva: ${servers[activeServerIndex + 1]?.name}`);
-            onSelectServer(activeServerIndex + 1);
-          }
+          }, 25000);
         };
 
         const handlePlaying = () => {
@@ -1649,9 +1776,13 @@ export default function KodiVideoPlayer({
                 type="button"
                 onClick={handleFullscreen}
                 className="p-2 sm:p-2.5 rounded-xl !bg-zinc-900/90 hover:!bg-zinc-800 !text-white border border-zinc-700 shadow-xl transition-all cursor-pointer"
-                title="Alternar Tela Cheia"
+                title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
               >
-                <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 !text-white" />
+                {isFullscreen ? (
+                  <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 !text-white" />
+                ) : (
+                  <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 !text-white" />
+                )}
               </button>
 
               {/* Fechar Player */}

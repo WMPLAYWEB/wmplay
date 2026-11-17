@@ -64,9 +64,14 @@ export async function GET(req: NextRequest) {
 
     const isDirectBinary = targetUrl.includes('.ts') ||
                            targetUrl.includes('.mp4') ||
-                           targetUrl.includes('seg-') ||
                            targetUrl.includes('.m4s') ||
+                           targetUrl.includes('.aac') ||
+                           targetUrl.includes('.m4a') ||
+                           targetUrl.includes('.mp3') ||
+                           targetUrl.includes('seg-') ||
+                           targetUrl.includes('seg_') ||
                            targetUrl.includes('/p/') ||
+                           targetUrl.includes('/audio/') ||
                            (targetUrl.includes('.js') && (targetUrl.includes('hclod.qzz.io') || targetUrl.includes('/st/')));
 
     if (isDirectBinary) {
@@ -83,6 +88,10 @@ export async function GET(req: NextRequest) {
         const rawContentType = upstreamRes.headers.get('content-type') || '';
         const contentType = targetUrl.includes('.ts') || targetUrl.includes('seg-') || targetUrl.includes('/p/')
           ? 'video/mp2t'
+          : targetUrl.includes('.aac')
+          ? 'audio/aac'
+          : targetUrl.includes('.m4a') || targetUrl.includes('.mp3')
+          ? 'audio/mp4'
           : (targetUrl.includes('.js') || targetUrl.includes('.mp4') || targetUrl.includes('.m4s') ? 'video/mp4' : (rawContentType || 'video/mp4'));
 
         const respHeaders: Record<string, string> = {

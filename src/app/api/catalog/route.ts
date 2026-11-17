@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
 
       if (filterType !== 'all') {
         if (filterType === 'novelas') {
-          conditions.push("(type = 'novelas' OR genres LIKE '%Soap%')");
+          conditions.push("(type = 'novelas' OR genres LIKE '%Soap%' OR genres LIKE '%Novela%')");
         } else {
           conditions.push('type = ?');
           params.push(filterType);
