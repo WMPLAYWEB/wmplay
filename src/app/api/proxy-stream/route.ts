@@ -62,6 +62,11 @@ export async function GET(req: NextRequest) {
       reqHeaders['Range'] = rangeHeader;
     }
 
+    // Se for vídeo MP4 hospedado em CDN pública direta, redirecionar via 307 sem passar gigabytes pela Vercel
+    if (targetUrl.includes('.mp4') && (targetUrl.includes('wasabisys.com') || targetUrl.includes('googleusercontent') || targetUrl.includes('gdrive'))) {
+      return NextResponse.redirect(targetUrl, 307);
+    }
+
     const isDirectBinary = targetUrl.includes('.ts') ||
                            targetUrl.includes('.mp4') ||
                            targetUrl.includes('.m4s') ||
@@ -99,7 +104,7 @@ export async function GET(req: NextRequest) {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, OPTIONS',
           'Accept-Ranges': 'bytes',
-          'Cache-Control': 'public, max-age=3600',
+          'Cache-Control': 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800',
         };
         if (upstreamRes.headers.get('content-range')) {
           respHeaders['Content-Range'] = upstreamRes.headers.get('content-range')!;

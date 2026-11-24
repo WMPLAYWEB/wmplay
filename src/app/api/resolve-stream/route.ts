@@ -222,7 +222,13 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
         if (playable) {
           const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
           servers.push({
-            name: `Servidor StreamTape Full HD Dublado`,
+            name: `Servidor StreamTape Full HD Dublado (Direto)`,
+            url: finalMp4,
+            type: 'video',
+            isDubbed: true
+          });
+          servers.push({
+            name: `Servidor StreamTape Acelerado (Reserva)`,
             url: proxiedUrl,
             type: 'video',
             isDubbed: true
@@ -244,7 +250,13 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
         if (playable) {
           const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
           servers.push({
-            name: `Servidor MixDrop Full HD Dublado (Anti-Buffer)`,
+            name: `Servidor MixDrop Full HD Dublado (Direto)`,
+            url: directMix,
+            type: 'video',
+            isDubbed: true
+          });
+          servers.push({
+            name: `Servidor MixDrop Acelerado (Reserva)`,
             url: proxiedUrl,
             type: 'video',
             isDubbed: true
@@ -268,7 +280,13 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
           if (playable) {
             const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(finalMp4)}&referer=${encodeURIComponent('https://streamtape.com/')}`;
             servers.push({
-              name: `Servidor StreamTape Full HD Legendado`,
+              name: `Servidor StreamTape Full HD Legendado (Direto)`,
+              url: finalMp4,
+              type: 'video',
+              isDubbed: false
+            });
+            servers.push({
+              name: `Servidor StreamTape Acelerado (Reserva)`,
               url: proxiedUrl,
               type: 'video',
               isDubbed: false
@@ -288,7 +306,13 @@ async function buildOverflixServers(playerData: any, labelPrefix = 'Dublado PT-B
           if (playable) {
             const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(directMix)}&referer=${encodeURIComponent('https://mxdrop.click/')}`;
             servers.push({
-              name: `Servidor MixDrop Full HD Legendado (Anti-Buffer)`,
+              name: `Servidor MixDrop Full HD Legendado (Direto)`,
+              url: directMix,
+              type: 'video',
+              isDubbed: false
+            });
+            servers.push({
+              name: `Servidor MixDrop Acelerado (Reserva)`,
               url: proxiedUrl,
               type: 'video',
               isDubbed: false

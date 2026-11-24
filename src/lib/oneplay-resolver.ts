@@ -125,7 +125,7 @@ export async function resolveWatchPlayStream(params: {
       if (playable) {
         return {
           name: isTv ? `Servidor WatchPlay Full HD Dublado (T${season}E${episode})` : 'Servidor WatchPlay 1080p Full HD Dublado',
-          url: `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}&referer=${encodeURIComponent('https://v1.watchplay.shop/')}`,
+          url: streamUrl,
           type: 'video',
           isDubbed: true
         };
@@ -227,10 +227,9 @@ export async function resolveFenixFlix(
     for (const r of verifiedResults) {
       if (r.status === 'fulfilled' && r.value.playable) {
         const { item, itemReferer } = r.value;
-        const encodedRef = itemReferer ? `&referer=${encodeURIComponent(itemReferer)}` : '';
         streams.push({
           name: `${item.cleanLabel}`,
-          url: `/api/proxy-stream?url=${encodeURIComponent(item.rawUrl)}${encodedRef}`,
+          url: item.rawUrl,
           type: 'video',
           isDubbed: item.isDub
         });
